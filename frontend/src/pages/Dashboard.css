@@ -1,0 +1,409 @@
+.dashboard {
+  --muted-text: #5b5775;
+  --line: #e3e0ef;
+  --line-soft: #eceaf5;
+  --billed: #ffe7b0;
+
+  max-width: 1280px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.muted {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.strong {
+  font-weight: 700;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Толгой хэсэг */
+.dash-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dash-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.field select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.btn {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  border: 0;
+  background: var(--yellow);
+  font-weight: 800;
+}
+
+.btn-small {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border-color: #cfcbe0;
+  font-size: 13px;
+  margin-left: auto;
+}
+
+/* Карт */
+.card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.card-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+/* Үзүүлэлтийн картууд */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.stat {
+  padding: 20px;
+  gap: 8px;
+}
+
+.stat-label,
+.stat-note {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.stat-value {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.stat-value.bad {
+  color: #b42318;
+}
+
+.stat-note.good {
+  color: #0b7a4b;
+  font-weight: 600;
+}
+
+.stat.dark {
+  background: var(--navy);
+  color: #fff;
+}
+
+.stat.dark .stat-label,
+.stat.dark .stat-note {
+  color: #fff;
+  opacity: 0.85;
+}
+
+.progress {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #fff;
+}
+
+/* График */
+.legend {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.swatch.billed {
+  background: var(--billed);
+}
+
+.swatch.collected {
+  background: var(--navy);
+}
+
+.chart {
+  display: flex;
+  gap: 12px;
+}
+
+.chart-axis {
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted-text);
+  text-align: right;
+}
+
+.chart-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chart-bars {
+  height: 220px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2%;
+  border-bottom: 1px solid var(--line);
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px);
+  background-size: 100% 73.3px;
+}
+
+.bar {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  background: var(--billed);
+  border-radius: 6px 6px 0 0;
+}
+
+.bar-fill {
+  width: 100%;
+  background: var(--navy);
+  border-radius: 6px 6px 0 0;
+}
+
+/* Явагдаж буй сар */
+.bar-fill.current {
+  background: var(--yellow);
+}
+
+.chart-labels {
+  display: flex;
+  gap: 2%;
+}
+
+.chart-labels span {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted-text);
+}
+
+/* Доод мөр */
+.dash-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.debtors {
+  flex: 3 1 480px;
+  min-width: 0;
+}
+
+.dash-side {
+  flex: 2 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table-wrap table {
+  width: 100%;
+  min-width: 460px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table-wrap th {
+  padding: 8px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
+.table-wrap td {
+  padding: 12px 8px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.table-wrap th:first-child,
+.table-wrap td:first-child {
+  padding-left: 0;
+}
+
+.table-wrap th:last-child,
+.table-wrap td:last-child {
+  padding-right: 0;
+}
+
+.table-wrap th.num {
+  text-align: right;
+}
+
+.pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.pill.bad {
+  color: #b42318;
+  background: #fde7e5;
+}
+
+.pill.warn {
+  color: #7a4300;
+  background: #ffe9c2;
+}
+
+.category {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.category-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+
+.category-track span {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--navy);
+}
+
+.poll-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 20px;
+  background: #ffe9c2;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.poll-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a4300;
+}
+
+.poll-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.poll-note {
+  font-size: 13px;
+  color: #5c3300;
+}

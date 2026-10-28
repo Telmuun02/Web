@@ -1,0 +1,29 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  background: var(--page-bg);
+  color: var(--navy);
+  font-family: 'Onest', system-ui, sans-serif;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.content h1 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+/* Утасны өргөнд цэс дээр гарна */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+}

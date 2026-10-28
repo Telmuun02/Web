@@ -3,12 +3,24 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "db:check": "node db/check.js",
+    "migrate": "knex --knexfile db/knexfile.js migrate:latest",
+    "migrate:rollback": "knex --knexfile db/knexfile.js migrate:rollback",
+    "seed": "knex --knexfile db/knexfile.js seed:run",
+    "migrate:status": "knex --knexfile db/knexfile.js migrate:status",
+    "migrate:make": "knex --knexfile db/knexfile.js migrate:make",
+    "seed:make": "knex --knexfile db/knexfile.js seed:make",
+    "user:create": "node db/create-user.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
+    "dotenv": "^18.0.9",
     "express": "~4.16.1",
-    "morgan": "~1.9.1"
+    "knex": "^3.3.0",
+    "morgan": "~1.9.1",
+    "mysql2": "^3.24.6"
   }
 }

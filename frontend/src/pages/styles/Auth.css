@@ -1,0 +1,174 @@
+/* Login, ForgotPassword хуудсуудын form */
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  padding: 32px;
+  border-radius: 20px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-head h2 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.auth-muted {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.auth-error {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fde7e5;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-success {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #e3f5ec;
+  color: #0b7a4b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-field input {
+  width: 100%;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--navy);
+}
+
+.auth-field input::placeholder {
+  color: #a9a5bf;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(255, 194, 75, 0.45);
+}
+
+/* 6 оронтой код — том, тэгш зайтай */
+.auth-field input.auth-code {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 10px;
+  text-align: center;
+}
+
+.auth-hint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-text);
+}
+
+/* Dashboard-ийн .btn-primary-тай ижил шар товч */
+.auth-submit {
+  height: 48px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--yellow);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--navy);
+  cursor: pointer;
+}
+
+.auth-submit:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.auth-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-help {
+  text-align: center;
+}
+
+/* Текст шиг харагдах линк / товч */
+.auth-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.auth-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-forgot {
+  align-self: flex-end;
+  margin-top: -8px;
+}
+
+.auth-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-back:hover {
+  color: var(--navy);
+}
+
+@media (max-width: 768px) {
+  .auth-card {
+    padding: 24px 20px;
+  }
+}

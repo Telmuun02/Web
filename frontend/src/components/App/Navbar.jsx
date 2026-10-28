@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom'
+import Brand from './Brand'
+import './Navbar.css'
 
 // MUI аас татсан icon ууд
-import ApartmentOutlined from '@mui/icons-material/ApartmentOutlined'
 import BarChartOutlined from '@mui/icons-material/BarChartOutlined'
 import BuildOutlined from '@mui/icons-material/BuildOutlined'
 import CampaignOutlined from '@mui/icons-material/CampaignOutlined'
@@ -38,15 +39,7 @@ export default function Navbar({ user, onLogout }) {
 
   return (
     <nav className="sidebar" aria-label="Үндсэн цэс">
-      <div className="brand">
-        <span className="brand-logo">
-          <ApartmentOutlined sx={{ fontSize: 20 }} />
-        </span>
-        <span className="brand-text">
-          <span className="brand-name">СӨХ Hub</span>
-          <span className="brand-sub">Нарны хотхон</span>
-        </span>
-      </div>
+      <Brand />
 
       {visibleItems.map((item) => (
         <NavLink key={item.path} to={item.path} end={item.path === '/'} className="sidebar-link">

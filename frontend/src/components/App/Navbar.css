@@ -1,0 +1,71 @@
+/* Хажуугийн цэс */
+.sidebar {
+  flex: 0 0 240px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.sidebar .brand {
+  padding: 0 8px 24px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* NavLink идэвхтэй замд "active" класс автоматаар нэмдэг */
+.sidebar-link.active {
+  background: var(--yellow);
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.logout {
+  margin-top: auto;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Утасны өргөнд цэс дээр гарч, хэвтээ гүйдэг болно */
+@media (max-width: 768px) {
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+
+  .sidebar .brand {
+    width: 100%;
+    padding-bottom: 12px;
+  }
+
+  .logout {
+    margin-top: 0;
+  }
+}

@@ -1,9 +1,8 @@
 import { Link, useOutletContext } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import './Dashboard.css'
+import './styles/Dashboard.css'
 
-// Түр өгөгдөл (дизайн дээрх жишээ) — backend бэлэн болохоор API-аас авна
 const stats = [
   { label: 'Цугларсан / нэхэмжилсэн', value: '7.9 / 10.2 сая₮', note: '120 тоотоос 92 нь төлсөн', progress: 77, dark: true },
   { label: 'Төлөлтийн хувь', value: '77%', note: '11/25 хүртэл 10 хоног байна', noteClass: 'good' },

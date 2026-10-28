@@ -1,0 +1,112 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  background: var(--page-bg);
+  color: var(--navy);
+  font-family: 'Onest', system-ui, sans-serif;
+}
+
+/* Зүүн тал — sidebar-тай ижил navy */
+.auth-hero {
+  flex: 0 0 42%;
+  max-width: 560px;
+  box-sizing: border-box;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  background: var(--navy);
+  color: #fff;
+}
+
+.auth-hero-body {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.auth-hero h1 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.auth-features {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 15px;
+  color: var(--link);
+}
+
+.auth-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-feature-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-footnote {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Баруун тал — хуудасны form энд гарна */
+.auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+/* Утас — navy хэсэг дээр нь богино болж гарна */
+@media (max-width: 768px) {
+  .auth-page {
+    flex-direction: column;
+  }
+
+  .auth-hero {
+    flex: none;
+    max-width: none;
+    padding: 20px 16px 24px;
+    gap: 20px;
+  }
+
+  .auth-hero-body {
+    margin: 0;
+    gap: 16px;
+  }
+
+  .auth-hero h1 {
+    font-size: 22px;
+  }
+
+  .auth-features,
+  .auth-footnote {
+    display: none;
+  }
+
+  .auth-main {
+    align-items: flex-start;
+    padding: 24px 16px;
+  }
+}

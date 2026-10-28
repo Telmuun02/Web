@@ -1,0 +1,2 @@
+bcrypt нууц үгийг hash хийх 
+knex db руу хандах

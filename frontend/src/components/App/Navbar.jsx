@@ -38,11 +38,12 @@ export default function Navbar({ user, onLogout }) {
   )
 
   return (
+    // Хулгана гадна байхад зөвхөн icon, дээр нь очиход CSS (:hover) бүтэн дэлгэнэ
     <nav className="sidebar" aria-label="Үндсэн цэс">
       <Brand />
 
       {user && (
-        <NavLink to="/profile" className="sidebar-profile">
+        <NavLink to="/profile" className="sidebar-profile" title={user.name}>
           {/* Зураг байхгүй тул нэрийн эхний үсэг */}
           <span className="avatar">{user.name?.[0]?.toUpperCase()}</span>
           <span className="sidebar-profile-text">
@@ -53,16 +54,17 @@ export default function Navbar({ user, onLogout }) {
       )}
 
       {visibleItems.map((item) => (
-        <NavLink key={item.path} to={item.path} end={item.path === '/'} className="sidebar-link">
+        // title — хумигдсан үед хулганаа барихад нэр нь харагдана
+        <NavLink key={item.path} to={item.path} end={item.path === '/'} className="sidebar-link" title={item.label}>
           <item.icon sx={iconSx} />
-          {item.label}
+          <span className="sidebar-label">{item.label}</span>
         </NavLink>
       ))}
 
       {user && (
-        <button className="sidebar-link logout" onClick={onLogout}>
+        <button className="sidebar-link logout" onClick={onLogout} title="Гарах">
           <LogoutOutlined sx={iconSx} />
-          Гарах
+          <span className="sidebar-label">Гарах</span>
         </button>
       )}
     </nav>

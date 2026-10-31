@@ -26,9 +26,3 @@
   color: var(--navy);
 }
 
-/* Утасны өргөнд цэс дээр гарна */
-@media (max-width: 768px) {
-  .layout {
-    flex-direction: column;
-  }
-}

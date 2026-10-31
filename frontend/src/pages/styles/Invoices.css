@@ -1,0 +1,390 @@
+.invoices {
+  --line-soft: #eceaf5;
+  --field-border: #cfcbe0;
+
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inv-muted {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+/* Толгой хэсэг */
+.inv-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.inv-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inv-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.inv-auto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b7a4b;
+}
+
+/* Товчнууд */
+.inv-btn {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.inv-btn.small {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border-color: var(--field-border);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.inv-btn.primary {
+  border: 0;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 700;
+}
+
+.inv-btn.primary:disabled {
+  background: #9aa3b5;
+  cursor: not-allowed;
+}
+
+/* Таб ба хайлт */
+.inv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inv-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.inv-tab {
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3e3a57;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.inv-tab.active {
+  background: var(--navy);
+  color: #fff;
+}
+
+.inv-tab-count {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.inv-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  min-width: 240px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted-text);
+}
+
+.inv-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--navy);
+  outline-offset: 4px;
+}
+
+/* Бүртгэсний дараах мэдэгдэл */
+.inv-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #ddf5e9;
+  color: #0b5c38;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Хүснэгт */
+.inv-card {
+  padding: 8px 24px 16px;
+  border-radius: 20px;
+  background: #fff;
+  overflow-x: auto; /* нарийн дэлгэцэнд хүснэгт хажуу тийш гүйнэ */
+}
+
+.inv-card table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.inv-card th {
+  padding: 14px 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
+.inv-card td {
+  padding: 12px 8px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.inv-card th:first-child,
+.inv-card td:first-child {
+  padding-left: 0;
+}
+
+.inv-card th:last-child,
+.inv-card td:last-child {
+  padding-right: 0;
+}
+
+.inv-card .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-card .strong {
+  font-weight: 700;
+}
+
+.inv-empty {
+  margin: 24px 0 8px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+/* Төлөвийн шошго */
+.inv-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inv-pill.unpaid {
+  color: #3e3a57;
+  background: var(--line-soft);
+}
+
+.inv-pill.partial {
+  color: #7a4300;
+  background: #ffe9c2;
+}
+
+.inv-pill.paid {
+  color: #0b5c38;
+  background: #ddf5e9;
+}
+
+.inv-pill.overdue {
+  color: #b42318;
+  background: #fde7e5;
+}
+
+/* Төлбөр бүртгэх цонх */
+.inv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30; /* цэснээс (z-index: 10) дээгүүр */
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(18, 21, 28, 0.45);
+}
+
+.inv-drawer {
+  width: 420px;
+  max-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: #fff;
+  color: var(--navy);
+}
+
+.inv-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.inv-drawer-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inv-drawer-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.inv-close {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--page-bg);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.inv-left {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--page-bg);
+}
+
+.inv-left-value {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.inv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.inv-field input,
+.inv-field select,
+.inv-field textarea {
+  border: 1px solid var(--field-border);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  color: var(--navy);
+}
+
+.inv-field input {
+  height: 48px;
+  padding: 0 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.inv-field select {
+  height: 48px;
+  padding: 0 12px;
+  font-size: 15px;
+}
+
+.inv-field textarea {
+  padding: 12px 14px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.inv-error {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b42318;
+}
+
+.inv-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}
+
+.inv-drawer-actions {
+  margin-top: auto; /* товчнуудыг цонхны доод талд шахна */
+  display: flex;
+  gap: 10px;
+}
+
+.inv-drawer-actions .inv-btn {
+  flex: 1;
+  height: 50px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+.inv-drawer-actions .inv-btn.primary {
+  flex: 2;
+}

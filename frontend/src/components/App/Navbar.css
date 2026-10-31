@@ -1,9 +1,12 @@
 /* Хажуугийн цэс */
 .sidebar {
-  flex: 0 0 240px;
+  flex: 0 0 88px; /* анхнаасаа зөвхөн icon-ы өргөнтэй (56px avatar + 2×16px padding) */
   position: sticky;
   top: 0;
+  z-index: 10; /* дэлгэгдэхдээ контентын дээгүүр гарна */
   height: 100vh;
+  overflow-x: hidden;
+  transition: flex-basis 0.25s ease, margin-right 0.25s ease, padding 0.25s ease; /* өргөн зөөлөн өөрчлөгдөнө */
   box-sizing: border-box;
   padding: 24px 16px;
   display: flex;
@@ -103,28 +106,47 @@
   cursor: pointer;
 }
 
-/* Утасны өргөнд цэс дээр гарч, хэвтээ гүйдэг болно */
-@media (max-width: 768px) {
-  .sidebar {
-    position: static;
-    height: auto;
-    flex-direction: row;
-    flex-wrap: wrap;
-    padding: 12px;
-  }
+/* Дэлгэх/хумих үед бичвэр 2 мөр болж эвдрэхгүй */
+.sidebar-link,
+.brand {
+  white-space: nowrap;
+}
 
-  .sidebar .brand {
-    width: 100%;
-    padding-bottom: 12px;
-  }
+/* Hover хийхэд 240px болно. Сөрөг margin нь нэмэгдсэн 152px-ийг нөхөж,
+   контентыг түлхэлгүй дээгүүр нь давхарлаж гарна */
+.sidebar:hover {
+  flex-basis: 240px;
+  margin-right: -152px;
+}
 
-  .sidebar-profile {
-    width: 100%;
-    box-sizing: border-box; /* padding-ийг 100%-д багтаана */
-    margin-bottom: 8px;
-  }
+/* Хулгана гадна байхад — зөвхөн өргөн нарийсна.
+   Өндөр, padding, avatar, icon-ы хэмжээ дэлгэгдсэн үеийнхтэй яг адил тул юу ч дээш доош үсрэхгүй */
 
-  .logout {
-    margin-top: 0;
-  }
+/* Бичвэрийг устгахгүй, өргөнийг нь 0 болгоно — мөрийн өндөр нь хэвээр үлдэнэ */
+.sidebar:not(:hover) .brand-text,
+.sidebar:not(:hover) .sidebar-label {
+  width: 0;
+  overflow: hidden;
+}
+
+/* Нэр, role нуугдах ч зай нь үлдэнэ */
+.sidebar:not(:hover) .sidebar-profile-text {
+  visibility: hidden;
+}
+
+/* Бичвэргүй үед icon голдоо байрлана (gap нь icon-ыг хажуу тийш түлхэхгүй) */
+.sidebar:not(:hover) .brand,
+.sidebar:not(:hover) .sidebar-link {
+  justify-content: center;
+  gap: 0;
+}
+
+.sidebar:not(:hover) .brand {
+  padding: 0 0 24px;
+}
+
+/* 56px avatar 56px зайд яг багтана. Хумигдсан үед картын дэвсгэр арилж, зөвхөн avatar үлдэнэ */
+.sidebar:not(:hover) .sidebar-profile {
+  padding: 16px 0;
+  background: none;
 }

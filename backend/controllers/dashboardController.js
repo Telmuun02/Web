@@ -5,6 +5,7 @@ var { Invoices, Requests, Polls } = require('../db/models');
  * toPeriod -- сар, өдөр, цагийг YYYY-MM-DD хэлбэрт хөрвүүлнэ
  * collectionStats -- "Цугларсан / нэхэмжилсэн", "Төлөлтийн хувь" картын өгөгдөл
  * monthStart -- MonthlyChart ийг хийхэд хэрэглэх хүснэгт
+ * 
  */
 
 function toPeriod(date) {

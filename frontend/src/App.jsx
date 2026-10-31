@@ -4,6 +4,7 @@ import api from './api/client'
 import Layout from './components/App/Layout'
 import Page from './components/Page'
 import Dashboard from './pages/Dashboard'
+import Invoices from './pages/Invoices'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import './App.css'
@@ -30,7 +31,7 @@ function App() {
 
       <Route element={<Layout user={user} onLogout={() => setUser(null)} />}>
         <Route index element={<Dashboard />} />
-        <Route path="invoices" element={<Page title="Нэхэмжлэл ба төлбөр" />} />
+        <Route path="invoices" element={<Invoices />} />
         <Route path="invoices/settings" element={<Page title="Хураамжийн тохиргоо" />} />
         <Route path="requests" element={<Page title="Засварын хүсэлт" />} />
         <Route path="announcements" element={<Page title="Зарлал" />} />

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import AuthLayout from '../components/Auth/AuthLayout'
 import PasswordInput from '../components/Auth/PasswordInput'
-import { requestPasswordReset, resetPassword } from '../api/auth'
+import api from '../api/client'
 import './styles/Auth.css'
 
 const RESEND_SECONDS = 60
@@ -34,7 +34,8 @@ export default function ForgotPassword() {
     setError('')
     setSubmitting(true)
     try {
-      const result = await requestPasswordReset(login.trim())
+      // Бүртгэлгүй хаяг байсан ч ижил хариу буцаана (хэн бүртгэлтэйг таахаас сэргийлнэ)
+      const result = await api.post('/auth/forgot-password', { login: login.trim() })
       setChannel(result.channel)
       setStep('reset')
       setCooldown(RESEND_SECONDS)
@@ -65,7 +66,7 @@ export default function ForgotPassword() {
 
     setSubmitting(true)
     try {
-      await resetPassword({ login: login.trim(), code, password })
+      await api.post('/auth/reset-password', { login: login.trim(), code, password })
       navigate('/login', {
         replace: true,
         state: { login: login.trim(), notice: 'Нууц үг амжилттай солигдлоо. Шинэ нууц үгээрээ нэвтэрнэ үү.' },

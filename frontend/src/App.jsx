@@ -10,15 +10,9 @@ import './App.css'
 function App() {
   const [user, setUser] = useState(null)
 
-  // Түр нэвтрэлт — backend бэлэн болохоор POST /api/auth/login руу илгээнэ.
-  // Одоохондоо ямар ч нэр, нууц үгээр нэвтэрнэ; role-ыг 'admin' эсвэл 'user' болгож шалгана.
-  async function handleLogin({ login }) {
-    setUser({ name: 'Ариунаа', login, role: 'admin' })
-  }
-
   return (
     <Routes>
-      <Route path="/login" element={<Login user={user} onLogin={handleLogin} />} />
+      <Route path="/login" element={<Login user={user} onLogin={setUser} />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
       <Route element={<Layout user={user} onLogout={() => setUser(null)} />}>

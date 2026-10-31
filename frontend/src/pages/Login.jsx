@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/Auth/AuthLayout'
 import PasswordInput from '../components/Auth/PasswordInput'
+import api from '../api/client'
 import './styles/Auth.css'
 
 export default function Login({ user, onLogin }) {
@@ -23,7 +24,8 @@ export default function Login({ user, onLogin }) {
     setError('')
     setSubmitting(true)
     try {
-      await onLogin({ login: login.trim(), password })
+      await api.post('/auth/login', { login: login.trim(), password }) // cookie тавигдана
+      onLogin(await api.get('/auth/me'))                               // App руу хэрэглэгчийг дамжуулна
       navigate('/', { replace: true })
     } catch (err) {
       setError(err.message || 'Нэвтрэх нэр эсвэл нууц үг буруу байна')

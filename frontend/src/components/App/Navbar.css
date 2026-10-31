@@ -17,6 +17,59 @@
   padding: 0 8px 24px;
 }
 
+/* Лого доорх профайл карт — /profile руу шилжинэ */
+.sidebar-profile {
+  display: flex;
+  flex-direction: column; /* зураг дээр, нэр role доор */
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 16px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  text-decoration: none;
+}
+
+.sidebar-profile:hover,
+.sidebar-profile.active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.sidebar-profile-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  text-align: center;
+}
+
+.sidebar-profile-name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis; /* урт нэрийг ... болгоно */
+  white-space: nowrap;
+}
+
+.sidebar-profile-role {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .sidebar-link {
   display: flex;
   align-items: center;
@@ -63,6 +116,12 @@
   .sidebar .brand {
     width: 100%;
     padding-bottom: 12px;
+  }
+
+  .sidebar-profile {
+    width: 100%;
+    box-sizing: border-box; /* padding-ийг 100%-д багтаана */
+    margin-bottom: 8px;
   }
 
   .logout {

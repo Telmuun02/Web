@@ -20,12 +20,12 @@ import SettingsOutlined from '@mui/icons-material/SettingsOutlined'
 // icon — MUI-ийн дүрсний компонент
 const menuItems = [
   { path: '/',              label: 'Самбар',              roles: ['admin', 'user'], icon: DashboardOutlined },
-  { path: '/invoices',      label: 'Нэхэмжлэл ба төлбөр', roles: ['admin'],         icon: ReceiptLongOutlined },
+  { path: '/invoices',      label: 'Нэхэмжлэл ба төлбөр', roles: ['admin', 'user'],         icon: ReceiptLongOutlined },
   { path: '/requests',      label: 'Засварын хүсэлт',     roles: ['admin', 'user'], icon: BuildOutlined },
   { path: '/announcements', label: 'Зарлал',              roles: ['admin', 'user'], icon: CampaignOutlined },
   { path: '/polls',         label: 'Санал хураалт',       roles: ['admin', 'user'], icon: HowToVoteOutlined },
   { path: '/units',         label: 'Тоот ба оршин суугч', roles: ['admin'],         icon: PeopleOutlined },
-  { path: '/reports',       label: 'Тайлан',              roles: ['admin'],         icon: BarChartOutlined },
+  { path: '/reports',       label: 'Тайлан',              roles: ['admin', 'user'],         icon: BarChartOutlined },
   { path: '/settings',      label: 'Тохиргоо',            roles: ['admin'],         icon: SettingsOutlined },
 ]
 
@@ -40,6 +40,17 @@ export default function Navbar({ user, onLogout }) {
   return (
     <nav className="sidebar" aria-label="Үндсэн цэс">
       <Brand />
+
+      {user && (
+        <NavLink to="/profile" className="sidebar-profile">
+          {/* Зураг байхгүй тул нэрийн эхний үсэг */}
+          <span className="avatar">{user.name?.[0]?.toUpperCase()}</span>
+          <span className="sidebar-profile-text">
+            <span className="sidebar-profile-name">{user.name}</span>
+            <span className="sidebar-profile-role">{user.role === 'admin' ? 'Админ' : 'Оршин суугч'}</span>
+          </span>
+        </NavLink>
+      )}
 
       {visibleItems.map((item) => (
         <NavLink key={item.path} to={item.path} end={item.path === '/'} className="sidebar-link">

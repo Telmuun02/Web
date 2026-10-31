@@ -47,16 +47,12 @@ async function debtors(limit) {
   var rows = await db('invoices as i')
     .join('units as u', 'u.id', 'i.unit_id')
     .leftJoin(paidPerInvoice(), 'p.invoice_id', 'i.id')
-    .select(
-      'u.id as unit_id',
-      'u.code',
-      db.raw("(SELECT name FROM users WHERE users.unit_id = u.id AND role = 'user' ORDER BY id LIMIT 1) AS resident")
-    )
+    .select('u.id as unit_id', 'u.code', 'u.entrance', 'u.floor', 'u.area_m2')
     .select(db.raw('SUM(i.amount - COALESCE(p.paid, 0)) AS debt'))
     .count({ months: 'i.id' })
     .whereIn('i.status', ['unpaid', 'partial'])
     .where('i.due_date', '<', db.fn.now())
-    .groupBy('u.id', 'u.code')
+    .groupBy('u.id', 'u.code', 'u.entrance', 'u.floor', 'u.area_m2')
     .orderBy('debt', 'desc')
     .limit(limit || 10);
 

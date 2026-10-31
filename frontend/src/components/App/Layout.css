@@ -21,6 +21,11 @@
   color: var(--navy);
 }
 
+/* index.css-ийн dark mode h2-ийг бараг цагаан болгодог — цагаан карт дээр үл харагдана */
+.content h2 {
+  color: var(--navy);
+}
+
 /* Утасны өргөнд цэс дээр гарна */
 @media (max-width: 768px) {
   .layout {

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import api from './api/client'
 import Layout from './components/App/Layout'
 import Page from './components/Page'
 import Dashboard from './pages/Dashboard'
@@ -9,6 +10,18 @@ import './App.css'
 
 function App() {
   const [user, setUser] = useState(null)
+  const [checking, setChecking] = useState(true)
+
+  // Апп ачаалагдахад (F5 дарсан ч) cookie хүчинтэй эсэхийг серверээс асууна
+  useEffect(() => {
+    api.get('/auth/me')
+      .then((me) => setUser(me))
+      .catch(() => setUser(null))
+      .finally(() => setChecking(false))
+  }, [])
+
+  // Шалгаж дуустал юу ч харуулахгүй — эс бөгөөс Layout шууд /login руу шилжүүлнэ
+  if (checking) return null
 
   return (
     <Routes>
@@ -25,6 +38,7 @@ function App() {
         <Route path="units" element={<Page title="Тоот ба оршин суугч" />} />
         <Route path="reports" element={<Page title="Тайлан" />} />
         <Route path="settings" element={<Page title="Тохиргоо" />} />
+        <Route path="profile" element={<Page title="Миний профайл" />} />
       </Route>
 
       <Route path="*" element={<Page title="Хуудас олдсонгүй" />} />

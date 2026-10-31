@@ -1,47 +1,90 @@
+import { useEffect, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import api from '../api/client'
 import './styles/Dashboard.css'
 
-const stats = [
-  { label: 'Цугларсан / нэхэмжилсэн', value: '7.9 / 10.2 сая₮', note: '120 тоотоос 92 нь төлсөн', progress: 77, dark: true },
-  { label: 'Төлөлтийн хувь', value: '77%', note: '11/25 хүртэл 10 хоног байна', noteClass: 'good' },
-  { label: 'Хугацаа хэтэрсэн өр', value: '1.3 сая₮', note: '14 тоот · өмнөх саруудаас', valueClass: 'bad' },
-  { label: 'Нээлттэй хүсэлт', value: '9', note: 'Дунджаар 19 цагт шийддэг' },
-]
+const chartTop = 12 // сая₮ — графикийн дээд хязгаар
 
-const months = ['12/25', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
-const billed = [9.8, 9.8, 9.8, 9.8, 9.8, 10.2, 10.2, 10.2, 10.2, 10.2, 10.2, 10.2]
-const collected = [9.1, 9.4, 8.8, 9.7, 9.6, 9.5, 9.0, 8.6, 9.8, 9.9, 9.6, 7.9]
-const chartTop = 12 // сая₮
+// 7900000 → '7.9'. Утга ирээгүй бол 0
+function million(n) {
+  return ((n || 0) / 1000000).toFixed(1)
+}
 
-const debtors = [
-  { unit: '1-12', name: 'Ганболд Т.', debt: '255,000₮', months: 3 },
-  { unit: '3-87', name: 'Сарантуяа Б.', debt: '170,000₮', months: 2 },
-  { unit: '2-31', name: 'Мөнхбат Э.', debt: '170,000₮', months: 2 },
-  { unit: '1-05', name: 'Оюун Д.', debt: '92,400₮', months: 1 },
-  { unit: '3-64', name: 'Тэмүүлэн Г.', debt: '85,000₮', months: 1 },
-  { unit: '2-18', name: 'Нарантуяа С.', debt: '85,000₮', months: 1 },
-]
+// /api/dashboard-ийн хариунаас дээд талын 4 карт.
+// Хэсэг нь ирээгүй (backend хуучин хувилбартай гэх мэт) бол = {}, талбар нь байхгүй бол ?? 0
+function buildStats({ collection = {}, overdue = {}, requests = {} }) {
+  return [
+    {
+      label: 'Цугларсан / нэхэмжилсэн',
+      value: `${million(collection.collected)} / ${million(collection.billed)} сая₮`,
+      note: `${collection.units ?? 0} тоотоос ${collection.paid_units ?? 0} нь төлсөн`,
+      progress: collection.percent ?? 0,
+      dark: true,
+    },
+    { label: 'Төлөлтийн хувь', value: `${collection.percent ?? 0}%`, note: 'Энэ сарын нэхэмжлэлээс', noteClass: 'good' },
+    { label: 'Хугацаа хэтэрсэн өр', value: `${million(overdue.debt)} сая₮`, note: `${overdue.units ?? 0} тоот · өмнөх саруудаас`, valueClass: 'bad' },
+    {
+      label: 'Нээлттэй хүсэлт',
+      value: `${requests.open ?? 0}`,
+      // Шийдсэн хүсэлт байхгүй бол дундаж тооцоологдохгүй (null)
+      note: requests.avg_hours != null ? `Дунджаар ${requests.avg_hours} цагт шийддэг` : 'Шийдсэн хүсэлт алга',
+    },
+  ]
+}
 
-const categories = [
-  { name: 'Сантехник', count: 14 },
-  { name: 'Цахилгаан', count: 8 },
-  { name: 'Цэвэрлэгээ', count: 6 },
-  { name: 'Лифт', count: 5 },
-  { name: 'Бусад', count: 3 },
-]
-const maxCategory = Math.max(...categories.map((c) => c.count))
+// Backend-ийн ангиллын нэр → харуулах нэр (requests.category enum)
+const categoryLabels = {
+  plumbing: 'Сантехник',
+  electrical: 'Цахилгаан',
+  cleaning: 'Цэвэрлэгээ',
+  elevator: 'Лифт',
+  other: 'Бусад',
+}
 
 export default function Dashboard() {
   const { user } = useOutletContext()
+  const [data, setData] = useState(null)
+  const [chart, setChart] = useState([])
+  const [debtors, setDebtors] = useState([])
+  const [categories, setCategories] = useState([])
+
+  // Хуудас нээгдэхэд самбарын өгөгдлийг татна
+  useEffect(() => {
+    api.get('/dashboard').then(setData)
+  }, [])
+
+  // 12 сарын график — тусдаа API
+  useEffect(() => {
+    api.get('/dashboard/monthly').then(setChart)
+  }, [])
+
+  // Өр ихтэй тоотууд — тусдаа API
+  useEffect(() => {
+    api.get('/dashboard/debtors', { params: { limit: 6 } }).then(setDebtors)
+  }, [])
+
+  // Энэ сарын хүсэлт ангиллаар — тусдаа API
+  useEffect(() => {
+    api.get('/dashboard/categories').then(setCategories)
+  }, [])
+
+  // Мөрийн уртыг хамгийн их ангилалтай харьцуулж бодно. Хоосон үед 0-д хуваахгүйн тулд 1
+  const maxCategory = Math.max(1, ...categories.map((c) => c.count))
+  const totalRequests = categories.reduce((sum, c) => sum + c.count, 0)
+  // '2026-10-01' → ['2026', '10', '01']
+  const [year, month] = data?.period ? data.period.split('-') : []
+
+  // Backend ₮-өөр өгнө, buildStats сая болгож харуулна. Өгөгдөл ирэх хүртэл хоосон
+  const stats = data ? buildStats(data) : []
 
   return (
     <div className="dashboard">
       <header className="dash-header">
         <div>
           <span className="muted">Сайн байна уу, {user?.name}</span>
-          <h1>2026 оны 11-р сар</h1>
+          <h1>{year ? `${year} оны ${Number(month)}-р сар` : '…'}</h1>
         </div>
         <div className="dash-actions">
           <label className="field">
@@ -92,17 +135,18 @@ export default function Dashboard() {
           </div>
           <div className="chart-body" role="img" aria-label="12 сарын нэхэмжилсэн ба цугларсан дүнгийн баганан график">
             <div className="chart-bars">
-              {months.map((m, i) => (
-                <div key={m} className="bar" style={{ height: `${(billed[i] / chartTop) * 100}%` }}>
+              {chart.map((c, i) => (
+                <div key={c.period} className="bar" style={{ height: `${(c.billed / 1000000 / chartTop) * 100}%` }}>
                   <div
-                    className={i === months.length - 1 ? 'bar-fill current' : 'bar-fill'}
-                    style={{ height: `${(collected[i] / billed[i]) * 100}%` }}
+                    className={i === chart.length - 1 ? 'bar-fill current' : 'bar-fill'}
+                    style={{ height: `${c.billed ? (c.collected / c.billed) * 100 : 0}%` }}
                   />
                 </div>
               ))}
             </div>
             <div className="chart-labels">
-              {months.map((m) => <span key={m}>{m}</span>)}
+              {/* '2026-10-01' → 10 */}
+              {chart.map((c) => <span key={c.period}>{Number(c.period.split('-')[1])}</span>)}
             </div>
           </div>
         </div>
@@ -119,7 +163,7 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th>Тоот</th>
-                  <th>Оршин суугч</th>
+                  <th>Орц / давхар</th>
                   <th className="num">Өр</th>
                   <th>Хэтэрсэн</th>
                   <th className="num">Үйлдэл</th>
@@ -127,10 +171,11 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {debtors.map((d) => (
-                  <tr key={d.unit}>
-                    <td className="strong">{d.unit}</td>
-                    <td>{d.name}</td>
-                    <td className="num strong">{d.debt}</td>
+                  <tr key={d.unit_id}>
+                    <td className="strong">{d.code}</td>
+                    <td>{d.entrance}-р орц, {d.floor} давхар</td>
+                    {/* 170000 → '170,000₮' */}
+                    <td className="num strong">{d.debt.toLocaleString('en-US')}₮</td>
                     <td><span className={d.months >= 2 ? 'pill bad' : 'pill warn'}>{d.months} сар</span></td>
                     <td className="num"><button className="btn btn-small">SMS сануулах</button></td>
                   </tr>
@@ -144,11 +189,11 @@ export default function Dashboard() {
           <section className="card">
             <div>
               <h2>Хүсэлт ангиллаар</h2>
-              <span className="muted">Энэ сард 36 хүсэлт</span>
+              <span className="muted">Энэ сард {totalRequests} хүсэлт</span>
             </div>
             {categories.map((c) => (
-              <div key={c.name} className="category">
-                <span>{c.name}</span>
+              <div key={c.category} className="category">
+                <span>{categoryLabels[c.category] ?? c.category}</span>
                 <span className="category-track">
                   <span style={{ width: `${(c.count / maxCategory) * 100}%` }} />
                 </span>

@@ -18,9 +18,7 @@ router.get('/dashboard/monthly', auth, dashboardController.monthlyChart);
 router.get('/dashboard/debtors', auth, dashboardController.topDebtors);
 router.get('/dashboard/categories', auth, dashboardController.requestCategories);
 
-// Нэхэмжлэл ба төлбөр
 router.get('/invoices', auth, invoicesController.index);
-router.get('/invoices/summary', auth, invoicesController.summary);
-router.post('/invoices/:id/pay', auth, invoicesController.pay); // :id — аль нэхэмжлэлд төлбөр бүртгэх
+router.get('/invoices/counts', auth, invoicesController.counts); // табуудын тоо
 
 module.exports = router;

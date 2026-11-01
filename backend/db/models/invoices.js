@@ -74,4 +74,106 @@ async function overdueTotal() {
   return { debt: Number(row.debt), units: Number(row.units) };
 }
 
-module.exports = { ...base, forUnit, monthlySummary, debtors, overdueTotal };
+// Нэхэмжлэл бүрийн хамгийн сүүлийн төлбөр (хэлбэр, огноо)
+function lastPayment() {
+  return db('payments as lp')
+    .select('lp.invoice_id', 'lp.method', 'lp.paid_at')
+    .whereIn('lp.id', db('payments').max('id').groupBy('invoice_id'))
+    .as('lp');
+}
+
+// list, counts хоёрын нийтлэг нөхцөл — хоёулаа яг ижил нэхэмжлэлүүдээс тооцно:
+// тухайн сарынх + өмнөх саруудаас төлөгдөөгүй үлдсэн нь, хайлт (тоот эсвэл оршин суугчийн нэр)
+function inScope(q, period, search) {
+  q.where(function () {
+    this.where('i.period', period).orWhere(function () {
+      this.where('i.period', '<', period).whereIn('i.status', ['unpaid', 'partial']);
+    });
+  });
+
+  if (search) {
+    var like = '%' + search + '%';
+    q.where(function () {
+      this.where('u.code', 'like', like).orWhereExists(
+        db('users').whereRaw('users.unit_id = i.unit_id').where('users.name', 'like', like)
+      );
+    });
+  }
+  return q;
+}
+
+// Таб бүрийн нэхэмжлэлийн тоо нэг query-ээр — { all, unpaid, partial, paid, overdue }
+// Нөхцөл нь list()-ийн таб шүүлттэй ижил (overdue нь due_date-ээс тооцогдоно)
+async function counts(period, search) {
+  var q = db('invoices as i')
+    .join('units as u', 'u.id', 'i.unit_id')
+    .select(db.raw('COUNT(*) AS total')) // `all` нь MySQL-ийн нөөц үг тул total гэж нэрлэв
+    .select(db.raw("COALESCE(SUM(i.status = 'unpaid' AND i.due_date >= NOW()), 0) AS unpaid"))
+    .select(db.raw("COALESCE(SUM(i.status = 'partial' AND i.due_date >= NOW()), 0) AS partial"))
+    .select(db.raw("COALESCE(SUM(i.status = 'paid'), 0) AS paid"))
+    .select(db.raw("COALESCE(SUM(i.status <> 'paid' AND i.due_date < NOW()), 0) AS overdue"))
+    .first();
+
+  var row = await inScope(q, period, search);
+
+  return {
+    all: Number(row.total),
+    unpaid: Number(row.unpaid),
+    partial: Number(row.partial),
+    paid: Number(row.paid),
+    overdue: Number(row.overdue),
+  };
+}
+
+// Нэхэмжлэлийн жагсаалт: тухайн сарынх + өмнөх саруудаас төлөгдөөгүй үлдсэн нь.
+// filters.status — 'unpaid' | 'partial' | 'paid' | 'overdue', null бол бүгд
+// filters.q — тоотын дугаар эсвэл оршин суугчийн нэрээр хайх
+// Буцаах status-д хугацаа хэтэрсэн бол 'overdue' гэж орно (DB-д тусдаа төлөв биш, due_date-ээс тооцно)
+async function list(period, filters) {
+  filters = filters || {};
+
+  var q = db('invoices as i')
+    .join('units as u', 'u.id', 'i.unit_id')
+    .leftJoin(paidPerInvoice(), 'p.invoice_id', 'i.id')
+    .leftJoin(lastPayment(), 'lp.invoice_id', 'i.id')
+    .select('i.id', 'i.unit_id', 'u.code as unit_code', 'i.period', 'i.amount', 'i.due_date', 'i.status')
+    .select(db.raw('COALESCE(p.paid, 0) AS paid'))
+    .select('lp.method as last_method', 'lp.paid_at as last_paid_at')
+    // Тоотын анхны бүртгэлтэй оршин суугч
+    .select(db.raw('(SELECT name FROM users WHERE users.unit_id = i.unit_id ORDER BY id LIMIT 1) AS resident_name'))
+    // Dashboard-ийн overdueTotal, debtors-той ижил нөхцөл
+    .select(db.raw("(i.status <> 'paid' AND i.due_date < NOW()) AS overdue"))
+    // хуучин өр эхэндээ; i.id — эрэмбэ тогтвортой байж хуудас хооронд мөр давхцаж/алдагдахгүй
+    .orderBy([{ column: 'i.period' }, { column: 'u.code' }, { column: 'i.id' }]);
+
+  inScope(q, period, filters.q);
+
+  // Хуудаслалт — filters.limit өгөөгүй бол бүгдийг
+  if (filters.limit) q.limit(filters.limit).offset(filters.offset || 0);
+
+  // Таб бүрийн нөхцөл
+  if (filters.status === 'paid') q.where('i.status', 'paid');
+  if (filters.status === 'overdue') q.whereNot('i.status', 'paid').where('i.due_date', '<', db.fn.now());
+  if (filters.status === 'unpaid' || filters.status === 'partial') {
+    q.where('i.status', filters.status).where('i.due_date', '>=', db.fn.now());
+  }
+
+  var rows = await q;
+
+  return rows.map(function (r) {
+    return {
+      id: r.id,
+      unit_id: r.unit_id,
+      unit_code: r.unit_code,
+      resident_name: r.resident_name,
+      period: r.period,
+      amount: Number(r.amount),
+      paid: Number(r.paid),
+      due_date: r.due_date,
+      status: Number(r.overdue) ? 'overdue' : r.status,
+      last_payment: r.last_method ? { method: r.last_method, paid_at: r.last_paid_at } : null,
+    };
+  });
+}
+
+module.exports = { ...base, forUnit, monthlySummary, debtors, overdueTotal, list, counts };

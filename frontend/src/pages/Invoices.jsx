@@ -1,24 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../api/client'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import './styles/Invoices.css'
-
-// Түр жишээ өгөгдөл — backend-ийн /api/invoices бэлэн болоход солигдоно
-const sampleRows = [
-  { id: 1, unit: '1-12', name: 'Ганболд Т.', period: '9-р сар', total: 85000, paid: 0, last: '—', overdue: true },
-  { id: 2, unit: '2-31', name: 'Мөнхбат Э.', period: '9-р сар', total: 85000, paid: 0, last: '—', overdue: true },
-  { id: 3, unit: '3-07', name: 'Сарантуяа Б.', period: '9-р сар', total: 85000, paid: 0, last: '—', overdue: true },
-  { id: 4, unit: '2-05', name: 'Болор А.', period: '10-р сар', total: 85000, paid: 0, last: '—', overdue: false },
-  { id: 5, unit: '1-05', name: 'Оюун Д.', period: '10-р сар', total: 92400, paid: 0, last: '—', overdue: false },
-  { id: 6, unit: '3-24', name: 'Тэмүүлэн Г.', period: '10-р сар', total: 85000, paid: 40000, last: 'Бэлэн · 10/08', overdue: false },
-  { id: 7, unit: '2-18', name: 'Нарантуяа С.', period: '10-р сар', total: 85000, paid: 0, last: '—', overdue: false },
-  { id: 8, unit: '1-03', name: 'Энхтуяа Б.', period: '10-р сар', total: 85000, paid: 85000, last: 'QPay · 10/03', overdue: false },
-  { id: 9, unit: '3-12', name: 'Даваа Ц.', period: '10-р сар', total: 101200, paid: 101200, last: 'Бэлэн · 10/05', overdue: false },
-  { id: 10, unit: '1-27', name: 'Хулан М.', period: '10-р сар', total: 85000, paid: 85000, last: 'QPay · 10/10', overdue: false },
-]
 
 // Төлөв бүрийн нэр ба өнгө (CSS класс)
 const statusLabels = {
@@ -42,17 +28,39 @@ function money(n) {
   return `${n.toLocaleString('en-US')}₮`
 }
 
-// Нэхэмжлэлийн төлөвийг дүнгээс нь тодорхойлно
-function statusOf(r) {
-  if (r.total - r.paid <= 0) return 'paid'
-  if (r.overdue) return 'overdue'
-  if (r.paid > 0) return 'partial'
-  return 'unpaid'
+const methodLabels = { cash: 'Бэлэн', bank: 'Данс', qpay: 'QPay', card: 'Карт' }
+
+// '2026-09-01' → '9-р сар'
+function monthLabel(period) {
+  return `${Number(period.split('-')[1])}-р сар`
+}
+
+// { method: 'cash', paid_at: '2026-10-08 ...' } → 'Бэлэн · 10/08'
+function lastLabel(p) {
+  if (!p) return '—'
+  const d = new Date(p.paid_at)
+  return `${methodLabels[p.method] ?? p.method} · ${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`
+}
+
+// /api/invoices-ийн мөр → хүснэгтийн мөр
+function toRow(inv) {
+  return {
+    id: inv.id,
+    unit: inv.unit_code,
+    name: inv.resident_name ?? '—',
+    period: monthLabel(inv.period),
+    total: inv.amount,
+    paid: inv.paid,
+    status: inv.status, // backend хугацаа хэтэрснийг 'overdue' гэж тооцоод өгнө
+    last: lastLabel(inv.last_payment),
+  }
 }
 
 export default function Invoices() {
   const [searchParams] = useSearchParams()
-  const [rows, setRows] = useState(sampleRows)
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   // /invoices?tab=debtors гэж ирвэл тэр табаар нээгдэнэ (Dashboard-ийн "Бүгдийг харах")
   const [tab, setTab] = useState(searchParams.get('tab') ?? 'all')
   const [query, setQuery] = useState('')
@@ -62,6 +70,10 @@ export default function Invoices() {
   const [note, setNote] = useState('')
   const [toast, setToast] = useState('')
   const [debtors, setDebtors] = useState([])
+  const [counts, setCounts] = useState({}) // табуудын тоо — /api/invoices/counts
+  const [nextOffset, setNextOffset] = useState(null) // null бол дараагийн хуудас алга
+  const sentinelRef = useRef(null) // хүснэгтийн доорх үл үзэгдэх div — харагдахад дараагийн хуудсыг татна
+  const requestId = useRef(0) // таб/хайлт солигдоход хуучин хүсэлтийн хариуг хаяна
 
   // Өр ихтэй бүх тоот — Dashboard-ийн API-г limit-гүйгээр (бүгдийг) дуудна.
   // Backend өр ихээс нь эрэмбэлж, өргүй (0) тоотыг оруулдаггүй
@@ -69,22 +81,72 @@ export default function Invoices() {
     api.get('/dashboard/debtors', { params: { limit: 1000 } }).then(setDebtors)
   }, [])
 
+  // Нэг хуудас нэхэмжлэл татна. offset 0 бол жагсаалтыг шинээр эхлүүлнэ, үгүй бол араас нь залгана.
+  // Хуудаслалт, шүүлтийг backend хийнэ: { rows, has_more, next_offset }
+  function loadPage(offset) {
+    const id = ++requestId.current
+    setLoading(true)
+
+    const params = { offset }
+    if (tab !== 'all') params.status = tab
+    if (query.trim()) params.q = query.trim()
+
+    api.get('/invoices', { params })
+      .then((data) => {
+        if (id !== requestId.current) return // энэ хооронд таб/хайлт солигдсон
+        const page = data.rows.map(toRow)
+        setRows((prev) => (offset === 0 ? page : [...prev, ...page]))
+        setNextOffset(data.next_offset)
+        setError('')
+      })
+      .catch((err) => {
+        if (id === requestId.current) setError(err.message)
+      })
+      .finally(() => {
+        if (id === requestId.current) setLoading(false)
+      })
+  }
+
+  // Таб, хайлт солигдоход эхний хуудаснаас дахин эхэлнэ.
+  // Хайлтыг 300мс хүлээгээд илгээнэ — үсэг бүрд хүсэлт явуулахгүйн тулд
+  useEffect(() => {
+    if (tab === 'debtors') return // "Өр ихтэй" таб /dashboard/debtors-ийг ашиглана
+
+    const timer = setTimeout(() => loadPage(0), 300)
+    return () => clearTimeout(timer) // дахин бичвэл өмнөх хүлээлтийг цуцална
+  }, [tab, query]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Infinite scroll — хүснэгтийн доод хэсэг дэлгэцэнд ойртоход (200px) дараагийн хуудсыг татна
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || nextOffset == null || loading) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadPage(nextOffset) },
+      { rootMargin: '200px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [nextOffset, loading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Табуудын тоо — бүх табынх нэг дор. Таб солиход өөрчлөгдөхгүй, зөвхөн хайлтаас хамаарна
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = query.trim() ? { q: query.trim() } : {}
+      api.get('/invoices/counts', { params }).then(setCounts).catch(() => setCounts({}))
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [query])
 
   const now = new Date()
   // Төлөх хугацаа — дараа сарын 10 (12-р сард 1-р сар болно)
   const due = new Date(now.getFullYear(), now.getMonth() + 1, 10)
 
-  // Таб бүрийн тоо
-  const counts = { all: rows.length, unpaid: 0, partial: 0, paid: 0, overdue: 0, debtors: debtors.length }
-  rows.forEach((r) => counts[statusOf(r)]++)
+  // Таб бүрийн тоо: нэхэмжлэлийнх backend-ээс, "Өр ихтэй"-нх debtors-оос
+  const tabCounts = { ...counts, debtors: debtors.length }
 
-  // Таб болон хайлтаар шүүнэ
   const q = query.trim().toLowerCase()
-  const visibleRows = rows.filter((r) => {
-    if (tab !== 'all' && statusOf(r) !== tab) return false
-    if (q && !`${r.unit} ${r.name}`.toLowerCase().includes(q)) return false
-    return true
-  })
 
   // Өр ихтэй таб — тоотын дугаараар хайна
   const visibleDebtors = debtors.filter((d) => !q || d.code.toLowerCase().includes(q))
@@ -107,9 +169,13 @@ export default function Invoices() {
   function save() {
     if (cantSave) return
     const methodLabel = method === 'cash' ? 'Бэлэн' : 'Данс'
-    setRows(rows.map((r) =>
-      r.id === selected.id ? { ...r, paid: r.paid + amountNum, last: `${methodLabel} · одоо` } : r
-    ))
+    // Түр — pay API нэмэгдэх хүртэл зөвхөн дэлгэц дээр шинэчилнэ (DB-д хадгалагдахгүй)
+    setRows(rows.map((r) => {
+      if (r.id !== selected.id) return r
+      const paid = r.paid + amountNum
+      const status = paid >= r.total ? 'paid' : r.status === 'overdue' ? 'overdue' : 'partial'
+      return { ...r, paid, status, last: `${methodLabel} · одоо` }
+    }))
     setToast(`${selected.unit} тоотод ${money(amountNum)} бүртгэгдлээ`)
     setSelected(null)
   }
@@ -140,7 +206,7 @@ export default function Invoices() {
               className={tab === t.key ? 'inv-tab active' : 'inv-tab'}
               onClick={() => setTab(t.key)}
             >
-              {t.label} <span className="inv-tab-count">{counts[t.key]}</span>
+              {t.label} {tabCounts[t.key] != null && <span className="inv-tab-count">{tabCounts[t.key]}</span>}
             </button>
           ))}
         </div>
@@ -208,8 +274,8 @@ export default function Invoices() {
               </tr>
             </thead>
             <tbody>
-              {visibleRows.map((r) => {
-                const status = statusOf(r)
+              {rows.map((r) => {
+                const status = r.status
                 return (
                   <tr key={r.id}>
                     <td className="strong">{r.unit}</td>
@@ -230,7 +296,11 @@ export default function Invoices() {
               })}
             </tbody>
           </table>
-          {visibleRows.length === 0 && <p className="inv-empty">Тохирох нэхэмжлэл олдсонгүй</p>}
+          {error && <p className="inv-empty">{error}</p>}
+          {!error && loading && <p className="inv-empty">{rows.length ? 'Цааш ачааллаж байна…' : 'Ачааллаж байна…'}</p>}
+          {/* Энэ div дэлгэцэнд орж ирэхэд дараагийн хуудас татагдана */}
+          {nextOffset != null && <div ref={sentinelRef} aria-hidden="true" />}
+          {!error && !loading && rows.length === 0 && <p className="inv-empty">Тохирох нэхэмжлэл олдсонгүй</p>}
         </section>
       )}
 

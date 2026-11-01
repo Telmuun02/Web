@@ -214,6 +214,22 @@
   font-weight: 700;
 }
 
+/* Өр ихтэй таб */
+.inv-debtors-total {
+  margin: 16px 0 4px;
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+.inv-debtors-total strong {
+  color: var(--navy);
+}
+
+/* 4 багана тул нэхэмжлэлийн хүснэгт шиг өргөн байх шаардлагагүй */
+.inv-card table.inv-debtors-table {
+  min-width: 460px;
+}
+
 .inv-empty {
   margin: 24px 0 8px;
   text-align: center;

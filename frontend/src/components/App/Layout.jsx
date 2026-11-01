@@ -11,8 +11,8 @@ export default function Layout({ user, onLogout }) {
     <div className="layout">
       <Navbar user={user} onLogout={onLogout} />
       <main className="content">
-        {/* context — хуудсууд useOutletContext()-оор user-ийг авна */}
-        <Outlet context={{ user }} />
+        {/* context — хуудсууд useOutletContext()-оор user, onLogout-ийг авна */}
+        <Outlet context={{ user, onLogout }} />
       </main>
     </div>
   )

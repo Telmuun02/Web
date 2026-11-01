@@ -15,15 +15,24 @@ function million(n) {
 // /api/dashboard-ийн хариунаас дээд талын 4 карт.
 // Хэсэг нь ирээгүй (backend хуучин хувилбартай гэх мэт) бол = {}, талбар нь байхгүй бол ?? 0
 function buildStats({ collection = {}, overdue = {}, requests = {} }) {
+  // Энэ сарын нэхэмжлэл үүсээгүй бол 0 биш NaN харуулна (жинхэнэ 0-оос ялгахын тулд)
+  const noInvoices = !collection.units
+  const empty = 'NaN'
+
   return [
     {
       label: 'Цугларсан / нэхэмжилсэн',
-      value: `${million(collection.collected)} / ${million(collection.billed)} сая₮`,
-      note: `${collection.units ?? 0} тоотоос ${collection.paid_units ?? 0} нь төлсөн`,
-      progress: collection.percent ?? 0,
+      value: noInvoices ? empty : `${million(collection.collected)} / ${million(collection.billed)} сая₮`,
+      note: noInvoices ? 'Энэ сарын нэхэмжлэл үүсээгүй' : `${collection.units} тоотоос ${collection.paid_units ?? 0} нь төлсөн`,
+      progress: noInvoices ? null : collection.percent ?? 0,
       dark: true,
     },
-    { label: 'Төлөлтийн хувь', value: `${collection.percent ?? 0}%`, note: 'Энэ сарын нэхэмжлэлээс', noteClass: 'good' },
+    {
+      label: 'Төлөлтийн хувь',
+      value: noInvoices ? empty : `${collection.percent ?? 0}%`,
+      note: 'Энэ сарын нэхэмжлэлээс',
+      noteClass: noInvoices ? '' : 'good',
+    },
     { label: 'Хугацаа хэтэрсэн өр', value: `${million(overdue.debt)} сая₮`, note: `${overdue.units ?? 0} тоот · өмнөх саруудаас`, valueClass: 'bad' },
     {
       label: 'Нээлттэй хүсэлт',
@@ -156,7 +165,7 @@ export default function Dashboard() {
         <section className="card debtors">
           <div className="card-head">
             <h2>Өр ихтэй тоотууд</h2>
-            <Link to="/invoices" className="link">Бүгдийг харах →</Link>
+            <Link to="/invoices?tab=debtors" className="link">Бүгдийг харах →</Link>
           </div>
           <div className="table-wrap">
             <table>

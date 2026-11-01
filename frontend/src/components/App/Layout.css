@@ -26,3 +26,21 @@
   color: var(--navy);
 }
 
+
+/* Navbar дээр hover хийхэд үндсэн хуудсыг бага зэрэг бараан болгоно */
+.content::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 5; /* .sidebar (z-index: 10)-ийн доор, контентын дээр */
+  background: rgba(10, 20, 40, 0.2); /* бага зэрэг бараан өнгө */
+  backdrop-filter: blur(4px); /* ард байгаа хуудсыг бүдгэрүүлнэ */
+  -webkit-backdrop-filter: blur(4px); /* Safari */
+  opacity: 0;
+  pointer-events: none; /* хуудсан дээрх товч, линкийг хаахгүй */
+  transition: opacity 0.25s ease; /* sidebar дэлгэгдэхтэй ижил хурдтай */
+}
+
+.sidebar:hover + .content::after {
+  opacity: 1;
+}

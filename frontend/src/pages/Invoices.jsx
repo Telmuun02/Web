@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import api from '../api/client'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
@@ -33,6 +34,7 @@ const tabs = [
   { key: 'partial', label: 'Хэсэгчилсэн' },
   { key: 'paid', label: 'Төлөгдсөн' },
   { key: 'overdue', label: 'Хэтэрсэн' },
+  { key: 'debtors', label: 'Өр ихтэй' },
 ]
 
 // 85000 → '85,000₮'
@@ -49,21 +51,31 @@ function statusOf(r) {
 }
 
 export default function Invoices() {
+  const [searchParams] = useSearchParams()
   const [rows, setRows] = useState(sampleRows)
-  const [tab, setTab] = useState('all')
+  // /invoices?tab=debtors гэж ирвэл тэр табаар нээгдэнэ (Dashboard-ийн "Бүгдийг харах")
+  const [tab, setTab] = useState(searchParams.get('tab') ?? 'all')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(null) // төлбөр бүртгэж буй нэхэмжлэл
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('cash')
   const [note, setNote] = useState('')
   const [toast, setToast] = useState('')
+  const [debtors, setDebtors] = useState([])
+
+  // Өр ихтэй бүх тоот — Dashboard-ийн API-г limit-гүйгээр (бүгдийг) дуудна.
+  // Backend өр ихээс нь эрэмбэлж, өргүй (0) тоотыг оруулдаггүй
+  useEffect(() => {
+    api.get('/dashboard/debtors', { params: { limit: 1000 } }).then(setDebtors)
+  }, [])
+
 
   const now = new Date()
   // Төлөх хугацаа — дараа сарын 10 (12-р сард 1-р сар болно)
   const due = new Date(now.getFullYear(), now.getMonth() + 1, 10)
 
   // Таб бүрийн тоо
-  const counts = { all: rows.length, unpaid: 0, partial: 0, paid: 0, overdue: 0 }
+  const counts = { all: rows.length, unpaid: 0, partial: 0, paid: 0, overdue: 0, debtors: debtors.length }
   rows.forEach((r) => counts[statusOf(r)]++)
 
   // Таб болон хайлтаар шүүнэ
@@ -73,6 +85,10 @@ export default function Invoices() {
     if (q && !`${r.unit} ${r.name}`.toLowerCase().includes(q)) return false
     return true
   })
+
+  // Өр ихтэй таб — тоотын дугаараар хайна
+  const visibleDebtors = debtors.filter((d) => !q || d.code.toLowerCase().includes(q))
+  const totalDebt = visibleDebtors.reduce((sum, d) => sum + d.debt, 0)
 
   // Бүртгэх цонхны шалгалт — үлдэгдлээс их дүн оруулж болохгүй
   const left = selected ? selected.total - selected.paid : 0
@@ -147,46 +163,76 @@ export default function Invoices() {
         </div>
       )}
 
-      <section className="inv-card" aria-label="Нэхэмжлэлийн жагсаалт">
-        <table>
-          <thead>
-            <tr>
-              <th>Тоот</th>
-              <th>Оршин суугч</th>
-              <th>Сар</th>
-              <th className="num">Дүн</th>
-              <th className="num">Төлсөн</th>
-              <th className="num">Үлдэгдэл</th>
-              <th>Төлөв</th>
-              <th>Сүүлийн төлбөр</th>
-              <th className="num">Үйлдэл</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.map((r) => {
-              const status = statusOf(r)
-              return (
-                <tr key={r.id}>
-                  <td className="strong">{r.unit}</td>
-                  <td>{r.name}</td>
-                  <td className="inv-muted">{r.period}</td>
-                  <td className="num">{money(r.total)}</td>
-                  <td className="num inv-muted">{money(r.paid)}</td>
-                  <td className="num strong">{money(r.total - r.paid)}</td>
-                  <td><span className={`inv-pill ${status}`}>{statusLabels[status]}</span></td>
-                  <td className="inv-muted">{r.last}</td>
-                  <td className="num">
-                    {status !== 'paid' && (
-                      <button className="inv-btn small" onClick={() => openPay(r)}>Бэлэн бүртгэх</button>
-                    )}
-                  </td>
+      {/* "Өр ихтэй" таб — нэхэмжлэл биш, тоот бүрийн нийт өрийг харуулна */}
+      {tab === 'debtors' ? (
+        <section className="inv-card" aria-label="Өр ихтэй тоотууд">
+          <p className="inv-debtors-total">
+            {visibleDebtors.length} тоот · нийт өр <strong>{money(totalDebt)}</strong>
+          </p>
+          <table className="inv-debtors-table">
+            <thead>
+              <tr>
+                <th>Тоот</th>
+                <th>Орц / давхар</th>
+                <th className="num">Өр</th>
+                <th>Хэтэрсэн</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleDebtors.map((d) => (
+                <tr key={d.unit_id}>
+                  <td className="strong">{d.code}</td>
+                  <td>{d.entrance}-р орц, {d.floor} давхар</td>
+                  <td className="num strong">{money(d.debt)}</td>
+                  <td><span className={d.months >= 2 ? 'inv-pill overdue' : 'inv-pill partial'}>{d.months} сар</span></td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        {visibleRows.length === 0 && <p className="inv-empty">Тохирох нэхэмжлэл олдсонгүй</p>}
-      </section>
+              ))}
+            </tbody>
+          </table>
+          {visibleDebtors.length === 0 && <p className="inv-empty">Өртэй тоот алга</p>}
+        </section>
+      ) : (
+        <section className="inv-card" aria-label="Нэхэмжлэлийн жагсаалт">
+          <table>
+            <thead>
+              <tr>
+                <th>Тоот</th>
+                <th>Оршин суугч</th>
+                <th>Сар</th>
+                <th className="num">Дүн</th>
+                <th className="num">Төлсөн</th>
+                <th className="num">Үлдэгдэл</th>
+                <th>Төлөв</th>
+                <th>Сүүлийн төлбөр</th>
+                <th className="num">Үйлдэл</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleRows.map((r) => {
+                const status = statusOf(r)
+                return (
+                  <tr key={r.id}>
+                    <td className="strong">{r.unit}</td>
+                    <td>{r.name}</td>
+                    <td className="inv-muted">{r.period}</td>
+                    <td className="num">{money(r.total)}</td>
+                    <td className="num inv-muted">{money(r.paid)}</td>
+                    <td className="num strong">{money(r.total - r.paid)}</td>
+                    <td><span className={`inv-pill ${status}`}>{statusLabels[status]}</span></td>
+                    <td className="inv-muted">{r.last}</td>
+                    <td className="num">
+                      {status !== 'paid' && (
+                        <button className="inv-btn small" onClick={() => openPay(r)}>Бэлэн бүртгэх</button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          {visibleRows.length === 0 && <p className="inv-empty">Тохирох нэхэмжлэл олдсонгүй</p>}
+        </section>
+      )}
 
       {/* Төлбөр бүртгэх цонх — баруун талаас гарна */}
       {selected && (

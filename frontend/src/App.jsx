@@ -5,6 +5,7 @@ import Layout from './components/App/Layout'
 import Page from './components/Page'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/Invoices'
+import Profile from './pages/Profile'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import './App.css'
@@ -39,7 +40,7 @@ function App() {
         <Route path="units" element={<Page title="Тоот ба оршин суугч" />} />
         <Route path="reports" element={<Page title="Тайлан" />} />
         <Route path="settings" element={<Page title="Тохиргоо" />} />
-        <Route path="profile" element={<Page title="Миний профайл" />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<Page title="Хуудас олдсонгүй" />} />

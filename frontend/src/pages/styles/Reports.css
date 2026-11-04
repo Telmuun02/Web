@@ -1,0 +1,95 @@
+.reports {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Сар сонгох */
+.reports-month {
+  height: 44px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.reports-month span {
+  color: var(--muted-text);
+}
+
+.reports-month select {
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  font-weight: 600;
+}
+
+.reports-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* Зарлага ба орцоор төлөлт — нарийн дэлгэцэнд доошоо орно */
+.reports-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.reports-expenses {
+  flex: 3 1 440px;
+}
+
+.reports-entrances {
+  flex: 2 1 300px;
+}
+
+.reports-expense {
+  display: grid;
+  grid-template-columns: minmax(110px, 170px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.reports-expense b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.reports-entrance {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reports-entrance-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+/* Татах тайлангийн нэр, тайлбар */
+.reports-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reports-doc b {
+  font-weight: 600;
+}
+
+.reports-doc span {
+  font-size: 12px;
+  color: var(--muted-text);
+}

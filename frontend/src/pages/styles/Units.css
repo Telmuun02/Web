@@ -1,0 +1,184 @@
+.units {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.units-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+/* Табууд ба хайлт */
+.units-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Жагсаалт ба дэлгэрэнгүй — нарийн дэлгэцэнд доошоо орно */
+.units-columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.units-list {
+  flex: 3 1 520px;
+}
+
+.units-detail {
+  flex: 2 1 300px;
+}
+
+/* Тоотын мөр — товч өндөр тул нүдний дээд доод зайг багасгана */
+tr.units-row td {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+tr.units-row.selected {
+  background: var(--page-bg);
+}
+
+/* Тоотын дугаар — дарахад баруун талд дэлгэрэнгүй нь гарна */
+.units-code {
+  min-height: 40px;
+  margin-left: -10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.units-owner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.units-app {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a4300;
+}
+
+.units-app.ok {
+  color: #0b5c38;
+}
+
+.units-debt {
+  font-weight: 700;
+}
+
+.units-debt.bad {
+  color: #b42318;
+}
+
+.units-empty {
+  margin: 8px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+/* Баруун талын дэлгэрэнгүй */
+.units-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.units-detail-head h2 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: normal;
+}
+
+.units-muted {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.units-subtitle {
+  display: block;
+  padding-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+.units-phone {
+  font-size: 13px;
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.units-balance {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-radius: 14px;
+  background: var(--page-bg);
+}
+
+.units-balance-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.units-balance-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.units-balance-value.bad {
+  color: #b42318;
+}
+
+.units-balance-value.ok {
+  color: #0b5c38;
+}
+
+.units-link {
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+/* Хоёр товч тэнцүү өргөнтэй */
+.units-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.units-actions > * {
+  flex: 1;
+}
+
+.units-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}

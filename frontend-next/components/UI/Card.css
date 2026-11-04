@@ -1,0 +1,39 @@
+.ui-card {
+  min-width: 0;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.ui-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ui-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* index.css-ийн том h2-ийг дизайны хэмжээнд оруулна */
+.ui-card-title h2 {
+  margin: 0;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: normal;
+}
+
+.ui-card-sub {
+  font-size: 13px;
+  color: var(--muted-text);
+}

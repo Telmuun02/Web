@@ -1,0 +1,47 @@
+.settings {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Хоёр багана — нарийн дэлгэцэнд доошоо орно */
+.settings-columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.settings-col {
+  flex: 1 1 440px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.settings-hint {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}
+
+/* Төлбөрийн хэрэгслийн дүрс — саарал дөрвөлжин дотор */
+.settings-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--line-soft);
+}

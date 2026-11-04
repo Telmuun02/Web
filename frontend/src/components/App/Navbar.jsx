@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import api from '../../api/client'
 import Brand from './Brand'
 import './Navbar.css'
 
@@ -19,7 +21,7 @@ import SettingsOutlined from '@mui/icons-material/SettingsOutlined'
 // ingehdee roles deer ni admin bolon user gej uguh ba role oos ni hamaarch haragdah baidlaar hiih bolono
 // icon — MUI-ийн дүрсний компонент
 const menuItems = [
-  { path: '/',              label: 'Самбар',              roles: ['admin', 'user'], icon: DashboardOutlined },
+  { path: '/dashboard',     label: 'Самбар',             roles: ['admin', 'user'], icon: DashboardOutlined },
   { path: '/invoices',      label: 'Нэхэмжлэл ба төлбөр', roles: ['admin', 'user'],         icon: ReceiptLongOutlined },
   { path: '/requests',      label: 'Засварын хүсэлт',     roles: ['admin', 'user'], icon: BuildOutlined },
   { path: '/announcements', label: 'Зарлал',              roles: ['admin', 'user'], icon: CampaignOutlined },
@@ -36,6 +38,17 @@ export default function Navbar({ user, onLogout }) {
   const visibleItems = menuItems.filter((item) =>
     item.roles.includes(user?.role)
   )
+
+  // Цэсний тоонууд — замаар нь: { '/requests': 7 }
+  const [badges, setBadges] = useState({})
+
+  // Нэвтэрсэн үед нээлттэй засварын хүсэлтийн тоог авна. Алдаа гарвал тоо харуулахгүй л болно
+  useEffect(() => {
+    if (!user) return
+    api.get('/requests/open-count')
+      .then((res) => setBadges({ '/requests': res.count }))
+      .catch(() => setBadges({}))
+  }, [user])
 
   return (
     // Хулгана гадна байхад зөвхөн icon, дээр нь очиход CSS (:hover) бүтэн дэлгэнэ
@@ -58,6 +71,9 @@ export default function Navbar({ user, onLogout }) {
         <NavLink key={item.path} to={item.path} end={item.path === '/'} className="sidebar-link" title={item.label}>
           <item.icon sx={iconSx} />
           <span className="sidebar-label">{item.label}</span>
+          {badges[item.path] > 0 && (
+            <span className="sidebar-badge" aria-label={`${badges[item.path]} нээлттэй`}>{badges[item.path]}</span>
+          )}
         </NavLink>
       ))}
 

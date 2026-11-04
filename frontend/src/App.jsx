@@ -2,12 +2,19 @@ import { useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import api from './api/client'
 import Layout from './components/App/Layout'
-import Page from './components/Page'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/Invoices'
 import Profile from './pages/Profile'
+import Requests from './pages/Requests'
+import Announcements from './pages/Announcements'
+import Polls from './pages/Polls'
+import Units from './pages/Units'
+import Reports from './pages/Reports'
+import Settings from './pages/Settings'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
+import NotFound from './pages/NotFound'
+import Landing from './pages/Landing'
 import './App.css'
 
 function App() {
@@ -27,23 +34,27 @@ function App() {
 
   return (
     <Routes>
+      {/* Танилцуулга — сайт руу орход хамгийн түрүүнд, navbar-гүй */}
+      <Route path="/" element={<Landing user={user} />} />
       <Route path="/login" element={<Login user={user} onLogin={setUser} />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
       <Route element={<Layout user={user} onLogout={() => setUser(null)} />}>
-        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="invoices" element={<Invoices />} />
-        <Route path="invoices/settings" element={<Page title="Хураамжийн тохиргоо" />} />
-        <Route path="requests" element={<Page title="Засварын хүсэлт" />} />
-        <Route path="announcements" element={<Page title="Зарлал" />} />
-        <Route path="polls" element={<Page title="Санал хураалт" />} />
-        <Route path="units" element={<Page title="Тоот ба оршин суугч" />} />
-        <Route path="reports" element={<Page title="Тайлан" />} />
-        <Route path="settings" element={<Page title="Тохиргоо" />} />
+        {/* Хураамжийн тохиргоо Тохиргоо хуудасны "Хураамж" хэсэгт байгаа */}
+        <Route path="invoices/settings" element={<Settings />} />
+        <Route path="requests" element={<Requests />} />
+        <Route path="announcements" element={<Announcements />} />
+        <Route path="polls" element={<Polls />} />
+        <Route path="units" element={<Units />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 
-      <Route path="*" element={<Page title="Хуудас олдсонгүй" />} />
+      {/* Layout-ийн гадна — navbar-гүй 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

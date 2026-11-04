@@ -2,6 +2,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  color: inherit; /* линк боловч цэнхэр биш, эцгийнхээ өнгөөр */
+  text-decoration: none;
 }
 
 .brand-logo {

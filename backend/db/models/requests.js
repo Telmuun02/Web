@@ -5,19 +5,66 @@ var base = createModel('requests');
 
 var openStatuses = ['open', 'in_progress'];
 
-// Хүсэлтүүд — { status, category, unitId }-аар шүүж болно
+// Табууд (stage) DB-д шууд байхгүй — status, assigned_to-оос гаргана:
+//   open     — шийдээгүй бүгд (open, in_progress)
+//   new      — open, засварчин томилоогүй
+//   assigned — open, засварчин томилсон
+//   progress — in_progress
+//   done     — resolved эсвэл rejected
+var stages = ['open', 'new', 'assigned', 'progress', 'done'];
+
+function whereStage(q, stage) {
+  if (stage === 'open') q.whereIn('r.status', openStatuses);
+  if (stage === 'new') q.where('r.status', 'open').whereNull('r.assigned_to');
+  if (stage === 'assigned') q.where('r.status', 'open').whereNotNull('r.assigned_to');
+  if (stage === 'progress') q.where('r.status', 'in_progress');
+  if (stage === 'done') q.whereIn('r.status', ['resolved', 'rejected']);
+}
+
+// Мөр бүрийн таб — frontend өнгө, алхмаа үүгээр сонгоно
+function stageOf(r) {
+  if (r.status === 'open') return r.assigned_to ? 'assigned' : 'new';
+  if (r.status === 'in_progress') return 'progress';
+  return 'done';
+}
+
+// Хүсэлтүүд — { stage, limit, offset }. Шинэ нь эхэндээ
 async function list(filters) {
   filters = filters || {};
   var q = db('requests as r')
     .leftJoin('units as u', 'u.id', 'r.unit_id')
     .leftJoin('users as c', 'c.id', 'r.created_by')
-    .select('r.*', 'u.code as unit_code', 'c.name as created_by_name')
-    .orderBy('r.created_at', 'desc');
+    .leftJoin('users as a', 'a.id', 'r.assigned_to')
+    .select('r.*', 'u.code as unit_code', 'c.name as created_by_name', 'a.name as assigned_name')
+    .orderBy([{ column: 'r.created_at', order: 'desc' }, { column: 'r.id', order: 'desc' }]); // id — ижил цагтай мөрүүд хуудас хооронд үсрэхгүй
 
-  if (filters.status) q.where('r.status', filters.status);
-  if (filters.category) q.where('r.category', filters.category);
-  if (filters.unitId) q.where('r.unit_id', filters.unitId);
-  return q;
+  if (filters.stage) whereStage(q, filters.stage);
+  if (filters.limit) q.limit(filters.limit).offset(filters.offset || 0);
+
+  var rows = await q;
+  return rows.map(function (r) {
+    return Object.assign({}, r, { stage: stageOf(r) });
+  });
+}
+
+// Табуудын тоо нэг query-гээр — { open, new, assigned, progress, done }
+// MySQL-д (нөхцөл) нь 1/0 тул SUM нь таарсан мөрийн тоо болно
+async function stageCounts() {
+  var row = await db('requests')
+    .select(
+      db.raw("SUM(status IN ('open', 'in_progress')) AS `open`"),
+      db.raw("SUM(status = 'open' AND assigned_to IS NULL) AS `new`"),
+      db.raw("SUM(status = 'open' AND assigned_to IS NOT NULL) AS `assigned`"),
+      db.raw("SUM(status = 'in_progress') AS `progress`"),
+      db.raw("SUM(status IN ('resolved', 'rejected')) AS `done`")
+    )
+    .first();
+
+  var counts = {};
+  stages.forEach(function (s) {
+    counts[s] = Number(row[s] || 0); // хоосон хүснэгтэд SUM нь null
+  });
+  return counts;
 }
 
 // Шийдвэрлэгдээгүй хүсэлтийн тоо
@@ -59,4 +106,4 @@ async function setStatus(id, status) {
   });
 }
 
-module.exports = { ...base, list, openCount, countByCategory, avgResolveHours, setStatus };
+module.exports = { ...base, stages, list, stageCounts, openCount, countByCategory, avgResolveHours, setStatus };

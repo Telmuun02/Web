@@ -3,9 +3,24 @@ import { Link, useOutletContext } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import api from '../api/client'
+import Badge from '../components/UI/Badge'
+import Button from '../components/UI/Button'
+import Card from '../components/UI/Card'
+import PageHeader from '../components/UI/PageHeader'
+import ProgressBar from '../components/UI/ProgressBar'
+import StatCard from '../components/UI/StatCard'
+import Table from '../components/UI/Table'
 import './styles/Dashboard.css'
 
 const chartTop = 12 // сая₮ — графикийн дээд хязгаар
+
+const debtorColumns = [
+  { label: 'Тоот' },
+  { label: 'Орц / давхар' },
+  { label: 'Өр', align: 'right' },
+  { label: 'Хэтэрсэн' },
+  { label: 'Үйлдэл', align: 'right' },
+]
 
 // 7900000 → '7.9'. Утга ирээгүй бол 0
 function million(n) {
@@ -25,15 +40,15 @@ function buildStats({ collection = {}, overdue = {}, requests = {} }) {
       value: noInvoices ? empty : `${million(collection.collected)} / ${million(collection.billed)} сая₮`,
       note: noInvoices ? 'Энэ сарын нэхэмжлэл үүсээгүй' : `${collection.units} тоотоос ${collection.paid_units ?? 0} нь төлсөн`,
       progress: noInvoices ? null : collection.percent ?? 0,
-      dark: true,
+      tone: 'dark',
     },
     {
       label: 'Төлөлтийн хувь',
       value: noInvoices ? empty : `${collection.percent ?? 0}%`,
       note: 'Энэ сарын нэхэмжлэлээс',
-      noteClass: noInvoices ? '' : 'good',
+      noteTone: noInvoices ? undefined : 'good',
     },
-    { label: 'Хугацаа хэтэрсэн өр', value: `${million(overdue.debt)} сая₮`, note: `${overdue.units ?? 0} тоот · өмнөх саруудаас`, valueClass: 'bad' },
+    { label: 'Хугацаа хэтэрсэн өр', value: `${million(overdue.debt)} сая₮`, note: `${overdue.units ?? 0} тоот · өмнөх саруудаас`, tone: 'bad' },
     {
       label: 'Нээлттэй хүсэлт',
       value: `${requests.open ?? 0}`,
@@ -90,54 +105,44 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <header className="dash-header">
-        <div>
-          <span className="muted">Сайн байна уу, {user?.name}</span>
-          <h1>{year ? `${year} оны ${Number(month)}-р сар` : '…'}</h1>
-        </div>
-        <div className="dash-actions">
-          <label className="field">
-            <span className="muted">Байр</span>
-            <select>
-              <option>Бүгд (3 орц)</option>
-              <option>1-р орц</option>
-              <option>2-р орц</option>
-              <option>3-р орц</option>
-            </select>
-          </label>
-          <button className="btn">
-            <FileDownloadOutlined sx={{ fontSize: 16 }} /> Excel татах
-          </button>
-          <button className="btn btn-primary">
-            <AddOutlined sx={{ fontSize: 16 }} /> Зарлал нийтлэх
-          </button>
-        </div>
-      </header>
+      <PageHeader sub={`Сайн байна уу, ${user?.name ?? ''}`} title={year ? `${year} оны ${Number(month)}-р сар` : '…'}>
+        <label className="dash-field">
+          <span>Байр</span>
+          <select>
+            <option>Бүгд (3 орц)</option>
+            <option>1-р орц</option>
+            <option>2-р орц</option>
+            <option>3-р орц</option>
+          </select>
+        </label>
+        <Button>
+          <FileDownloadOutlined sx={{ fontSize: 16 }} /> Excel татах
+        </Button>
+        <Button variant="primary">
+          <AddOutlined sx={{ fontSize: 16 }} /> Зарлал нийтлэх
+        </Button>
+      </PageHeader>
 
-      <div className="stats">
+      <div className="dash-stats">
         {stats.map((s) => (
-          <div key={s.label} className={s.dark ? 'card stat dark' : 'card stat'}>
-            <span className="stat-label">{s.label}</span>
-            <span className={`stat-value ${s.valueClass ?? ''}`}>{s.value}</span>
+          <StatCard key={s.label} label={s.label} value={s.value} note={s.note} tone={s.tone} noteTone={s.noteTone}>
             {s.progress != null && (
-              <span className="progress"><span style={{ width: `${s.progress}%` }} /></span>
+              <ProgressBar value={s.progress} size={6} color="#fff" track="rgba(255, 255, 255, 0.2)" />
             )}
-            <span className={`stat-note ${s.noteClass ?? ''}`}>{s.note}</span>
-          </div>
+          </StatCard>
         ))}
       </div>
 
-      <section className="card">
-        <div className="card-head">
-          <div>
-            <h2>Сүүлийн 12 сарын орлого</h2>
-            <span className="muted">Тав дахь сараас хураамж 9.8 → 10.2 сая₮ болсон; 11-р сар явж байна</span>
-          </div>
+      <Card
+        title="Сүүлийн 12 сарын орлого"
+        sub="Тав дахь сараас хураамж 9.8 → 10.2 сая₮ болсон; 11-р сар явж байна"
+        action={(
           <div className="legend">
             <span><i className="swatch billed" />Нэхэмжилсэн</span>
             <span><i className="swatch collected" />Цугларсан</span>
           </div>
-        </div>
+        )}
+      >
         <div className="chart">
           <div className="chart-axis" aria-hidden="true">
             <span>12 сая</span><span>8</span><span>4</span><span>0</span>
@@ -159,57 +164,38 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </section>
+      </Card>
 
       <div className="dash-row">
-        <section className="card debtors">
-          <div className="card-head">
-            <h2>Өр ихтэй тоотууд</h2>
-            <Link to="/invoices?tab=debtors" className="link">Бүгдийг харах →</Link>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Тоот</th>
-                  <th>Орц / давхар</th>
-                  <th className="num">Өр</th>
-                  <th>Хэтэрсэн</th>
-                  <th className="num">Үйлдэл</th>
-                </tr>
-              </thead>
-              <tbody>
-                {debtors.map((d) => (
-                  <tr key={d.unit_id}>
-                    <td className="strong">{d.code}</td>
-                    <td>{d.entrance}-р орц, {d.floor} давхар</td>
-                    {/* 170000 → '170,000₮' */}
-                    <td className="num strong">{d.debt.toLocaleString('en-US')}₮</td>
-                    <td><span className={d.months >= 2 ? 'pill bad' : 'pill warn'}>{d.months} сар</span></td>
-                    <td className="num"><button className="btn btn-small">SMS сануулах</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <Card
+          title="Өр ихтэй тоотууд"
+          action={<Link to="/invoices?tab=debtors" className="dash-link">Бүгдийг харах →</Link>}
+          className="debtors"
+        >
+          <Table columns={debtorColumns} minWidth={460}>
+            {debtors.map((d) => (
+              <tr key={d.unit_id}>
+                <td className="bold">{d.code}</td>
+                <td>{d.entrance}-р орц, {d.floor} давхар</td>
+                {/* 170000 → '170,000₮' */}
+                <td className="num bold">{d.debt.toLocaleString('en-US')}₮</td>
+                <td><Badge tone={d.months >= 2 ? 'red' : 'orange'}>{d.months} сар</Badge></td>
+                <td className="num"><Button size="small">SMS сануулах</Button></td>
+              </tr>
+            ))}
+          </Table>
+        </Card>
 
         <div className="dash-side">
-          <section className="card">
-            <div>
-              <h2>Хүсэлт ангиллаар</h2>
-              <span className="muted">Энэ сард {totalRequests} хүсэлт</span>
-            </div>
+          <Card title="Хүсэлт ангиллаар" sub={`Энэ сард ${totalRequests} хүсэлт`}>
             {categories.map((c) => (
               <div key={c.category} className="category">
                 <span>{categoryLabels[c.category] ?? c.category}</span>
-                <span className="category-track">
-                  <span style={{ width: `${(c.count / maxCategory) * 100}%` }} />
-                </span>
-                <span className="strong num">{c.count}</span>
+                <ProgressBar value={(c.count / maxCategory) * 100} />
+                <span className="category-count">{c.count}</span>
               </div>
             ))}
-          </section>
+          </Card>
 
           <Link to="/polls" className="poll-card">
             <span className="poll-tag">Идэвхтэй санал хураалт · 11/20 дуусна</span>

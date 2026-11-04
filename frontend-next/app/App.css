@@ -1,0 +1,12 @@
+/* Дизайны өнгөнүүд — бүх компонент, хуудас эндээс авна */
+:root {
+  --navy: #1a1547;
+  --yellow: #ffc24b;
+  --link: #c9c4ec;
+  --muted: #b3add0;
+  --page-bg: #f5f4fa;
+  --muted-text: #5b5775;
+  --line: #e3e0ef;
+  --line-soft: #eceaf5;
+  --field-border: #cfcbe0;
+}

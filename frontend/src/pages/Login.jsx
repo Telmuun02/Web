@@ -17,7 +17,7 @@ export default function Login({ user, onLogin }) {
   const notice = location.state?.notice
 
   // Нэвтэрсэн хэрэглэгч энэ хуудсанд орвол самбар руу буцаана
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to="/dashboard" replace />
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -26,7 +26,7 @@ export default function Login({ user, onLogin }) {
     try {
       await api.post('/auth/login', { login: login.trim(), password }) // cookie тавигдана
       onLogin(await api.get('/auth/me'))                               // App руу хэрэглэгчийг дамжуулна
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err.message || 'Нэвтрэх нэр эсвэл нууц үг буруу байна')
       setSubmitting(false)

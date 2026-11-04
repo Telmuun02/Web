@@ -1,0 +1,46 @@
+.ui-stat {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.ui-stat-label,
+.ui-stat-note {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.ui-stat-value {
+  font-family: var(--font-unbounded), sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.ui-stat-suffix {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
+.ui-stat-note.good {
+  color: #0b7a4b;
+  font-weight: 600;
+}
+
+.ui-stat.bad .ui-stat-value {
+  color: #b42318;
+}
+
+.ui-stat.dark {
+  background: var(--navy);
+  color: #fff;
+}
+
+.ui-stat.dark .ui-stat-label,
+.ui-stat.dark .ui-stat-note {
+  color: #fff;
+  opacity: 0.85;
+}

@@ -1,0 +1,212 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useAppContext } from '../components/App/AppShell'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import api from '../api/client'
+import Badge from '../components/UI/Badge'
+import Button from '../components/UI/Button'
+import Card from '../components/UI/Card'
+import PageHeader from '../components/UI/PageHeader'
+import ProgressBar from '../components/UI/ProgressBar'
+import StatCard from '../components/UI/StatCard'
+import Table from '../components/UI/Table'
+import './styles/Dashboard.css'
+
+const chartTop = 12 // сая₮ — графикийн дээд хязгаар
+
+const debtorColumns = [
+  { label: 'Тоот' },
+  { label: 'Орц / давхар' },
+  { label: 'Өр', align: 'right' },
+  { label: 'Хэтэрсэн' },
+  { label: 'Үйлдэл', align: 'right' },
+]
+
+// 7900000 → '7.9'. Утга ирээгүй бол 0
+function million(n) {
+  return ((n || 0) / 1000000).toFixed(1)
+}
+
+// /api/dashboard-ийн хариунаас дээд талын 4 карт.
+// Хэсэг нь ирээгүй (backend хуучин хувилбартай гэх мэт) бол = {}, талбар нь байхгүй бол ?? 0
+function buildStats({ collection = {}, overdue = {}, requests = {} }) {
+  // Энэ сарын нэхэмжлэл үүсээгүй бол 0 биш NaN харуулна (жинхэнэ 0-оос ялгахын тулд)
+  const noInvoices = !collection.units
+  const empty = 'NaN'
+
+  return [
+    {
+      label: 'Цугларсан / нэхэмжилсэн',
+      value: noInvoices ? empty : `${million(collection.collected)} / ${million(collection.billed)} сая₮`,
+      note: noInvoices ? 'Энэ сарын нэхэмжлэл үүсээгүй' : `${collection.units} тоотоос ${collection.paid_units ?? 0} нь төлсөн`,
+      progress: noInvoices ? null : collection.percent ?? 0,
+      tone: 'dark',
+    },
+    {
+      label: 'Төлөлтийн хувь',
+      value: noInvoices ? empty : `${collection.percent ?? 0}%`,
+      note: 'Энэ сарын нэхэмжлэлээс',
+      noteTone: noInvoices ? undefined : 'good',
+    },
+    { label: 'Хугацаа хэтэрсэн өр', value: `${million(overdue.debt)} сая₮`, note: `${overdue.units ?? 0} тоот · өмнөх саруудаас`, tone: 'bad' },
+    {
+      label: 'Нээлттэй хүсэлт',
+      value: `${requests.open ?? 0}`,
+      // Шийдсэн хүсэлт байхгүй бол дундаж тооцоологдохгүй (null)
+      note: requests.avg_hours != null ? `Дунджаар ${requests.avg_hours} цагт шийддэг` : 'Шийдсэн хүсэлт алга',
+    },
+  ]
+}
+
+// Backend-ийн ангиллын нэр → харуулах нэр (requests.category enum)
+const categoryLabels = {
+  plumbing: 'Сантехник',
+  electrical: 'Цахилгаан',
+  cleaning: 'Цэвэрлэгээ',
+  elevator: 'Лифт',
+  other: 'Бусад',
+}
+
+export default function Dashboard() {
+  const { user } = useAppContext()
+  const [data, setData] = useState(null)
+  const [chart, setChart] = useState([])
+  const [debtors, setDebtors] = useState([])
+  const [categories, setCategories] = useState([])
+
+  // Хуудас нээгдэхэд самбарын өгөгдлийг татна
+  useEffect(() => {
+    api.get('/dashboard').then(setData)
+  }, [])
+
+  // 12 сарын график — тусдаа API
+  useEffect(() => {
+    api.get('/dashboard/monthly').then(setChart)
+  }, [])
+
+  // Өр ихтэй тоотууд — тусдаа API
+  useEffect(() => {
+    api.get('/dashboard/debtors', { params: { limit: 6 } }).then(setDebtors)
+  }, [])
+
+  // Энэ сарын хүсэлт ангиллаар — тусдаа API
+  useEffect(() => {
+    api.get('/dashboard/categories').then(setCategories)
+  }, [])
+
+  // Мөрийн уртыг хамгийн их ангилалтай харьцуулж бодно. Хоосон үед 0-д хуваахгүйн тулд 1
+  const maxCategory = Math.max(1, ...categories.map((c) => c.count))
+  const totalRequests = categories.reduce((sum, c) => sum + c.count, 0)
+  // '2026-10-01' → ['2026', '10', '01']
+  const [year, month] = data?.period ? data.period.split('-') : []
+
+  // Backend ₮-өөр өгнө, buildStats сая болгож харуулна. Өгөгдөл ирэх хүртэл хоосон
+  const stats = data ? buildStats(data) : []
+
+  return (
+    <div className="dashboard">
+      <PageHeader sub={`Сайн байна уу, ${user?.name ?? ''}`} title={year ? `${year} оны ${Number(month)}-р сар` : '…'}>
+        <label className="dash-field">
+          <span>Байр</span>
+          <select>
+            <option>Бүгд (3 орц)</option>
+            <option>1-р орц</option>
+            <option>2-р орц</option>
+            <option>3-р орц</option>
+          </select>
+        </label>
+        <Button>
+          <FileDownloadOutlined sx={{ fontSize: 16 }} /> Excel татах
+        </Button>
+        <Button variant="primary">
+          <AddOutlined sx={{ fontSize: 16 }} /> Зарлал нийтлэх
+        </Button>
+      </PageHeader>
+
+      <div className="dash-stats">
+        {stats.map((s) => (
+          <StatCard key={s.label} label={s.label} value={s.value} note={s.note} tone={s.tone} noteTone={s.noteTone}>
+            {s.progress != null && (
+              <ProgressBar value={s.progress} size={6} color="#fff" track="rgba(255, 255, 255, 0.2)" />
+            )}
+          </StatCard>
+        ))}
+      </div>
+
+      <Card
+        title="Сүүлийн 12 сарын орлого"
+        sub="Тав дахь сараас хураамж 9.8 → 10.2 сая₮ болсон; 11-р сар явж байна"
+        action={(
+          <div className="legend">
+            <span><i className="swatch billed" />Нэхэмжилсэн</span>
+            <span><i className="swatch collected" />Цугларсан</span>
+          </div>
+        )}
+      >
+        <div className="chart">
+          <div className="chart-axis" aria-hidden="true">
+            <span>12 сая</span><span>8</span><span>4</span><span>0</span>
+          </div>
+          <div className="chart-body" role="img" aria-label="12 сарын нэхэмжилсэн ба цугларсан дүнгийн баганан график">
+            <div className="chart-bars">
+              {chart.map((c, i) => (
+                <div key={c.period} className="bar" style={{ height: `${(c.billed / 1000000 / chartTop) * 100}%` }}>
+                  <div
+                    className={i === chart.length - 1 ? 'bar-fill current' : 'bar-fill'}
+                    style={{ height: `${c.billed ? (c.collected / c.billed) * 100 : 0}%` }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="chart-labels">
+              {/* '2026-10-01' → 10 */}
+              {chart.map((c) => <span key={c.period}>{Number(c.period.split('-')[1])}</span>)}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="dash-row">
+        <Card
+          title="Өр ихтэй тоотууд"
+          action={<Link href="/invoices?tab=debtors" className="dash-link">Бүгдийг харах →</Link>}
+          className="debtors"
+        >
+          <Table columns={debtorColumns} minWidth={460}>
+            {debtors.map((d) => (
+              <tr key={d.unit_id}>
+                <td className="bold">{d.code}</td>
+                <td>{d.entrance}-р орц, {d.floor} давхар</td>
+                {/* 170000 → '170,000₮' */}
+                <td className="num bold">{d.debt.toLocaleString('en-US')}₮</td>
+                <td><Badge tone={d.months >= 2 ? 'red' : 'orange'}>{d.months} сар</Badge></td>
+                <td className="num"><Button size="small">SMS сануулах</Button></td>
+              </tr>
+            ))}
+          </Table>
+        </Card>
+
+        <div className="dash-side">
+          <Card title="Хүсэлт ангиллаар" sub={`Энэ сард ${totalRequests} хүсэлт`}>
+            {categories.map((c) => (
+              <div key={c.category} className="category">
+                <span>{categoryLabels[c.category] ?? c.category}</span>
+                <ProgressBar value={(c.count / maxCategory) * 100} />
+                <span className="category-count">{c.count}</span>
+              </div>
+            ))}
+          </Card>
+
+          <Link href="/polls" className="poll-card">
+            <span className="poll-tag">Идэвхтэй санал хураалт · 11/20 дуусна</span>
+            <span className="poll-title">Тоглоомын талбайг шинэчлэх үү?</span>
+            <span className="poll-note">Ирц 46% · босго 50% хүртэл 5 тоот дутуу</span>
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}

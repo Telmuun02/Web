@@ -1,0 +1,200 @@
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--page-bg);
+  color: var(--navy);
+  font-family: 'Onest', system-ui, sans-serif;
+}
+
+/* Дээд хэсэг — sidebar-тай ижил navy */
+.landing-hero {
+  padding: 24px 32px 72px;
+  background: var(--navy);
+  color: #fff;
+}
+
+/* Лого зүүн талд, нэвтрэх товч баруун дээд буланд */
+.landing-bar {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Нэвтэрсэн хэрэглэгч — нэрийн эхний үсэг + нэр, дарахад самбар руу */
+.landing-user {
+  min-width: 0;
+  padding: 4px 16px 4px 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.landing-user:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Урт нэр утсан дээр "…" болж таслагдана */
+.landing-user-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landing-intro {
+  max-width: 720px;
+  margin: 72px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+}
+
+/* index.css-ийн h1-ийг дарна */
+.landing-intro h1 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(30px, 5vw, 46px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.landing-intro p {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--link);
+}
+
+.landing-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: -40px auto 0; /* боломжуудын картууд navy хэсэг дээр бага зэрэг давхарлана */
+  padding: 0 32px 48px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Боломжууд */
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.landing-feature {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.landing-feature-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #ffe7b0;
+}
+
+.landing-feature h2 {
+  margin: 0;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--navy);
+}
+
+.landing-feature p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted-text);
+}
+
+/* Эхлэх хэсэг */
+.landing-start {
+  padding: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.landing-start-text {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landing-start h2 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--navy);
+}
+
+.landing-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  color: #3e3a57;
+}
+
+.landing-cta {
+  height: 52px;
+  padding: 0 32px;
+  font-size: 16px;
+}
+
+.landing-footer {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+/* Утсан дээр зайг багасгана */
+@media (max-width: 600px) {
+  .landing-hero {
+    padding: 20px 16px 64px;
+  }
+
+  .landing-intro {
+    margin-top: 48px;
+  }
+
+  .landing-main {
+    padding: 0 16px 32px;
+  }
+
+  .landing-cta {
+    width: 100%;
+  }
+}

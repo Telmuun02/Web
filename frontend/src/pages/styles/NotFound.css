@@ -1,0 +1,54 @@
+/* Бүтэн дэлгэц, голлуулсан */
+.notfound {
+  min-height: 100vh;
+  padding: 32px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--page-bg);
+  color: var(--navy);
+  font-family: 'Onest', system-ui, sans-serif;
+  text-align: center;
+}
+
+.notfound-code {
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(72px, 18vw, 120px); /* утсан дээр жижгэрнэ */
+  font-weight: 700;
+  line-height: 1;
+  color: var(--yellow);
+}
+
+/* index.css-ийн том h1-ийг дарна */
+.notfound h1 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--navy);
+}
+
+.notfound p {
+  max-width: 420px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}
+
+.notfound-link {
+  margin-top: 8px;
+  height: 48px;
+  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 12px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+}

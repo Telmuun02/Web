@@ -23,21 +23,19 @@ function periodFrom(req) {
 
 async function index(req, res, next) {
   try {
-    var status = statuses.includes(req.query.status) ? req.query.status : null; // null = Бүгд
+    var status = statuses.includes(req.query.status) ? req.query.status : null; 
     var q = String(req.query.q || '').trim();
 
-    // Хуудаслалт (infinite scroll): ?limit=30&offset=60 — 60-р мөрөөс хойш 30-ыг
     var limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 30, 1), 100);
     var offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
-    // Нэгийг илүү авч дараагийн хуудас байгаа эсэхийг мэднэ
     var rows = await Invoices.list(periodFrom(req), { status: status, q: q, limit: limit + 1, offset: offset });
     var hasMore = rows.length > limit;
 
     res.json({
       rows: rows.slice(0, limit),
       has_more: hasMore,
-      next_offset: hasMore ? offset + limit : null, // дараагийн хүсэлтэд өгөх offset
+      next_offset: hasMore ? offset + limit : null,
     });
   } catch (err) {
     next(err);

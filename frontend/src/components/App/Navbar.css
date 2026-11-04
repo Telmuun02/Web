@@ -97,6 +97,27 @@
   font-weight: 600;
 }
 
+/* Цэсний хажуугийн тоо (нээлттэй засварын хүсэлт гэх мэт) */
+.sidebar-link {
+  position: relative; /* хумигдсан үед тоо icon-ы буланд байрлана */
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Идэвхтэй (шар) мөрөн дээр шар тоо харагдахгүй тул эсрэгээр нь */
+.sidebar-link.active .sidebar-badge {
+  background: var(--navy);
+  color: #fff;
+}
+
 .logout {
   margin-top: auto;
   border: 0;
@@ -143,6 +164,15 @@
 
 .sidebar:not(:hover) .brand {
   padding: 0 0 24px;
+}
+
+/* Хумигдсан үед тоо icon-ы баруун дээд буланд жижгээр */
+.sidebar:not(:hover) .sidebar-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
 }
 
 /* 56px avatar 56px зайд яг багтана. Хумигдсан үед картын дэвсгэр арилж, зөвхөн avatar үлдэнэ */

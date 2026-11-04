@@ -1,0 +1,48 @@
+/* Нарийн дэлгэцэнд хүснэгт хажуу тийш гүйлгэгдэнэ */
+.ui-table-wrap {
+  overflow-x: auto;
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ui-table th {
+  padding: 0 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-text);
+}
+
+.ui-table td {
+  padding: 12px 8px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* Эхний ба сүүлийн баганыг картын ирмэгтэй тулгана */
+.ui-table th:first-child,
+.ui-table td:first-child {
+  padding-left: 0;
+}
+
+.ui-table th:last-child,
+.ui-table td:last-child {
+  padding-right: 0;
+}
+
+/* Тоо, мөнгөн дүн — баруун тийш, ижил өргөнтэй цифр */
+.ui-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-table .dim {
+  color: var(--muted-text);
+}
+
+.ui-table .bold {
+  font-weight: 600;
+}

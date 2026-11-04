@@ -1,0 +1,29 @@
+.ui-search {
+  min-width: min(260px, 100%);
+  height: 44px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--muted-text);
+}
+
+/* Бичиж байхад бүхэл хайрцагны хүрээ тодорно */
+.ui-search:focus-within {
+  border-color: var(--navy);
+}
+
+.ui-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+}

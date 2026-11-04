@@ -5,6 +5,14 @@ import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import ComputerOutlined from '@mui/icons-material/ComputerOutlined'
 import PhotoCameraOutlined from '@mui/icons-material/PhotoCameraOutlined'
 import SmartphoneOutlined from '@mui/icons-material/SmartphoneOutlined'
+import api from '../api/client'
+import Badge from '../components/UI/Badge'
+import Button from '../components/UI/Button'
+import Card from '../components/UI/Card'
+import Field from '../components/UI/Field'
+import ListItem from '../components/UI/ListItem'
+import Switch from '../components/UI/Switch'
+import Toast from '../components/UI/Toast'
 import './styles/Profile.css'
 
 // Түр жишээ өгөгдөл — backend бэлэн болоход солигдоно
@@ -44,26 +52,13 @@ const permissions = [
   { label: 'Ажилтан нэмэх, эрх өгөх', roles: [] },
 ]
 
-// Асаах/унтраах товч — role="switch" нь дэлгэц уншигчид асаалттай эсэхийг хэлнэ
-function Switch({ label, checked, onChange }) {
-  return (
-    <button
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      className={checked ? 'switch on' : 'switch'}
-      onClick={() => onChange(!checked)}
-    >
-      <span className="switch-knob" />
-    </button>
-  )
-}
-
 export default function Profile() {
   const { user, onLogout } = useOutletContext()
   const [name, setName] = useState(user.name ?? '')
   const [phone, setPhone] = useState(user.phone ?? '')
   const [email, setEmail] = useState(user.email ?? '')
+  const [password, setPassword] = useState('') // мэдээлэл солихоос өмнө баталгаажуулах нууц үг
+  const [error, setError] = useState('')
   const [twofa, setTwofa] = useState(true)
   const [notify, setNotify] = useState({ pay: true, debt: true, poll: true, request: false })
   const [sessions, setSessions] = useState(sampleSessions)
@@ -71,9 +66,16 @@ export default function Profile() {
 
   const roleLabel = user.role === 'admin' ? 'Админ' : 'Оршин суугч'
 
-  function saveInfo() {
-    // Backend-д хадгалах API дараа нь — одоохондоо зөвхөн мэдэгдэл
-    setToast('Хувийн мэдээлэл хадгалагдлаа')
+  // PUT /api/profile — нууц үг буруу (401), утас/имэйл давхардсан (409) бол backend-ийн мессежийг харуулна
+  async function saveInfo() {
+    setError('')
+    try {
+      await api.put('/profile', { name, phone, email, password })
+      setPassword('') // нууц үгийг талбарт үлдээхгүй
+      setToast('Хувийн мэдээлэл хадгалагдлаа')
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   function endSession(s) {
@@ -96,8 +98,8 @@ export default function Profile() {
           <h1>{name}</h1>
           <span className="profile-sub">{roleLabel} · Нарны хотхоны СӨХ</span>
           <span className="profile-pills">
-            {user.role === 'admin' && <span className="profile-pill good">Санхүүгийн эрх</span>}
-            <span className="profile-pill warn">2 алхамт баталгаажуулалт {twofa ? 'идэвхтэй' : 'унтраалттай'}</span>
+            {user.role === 'admin' && <Badge tone="green">Санхүүгийн эрх</Badge>}
+            <Badge tone="yellow">2 алхамт баталгаажуулалт {twofa ? 'идэвхтэй' : 'унтраалттай'}</Badge>
           </span>
         </div>
 
@@ -111,131 +113,119 @@ export default function Profile() {
         </div>
       </section>
 
-      {toast && (
-        <div className="profile-toast" role="status">
-          <CheckOutlined sx={{ fontSize: 18 }} />
-          {toast}
-        </div>
-      )}
+      <Toast>{toast}</Toast>
 
       <div className="profile-columns">
         <div className="profile-col wide">
-          <section className="profile-card" aria-labelledby="info-title">
-            <div className="profile-card-head">
-              <h2 id="info-title">Хувийн мэдээлэл</h2>
-              <button className="profile-btn primary" onClick={saveInfo}>Хадгалах</button>
-            </div>
+          <Card
+            title="Хувийн мэдээлэл"
+            action={<Button variant="dark" size="small" onClick={saveInfo}>Хадгалах</Button>}
+          >
             <div className="profile-form">
-              <label className="profile-field">
-                Нэр
+              <Field label="Нэр">
                 <input value={name} onChange={(e) => setName(e.target.value)} />
-              </label>
-              <label className="profile-field">
-                Утас
+              </Field>
+              <Field label="Утас">
                 <input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </label>
-              <label className="profile-field">
-                Имэйл
+              </Field>
+              <Field label="Имэйл">
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </label>
-              <label className="profile-field">
-                Албан тушаал
+              </Field>
+              <Field label="Албан тушаал">
                 <input value={roleLabel} readOnly />
-              </label>
-              <label className="profile-field">
-                Хэл
-                <select>
-                  <option>Монгол</option>
-                  <option>English</option>
-                </select>
-              </label>
+              </Field>
+              <Field label="Одоогийн нууц үг">
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Өөрчлөлтөө баталгаажуулах"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </Field>
             </div>
+            {error && <p className="profile-error" role="alert">{error}</p>}
             <span className="profile-muted">Албан тушаал ба эрхийг зөвхөн СӨХ-ийн дарга өөрчилнө.</span>
-          </section>
+          </Card>
 
-          <section className="profile-card list" aria-labelledby="sec-title">
-            <h2 id="sec-title">Нууцлал ба нэвтрэлт</h2>
-            <div className="profile-row">
-              <span className="profile-row-text">
-                <span className="profile-row-label">Нууц үг</span>
-                <span className="profile-muted">Сүүлд 64 хоногийн өмнө сольсон</span>
-              </span>
-              <button className="profile-btn">Солих</button>
-            </div>
-            <div className="profile-row">
-              <span className="profile-row-text">
-                <span className="profile-row-label">2 алхамт баталгаажуулалт</span>
-                <span className="profile-muted">Нэвтрэх бүрт SMS код · санхүүгийн эрхтэй ажилтанд зөвлөнө</span>
-              </span>
-              <Switch label="2 алхамт баталгаажуулалт" checked={twofa} onChange={setTwofa} />
-            </div>
+          <Card title="Нууцлал ба нэвтрэлт">
+            {/* Мөрүүдийг нэг div-д — хооронд нь картын зай биш, зураас байна */}
+            <div>
+              <ListItem title="Нууц үг" hint="Сүүлд 64 хоногийн өмнө сольсон">
+                <Button size="small">Солих</Button>
+              </ListItem>
+              <Switch
+                label="2 алхамт баталгаажуулалт"
+                hint="Нэвтрэх бүрт SMS код · санхүүгийн эрхтэй ажилтанд зөвлөнө"
+                checked={twofa}
+                onChange={setTwofa}
+              />
 
-            <span className="profile-subhead">Идэвхтэй төхөөрөмж</span>
-            {sessions.map((s) => (
-              <div key={s.id} className="profile-session">
-                <span className="profile-device">
-                  {s.phone ? <SmartphoneOutlined sx={{ fontSize: 20 }} /> : <ComputerOutlined sx={{ fontSize: 20 }} />}
-                </span>
-                <span className="profile-row-text">
-                  <span className="profile-row-label">{s.name}</span>
-                  <span className="profile-muted">{s.where}</span>
-                </span>
-                {s.current
-                  ? <span className="profile-pill good">Энэ төхөөрөмж</span>
-                  : <button className="profile-btn danger" onClick={() => endSession(s)}>Гаргах</button>}
-              </div>
-            ))}
-          </section>
+              <span className="profile-subhead">Идэвхтэй төхөөрөмж</span>
+              {sessions.map((s) => (
+                <ListItem
+                  key={s.id}
+                  icon={(
+                    <span className="profile-device">
+                      {s.phone ? <SmartphoneOutlined sx={{ fontSize: 20 }} /> : <ComputerOutlined sx={{ fontSize: 20 }} />}
+                    </span>
+                  )}
+                  title={s.name}
+                  hint={s.where}
+                >
+                  {s.current
+                    ? <Badge tone="green">Энэ төхөөрөмж</Badge>
+                    : <Button size="small" variant="danger" onClick={() => endSession(s)}>Гаргах</Button>}
+                </ListItem>
+              ))}
+            </div>
+          </Card>
         </div>
 
         <div className="profile-col">
-          <section className="profile-card list" aria-labelledby="notif-title">
-            <h2 id="notif-title">Надад мэдэгдэх</h2>
-            {notificationItems.map((n) => (
-              <div key={n.key} className="profile-row">
-                <span className="profile-row-text">
-                  <span className="profile-row-label">{n.label}</span>
-                  <span className="profile-muted">{n.hint}</span>
-                </span>
+          <Card title="Надад мэдэгдэх">
+            <div>
+              {notificationItems.map((n) => (
                 <Switch
+                  key={n.key}
                   label={n.label}
+                  hint={n.hint}
                   checked={notify[n.key]}
                   onChange={(value) => setNotify({ ...notify, [n.key]: value })}
                 />
-              </div>
-            ))}
-          </section>
-
-          <section className="profile-card" aria-labelledby="perm-title">
-            <h2 id="perm-title">Миний эрх</h2>
-            {permissions.map((p) => {
-              const on = p.roles.includes(user.role)
-              return (
-                <div key={p.label} className={on ? 'profile-perm on' : 'profile-perm'}>
-                  <span className="profile-perm-icon">
-                    {on ? <CheckOutlined sx={{ fontSize: 14 }} /> : <CloseOutlined sx={{ fontSize: 12 }} />}
-                  </span>
-                  {p.label}
-                </div>
-              )
-            })}
-          </section>
-
-          <section className="profile-card" aria-labelledby="act-title">
-            <div className="profile-card-head">
-              <h2 id="act-title">Сүүлийн үйлдэл</h2>
-              <Link to="/reports" className="profile-link">Аудит лог →</Link>
+              ))}
             </div>
-            {sampleActivity.map((a) => (
-              <div key={a.text} className="profile-activity">
-                <span className="profile-dot" aria-hidden="true" />
-                <span className="profile-row-text">
-                  <span>{a.text}</span>
-                  <span className="profile-muted small">{a.time}</span>
-                </span>
-              </div>
-            ))}
-          </section>
+          </Card>
+
+          <Card title="Миний эрх">
+            <div className="profile-perms">
+              {permissions.map((p) => {
+                const on = p.roles.includes(user.role)
+                return (
+                  <div key={p.label} className={on ? 'profile-perm on' : 'profile-perm'}>
+                    <span className="profile-perm-icon">
+                      {on ? <CheckOutlined sx={{ fontSize: 14 }} /> : <CloseOutlined sx={{ fontSize: 12 }} />}
+                    </span>
+                    {p.label}
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+
+          <Card title="Сүүлийн үйлдэл" action={<Link to="/reports" className="profile-link">Аудит лог →</Link>}>
+            <div>
+              {sampleActivity.map((a) => (
+                <div key={a.text} className="profile-activity">
+                  <span className="profile-dot" aria-hidden="true" />
+                  <span className="profile-activity-text">
+                    <span>{a.text}</span>
+                    <span className="profile-muted small">{a.time}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
 
           <button className="profile-logout" onClick={onLogout}>Системээс гарах</button>
         </div>

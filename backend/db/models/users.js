@@ -11,9 +11,14 @@ async function findForLogin(login) {
   return db('users').where({ email: login }).orWhere({ phone: login }).first();
 }
 
+// Мэдээлэл солихын өмнө нууц үг шалгахад — id-аар password_hash-тай нь авна
+async function findWithPassword(id) {
+  return db('users').where({ id: id }).first();
+}
+
 // Бүх admin
 async function admins() {
   return db('users').select(publicColumns).where({ role: 'admin' }).orderBy('name');
 }
 
-module.exports = { ...base, findForLogin, admins };
+module.exports = { ...base, findForLogin, findWithPassword, admins };

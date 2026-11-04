@@ -3,15 +3,23 @@ import { Link, useSearchParams } from 'react-router-dom'
 import api from '../api/client'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import SearchOutlined from '@mui/icons-material/SearchOutlined'
+import Badge from '../components/UI/Badge'
+import Button from '../components/UI/Button'
+import Card from '../components/UI/Card'
+import Field from '../components/UI/Field'
+import PageHeader from '../components/UI/PageHeader'
+import SearchInput from '../components/UI/SearchInput'
+import Table from '../components/UI/Table'
+import Tabs from '../components/UI/Tabs'
+import Toast from '../components/UI/Toast'
 import './styles/Invoices.css'
 
-// Төлөв бүрийн нэр ба өнгө (CSS класс)
-const statusLabels = {
-  unpaid: 'Төлөгдөөгүй',
-  partial: 'Хэсэгчилсэн',
-  paid: 'Төлөгдсөн',
-  overdue: 'Хугацаа хэтэрсэн',
+// Төлөв бүрийн нэр ба шошгоны өнгө
+const statusInfo = {
+  unpaid: { label: 'Төлөгдөөгүй', tone: 'gray' },
+  partial: { label: 'Хэсэгчилсэн', tone: 'orange' },
+  paid: { label: 'Төлөгдсөн', tone: 'green' },
+  overdue: { label: 'Хугацаа хэтэрсэн', tone: 'red' },
 }
 
 const tabs = [
@@ -21,6 +29,25 @@ const tabs = [
   { key: 'paid', label: 'Төлөгдсөн' },
   { key: 'overdue', label: 'Хэтэрсэн' },
   { key: 'debtors', label: 'Өр ихтэй' },
+]
+
+const invoiceColumns = [
+  { label: 'Тоот' },
+  { label: 'Оршин суугч' },
+  { label: 'Сар' },
+  { label: 'Дүн', align: 'right' },
+  { label: 'Төлсөн', align: 'right' },
+  { label: 'Үлдэгдэл', align: 'right' },
+  { label: 'Төлөв' },
+  { label: 'Сүүлийн төлбөр' },
+  { label: 'Үйлдэл', align: 'right' },
+]
+
+const debtorColumns = [
+  { label: 'Тоот' },
+  { label: 'Орц / давхар' },
+  { label: 'Өр', align: 'right' },
+  { label: 'Хэтэрсэн' },
 ]
 
 // 85000 → '85,000₮'
@@ -182,126 +209,74 @@ export default function Invoices() {
 
   return (
     <div className="invoices">
-      <header className="inv-header">
-        <div>
-          <span className="inv-muted">{now.getFullYear()} оны {now.getMonth() + 1}-р сар · төлөх хугацаа {due.getMonth() + 1}/{due.getDate()}</span>
-          <h1>Нэхэмжлэл ба төлбөр</h1>
-        </div>
-        <div className="inv-header-actions">
-          <span className="inv-auto">
-            <CheckOutlined sx={{ fontSize: 16 }} />
-            {now.getMonth() + 1}-р сарын {rows.length} нэхэмжлэл автоматаар үүссэн
-          </span>
-          <Link to="/invoices/settings" className="inv-btn">Хураамжийн тохиргоо</Link>
-        </div>
-      </header>
+      <PageHeader
+        sub={`${now.getFullYear()} оны ${now.getMonth() + 1}-р сар · төлөх хугацаа ${due.getMonth() + 1}/${due.getDate()}`}
+        title="Нэхэмжлэл ба төлбөр"
+      >
+        <span className="inv-auto">
+          <CheckOutlined sx={{ fontSize: 16 }} />
+          {now.getMonth() + 1}-р сарын {rows.length} нэхэмжлэл автоматаар үүссэн
+        </span>
+        <Button as={Link} to="/invoices/settings">Хураамжийн тохиргоо</Button>
+      </PageHeader>
 
       <div className="inv-toolbar">
-        <div className="inv-tabs" role="tablist" aria-label="Төлөвөөр шүүх">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={tab === t.key}
-              className={tab === t.key ? 'inv-tab active' : 'inv-tab'}
-              onClick={() => setTab(t.key)}
-            >
-              {t.label} {tabCounts[t.key] != null && <span className="inv-tab-count">{tabCounts[t.key]}</span>}
-            </button>
-          ))}
-        </div>
-
-        <label className="inv-search">
-          <SearchOutlined sx={{ fontSize: 18 }} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Тоот эсвэл нэрээр хайх"
-            aria-label="Тоот эсвэл нэрээр хайх"
-          />
-        </label>
+        <Tabs
+          label="Төлөвөөр шүүх"
+          items={tabs.map((t) => ({ ...t, count: tabCounts[t.key] }))}
+          value={tab}
+          onChange={setTab}
+        />
+        <SearchInput value={query} onChange={setQuery} placeholder="Тоот эсвэл нэрээр хайх" />
       </div>
 
-      {toast && (
-        <div className="inv-toast" role="status">
-          <CheckOutlined sx={{ fontSize: 18 }} />
-          {toast}
-        </div>
-      )}
+      <Toast>{toast}</Toast>
 
       {/* "Өр ихтэй" таб — нэхэмжлэл биш, тоот бүрийн нийт өрийг харуулна */}
       {tab === 'debtors' ? (
-        <section className="inv-card" aria-label="Өр ихтэй тоотууд">
+        <Card aria-label="Өр ихтэй тоотууд">
           <p className="inv-debtors-total">
             {visibleDebtors.length} тоот · нийт өр <strong>{money(totalDebt)}</strong>
           </p>
-          <table className="inv-debtors-table">
-            <thead>
-              <tr>
-                <th>Тоот</th>
-                <th>Орц / давхар</th>
-                <th className="num">Өр</th>
-                <th>Хэтэрсэн</th>
+          <Table columns={debtorColumns} minWidth={460}>
+            {visibleDebtors.map((d) => (
+              <tr key={d.unit_id}>
+                <td className="bold">{d.code}</td>
+                <td>{d.entrance}-р орц, {d.floor} давхар</td>
+                <td className="num bold">{money(d.debt)}</td>
+                <td><Badge tone={d.months >= 2 ? 'red' : 'orange'}>{d.months} сар</Badge></td>
               </tr>
-            </thead>
-            <tbody>
-              {visibleDebtors.map((d) => (
-                <tr key={d.unit_id}>
-                  <td className="strong">{d.code}</td>
-                  <td>{d.entrance}-р орц, {d.floor} давхар</td>
-                  <td className="num strong">{money(d.debt)}</td>
-                  <td><span className={d.months >= 2 ? 'inv-pill overdue' : 'inv-pill partial'}>{d.months} сар</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </Table>
           {visibleDebtors.length === 0 && <p className="inv-empty">Өртэй тоот алга</p>}
-        </section>
+        </Card>
       ) : (
-        <section className="inv-card" aria-label="Нэхэмжлэлийн жагсаалт">
-          <table>
-            <thead>
-              <tr>
-                <th>Тоот</th>
-                <th>Оршин суугч</th>
-                <th>Сар</th>
-                <th className="num">Дүн</th>
-                <th className="num">Төлсөн</th>
-                <th className="num">Үлдэгдэл</th>
-                <th>Төлөв</th>
-                <th>Сүүлийн төлбөр</th>
-                <th className="num">Үйлдэл</th>
+        <Card aria-label="Нэхэмжлэлийн жагсаалт">
+          <Table columns={invoiceColumns} minWidth={820}>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td className="bold">{r.unit}</td>
+                <td>{r.name}</td>
+                <td className="dim">{r.period}</td>
+                <td className="num">{money(r.total)}</td>
+                <td className="num dim">{money(r.paid)}</td>
+                <td className="num bold">{money(r.total - r.paid)}</td>
+                <td><Badge tone={statusInfo[r.status].tone}>{statusInfo[r.status].label}</Badge></td>
+                <td className="dim">{r.last}</td>
+                <td className="num">
+                  {r.status !== 'paid' && (
+                    <Button size="small" onClick={() => openPay(r)}>Бэлэн бүртгэх</Button>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const status = r.status
-                return (
-                  <tr key={r.id}>
-                    <td className="strong">{r.unit}</td>
-                    <td>{r.name}</td>
-                    <td className="inv-muted">{r.period}</td>
-                    <td className="num">{money(r.total)}</td>
-                    <td className="num inv-muted">{money(r.paid)}</td>
-                    <td className="num strong">{money(r.total - r.paid)}</td>
-                    <td><span className={`inv-pill ${status}`}>{statusLabels[status]}</span></td>
-                    <td className="inv-muted">{r.last}</td>
-                    <td className="num">
-                      {status !== 'paid' && (
-                        <button className="inv-btn small" onClick={() => openPay(r)}>Бэлэн бүртгэх</button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+            ))}
+          </Table>
           {error && <p className="inv-empty">{error}</p>}
           {!error && loading && <p className="inv-empty">{rows.length ? 'Цааш ачааллаж байна…' : 'Ачааллаж байна…'}</p>}
           {/* Энэ div дэлгэцэнд орж ирэхэд дараагийн хуудас татагдана */}
           {nextOffset != null && <div ref={sentinelRef} aria-hidden="true" />}
           {!error && !loading && rows.length === 0 && <p className="inv-empty">Тохирох нэхэмжлэл олдсонгүй</p>}
-        </section>
+        </Card>
       )}
 
       {/* Төлбөр бүртгэх цонх — баруун талаас гарна */}
@@ -324,37 +299,34 @@ export default function Invoices() {
               <span className="inv-left-value">{money(left)}</span>
             </div>
 
-            <label className="inv-field">
-              Төлсөн дүн (₮)
+            <Field label="Төлсөн дүн (₮)">
               <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </label>
+            </Field>
             {tooMuch && <span className="inv-error">Үлдэгдлээс их дүн бүртгэх боломжгүй</span>}
 
-            <label className="inv-field">
-              Төлбөрийн хэлбэр
+            <Field label="Төлбөрийн хэлбэр">
               <select value={method} onChange={(e) => setMethod(e.target.value)}>
                 <option value="cash">Бэлэн мөнгө</option>
                 <option value="bank">Дансаар шилжүүлсэн</option>
               </select>
-            </label>
+            </Field>
 
-            <label className="inv-field">
-              Тэмдэглэл
+            <Field label="Тэмдэглэл">
               <textarea
                 rows="3"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Жишээ: жижүүрийн өрөөнд хүлээж авсан"
               />
-            </label>
+            </Field>
 
             <span className="inv-hint">
               Бүртгэсэн төлбөрийг устгах боломжгүй; алдаатай бол буцаалт бичлэг нэмнэ.
             </span>
 
             <div className="inv-drawer-actions">
-              <button className="inv-btn" onClick={() => setSelected(null)}>Цуцлах</button>
-              <button className="inv-btn primary" onClick={save} disabled={cantSave}>Бүртгэх</button>
+              <Button onClick={() => setSelected(null)}>Цуцлах</Button>
+              <Button variant="dark" onClick={save} disabled={cantSave}>Бүртгэх</Button>
             </div>
           </div>
         </div>

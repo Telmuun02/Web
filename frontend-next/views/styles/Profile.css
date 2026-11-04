@@ -1,0 +1,257 @@
+.profile {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-muted {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.profile-muted.small {
+  font-size: 12px;
+}
+
+/* Дээд талын хар хөх тойм */
+.profile-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.profile-avatar {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid var(--yellow);
+  background: #2a2366;
+  color: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-unbounded), sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+/* Avatar-ын баруун доод буланд камерын товч */
+.profile-photo {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 3px solid var(--navy);
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.profile-who {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* .content h1 нь navy өнгөтэй — хар хөх дэвсгэр дээр цагаан болгоно */
+.content .profile-who h1 {
+  font-size: 26px;
+  color: #fff;
+}
+
+.profile-sub {
+  font-size: 15px;
+  color: var(--link);
+}
+
+.profile-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.profile-stats {
+  flex: 1 1 360px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.profile-stat-value {
+  font-family: var(--font-unbounded), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.profile-stat-label {
+  font-size: 12px;
+  color: var(--link);
+}
+
+/* Хоёр багана — нарийн дэлгэцэнд доошоо орно */
+.profile-columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.profile-col {
+  flex: 2 1 340px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-col.wide {
+  flex: 3 1 460px;
+}
+
+/* Хувийн мэдээллийн маягт */
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+/* Хадгалах үеийн алдаа — Auth.css-ийн .auth-error-тэй ижил өнгө */
+.profile-error {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fde7e5;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* "Идэвхтэй төхөөрөмж" дэд гарчиг */
+.profile-subhead {
+  display: block;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+/* Төхөөрөмжийн дүрс — саарал дөрвөлжин дотор */
+.profile-device {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Миний эрх */
+.profile-perms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-perm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+.profile-perm.on {
+  color: var(--navy);
+}
+
+.profile-perm-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-perm.on .profile-perm-icon {
+  background: #ddf5e9;
+  color: #0b5c38;
+}
+
+/* Сүүлийн үйлдэл */
+.profile-link {
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.profile-activity {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.profile-activity-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.profile-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--yellow);
+}
+
+.profile-logout {
+  height: 52px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  color: #b42318;
+  cursor: pointer;
+}

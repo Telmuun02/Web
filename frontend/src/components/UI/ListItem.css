@@ -1,0 +1,27 @@
+.ui-item {
+  min-height: 60px;
+  padding: 8px 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.ui-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ui-item-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ui-item-hint {
+  font-size: 13px;
+  color: var(--muted-text);
+}

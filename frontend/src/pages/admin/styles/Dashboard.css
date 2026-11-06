@@ -1,0 +1,634 @@
+.dashboard {
+  --billed: #ffe7b0;
+  --good: #0b5c38;
+  --bad: #b42318;
+
+  max-width: 1280px;
+  margin: 0 auto; /* хоёр талын зайг тэнцүү хуваана */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Саарал, жижиг бичиг — хуудасны хаа сайгүй */
+.dashboard .dim {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.dashboard .small {
+  font-size: 12px;
+}
+
+.dashboard .bold {
+  font-weight: 700;
+}
+
+/* Картын гарчиг дотор анивчдаг цэг байгаа тул нэг мөрөнд */
+.dashboard .ui-card-title h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Анивчдаг цэг ---------- */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #12a15e;
+  animation: live-pulse 1.2s ease-in-out infinite;
+}
+
+.live-dot.red { background: var(--bad); }
+.live-dot.orange { background: #b45309; }
+
+/* ---------- Толгой ---------- */
+.dash-user {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.dash-live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--good);
+  font-variant-numeric: tabular-nums; /* цаг өөрчлөгдөхөд бичиг хөдлөхгүй */
+}
+
+/* Байр сонгох */
+.dash-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.dash-field span {
+  color: var(--muted-text);
+}
+
+.dash-field select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.dash-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+/* ---------- Үзүүлэлтийн картууд ---------- */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.dash-stats .ui-stat-value {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stats .ui-stat-note.bad {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+/* Анхааруулга байгаа үед ягаан карт, улаан тоо */
+.dash-stats .ui-stat.alert {
+  background: #fde7e5;
+}
+
+.dash-stats .ui-stat.alert .ui-stat-value {
+  color: var(--bad);
+}
+
+.dash-stats .ui-stat.alert .ui-stat-note {
+  color: #7a1d14;
+}
+
+/* ---------- Төлбөрийн урсгал | Шинэ хүсэлт ---------- */
+.dash-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dash-feed {
+  flex: 3 1 440px;
+}
+
+.dash-requests {
+  flex: 2 1 340px;
+}
+
+.hour-bars {
+  height: 64px;
+  padding-bottom: 4px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.hour {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.hour-bar {
+  width: 100%;
+  max-width: 36px;
+  border-radius: 4px 4px 0 0;
+  background: var(--link);
+}
+
+.hour-bar.current {
+  background: var(--yellow);
+}
+
+.hour-label {
+  font-size: 10px;
+  color: var(--muted-text);
+}
+
+.feed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* тоот | нэр, суваг | дүн */
+.feed-item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #f1eff7;
+  font-size: 14px;
+}
+
+.feed-who {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.feed-name {
+  font-weight: 600;
+}
+
+.feed-who .dim {
+  font-size: 12px;
+}
+
+.feed-amount {
+  font-weight: 800;
+  color: var(--good);
+  font-variant-numeric: tabular-nums;
+}
+
+.req {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+}
+
+.req.unseen {
+  background: #fffbfa;
+}
+
+.req.urgent {
+  border-color: #f4b7b0;
+}
+
+.req-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
+.req-meta strong {
+  color: var(--navy);
+}
+
+.req-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.req-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(180, 35, 24, 0); }
+}
+
+.req-wait {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--bad);
+  animation: glow 1.6s ease-in-out infinite;
+}
+
+.req-seen {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--good);
+}
+
+/* ---------- Байрны систем ---------- */
+.systems {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.system {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.system-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+.lifts {
+  display: flex;
+  gap: 12px;
+}
+
+.lift {
+  flex: 1;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-radius: 14px;
+  background: var(--page-bg);
+}
+
+.lift.down {
+  background: #fde7e5;
+}
+
+.lift-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+/* 1-р давхар доор байхаар урвуу эрэмбэлнэ */
+.lift-shaft {
+  width: 22px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.lift-cell {
+  height: 7px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.lift-cell.here {
+  background: var(--navy);
+}
+
+.lift.down .lift-cell {
+  background: #f4d5d1;
+}
+
+.lift.down .lift-cell.here {
+  background: var(--bad);
+}
+
+.lift-floor {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.lift-status {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--good);
+}
+
+.lift.down .lift-status {
+  color: var(--bad);
+}
+
+/* орц | зурвас | хэм */
+.temp {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 60px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.temp-value {
+  text-align: right;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.temp.cold .temp-value {
+  color: #1f5fa8;
+}
+
+.utilities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.utility {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 14px;
+  background: var(--page-bg);
+}
+
+.utility-value {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.camera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.camera-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #12a15e;
+}
+
+.camera-name {
+  flex: 1;
+}
+
+.camera-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--good);
+}
+
+.camera.off .camera-dot {
+  background: var(--bad);
+  animation: live-pulse 1.2s ease-in-out infinite;
+}
+
+.camera.off .camera-status {
+  color: var(--bad);
+}
+
+/* ---------- Санал хураалт | Апп-ын идэвх | Ажилтны үйлдэл ---------- */
+.dash-trio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.dash-small {
+  padding: 20px 22px;
+  gap: 10px;
+}
+
+.dash-small .ui-card-title h2 {
+  font-size: 15px;
+}
+
+.poll-card {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 20px;
+  background: #ffe9c2;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.poll-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #7a4300;
+}
+
+.poll-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.poll-note {
+  font-size: 13px;
+  color: #5c3300;
+}
+
+.spark {
+  height: 70px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.spark-bar {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--link);
+}
+
+.spark-bar.current {
+  background: var(--yellow);
+}
+
+.log-item {
+  padding: 8px 0;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid #f1eff7;
+  font-size: 13px;
+}
+
+.log-item .ui-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.log-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* ---------- 12 сарын график ---------- */
+.legend {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.swatch.billed {
+  background: var(--billed);
+}
+
+.swatch.collected {
+  background: var(--navy);
+}
+
+.chart {
+  display: flex;
+  gap: 12px;
+}
+
+.chart-axis {
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted-text);
+  text-align: right;
+}
+
+.chart-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chart-bars {
+  height: 200px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2%;
+  border-bottom: 1px solid var(--line);
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px);
+  background-size: 100% 66.7px;
+}
+
+.bar {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  background: var(--billed);
+  border-radius: 6px 6px 0 0;
+}
+
+.bar-fill {
+  width: 100%;
+  background: var(--navy);
+  border-radius: 6px 6px 0 0;
+}
+
+/* Явагдаж буй сар */
+.bar-fill.current {
+  background: var(--yellow);
+}
+
+.chart-labels {
+  display: flex;
+  gap: 2%;
+}
+
+.chart-labels span {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted-text);
+}
+
+/* ---------- Өр ихтэй тоотууд ---------- */
+.seen-online {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--good);
+}
+
+/* Хөдөлгөөн багасгах тохиргоотой хэрэглэгчид анивчихгүй */
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .req-wait,
+  .camera.off .camera-dot {
+    animation: none;
+  }
+}

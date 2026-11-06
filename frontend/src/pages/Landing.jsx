@@ -4,7 +4,6 @@ import CampaignOutlined from '@mui/icons-material/CampaignOutlined'
 import HowToVoteOutlined from '@mui/icons-material/HowToVoteOutlined'
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import Brand from '../components/App/Brand'
-import Avatar from '../components/UI/Avatar'
 import Button from '../components/UI/Button'
 import './styles/Landing.css'
 
@@ -21,25 +20,15 @@ const steps = [
   'Нэхэмжлэл, хүсэлт, зарлалаа нэг дороос харна',
 ]
 
-// Танилцуулга — сайт руу орход хамгийн түрүүнд гарна. Layout-ийн гадна тул navbar-гүй.
-// Нэвтэрсэн бол товчнууд самбар руу, нэвтрээгүй бол нэвтрэх хуудас руу аваачна
-export default function Landing({ user }) {
-  const startTo = user ? '/dashboard' : '/login'
-
+// Танилцуулга — нэвтрээгүй хүн сайт руу орход гарна. Layout-ийн гадна тул navbar-гүй.
+// Нэвтэрсэн хүн "/" руу орвол App.jsx оршин суугчийн нүүр эсвэл /admin руу аваачна
+export default function Landing() {
   return (
     <div className="landing">
       <header className="landing-hero">
         <nav className="landing-bar" aria-label="Танилцуулгын цэс">
           <Brand showSub={false} />
-          {/* Нэвтэрсэн бол нэр нь харагдаж самбар руу, үгүй бол нэвтрэх товч */}
-          {user ? (
-            <Link to="/dashboard" className="landing-user" title="Самбар руу орох">
-              <Avatar name={user.name} />
-              <span className="landing-user-name">{user.name ?? 'Миний бүртгэл'}</span>
-            </Link>
-          ) : (
-            <Button as={Link} to="/login">Нэвтрэх</Button>
-          )}
+          <Button as={Link} to="/login">Нэвтрэх</Button>
         </nav>
 
         <div className="landing-intro">
@@ -70,8 +59,8 @@ export default function Landing({ user }) {
               {steps.map((s) => <li key={s}>{s}</li>)}
             </ol>
           </div>
-          <Button as={Link} to={startTo} variant="primary" className="landing-cta">
-            {user ? 'Самбар руу орох' : 'Эхлэх'}
+          <Button as={Link} to="/login" variant="primary" className="landing-cta">
+            Эхлэх
           </Button>
         </section>
       </main>

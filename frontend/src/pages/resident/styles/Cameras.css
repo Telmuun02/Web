@@ -1,0 +1,185 @@
+.res-cameras {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cm-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* ---------- Том дүрс ---------- */
+.cm-main {
+  flex: 3 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@keyframes cm-fade {
+  from { opacity: 0.2; }
+  to { opacity: 1; }
+}
+
+.cm-view {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #2b2e44;
+  animation: cm-fade 0.35s ease-out both;
+}
+
+.cm-view svg {
+  display: block;
+}
+
+/* Бүтэн дэлгэцэнд булан бөөрөнхий биш */
+.cm-view:fullscreen {
+  border-radius: 0;
+}
+
+/* Дүрсийг доош гүйх цайвар зурвас — шууд дүрс мэт */
+@keyframes cm-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(520px); }
+}
+
+.cm-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.04);
+  animation: cm-scan 5s linear infinite;
+}
+
+.cm-live,
+.cm-clock {
+  position: absolute;
+  top: 16px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cm-live {
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cm-clock {
+  right: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes cm-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.cm-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5a4e;
+  animation: cm-live 1.2s ease-in-out infinite;
+}
+
+.cm-dot.small {
+  width: 6px;
+  height: 6px;
+}
+
+.cm-name {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.cm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cm-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}
+
+/* ---------- Жагсаалт ---------- */
+.cm-list {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.cm-item {
+  position: relative;
+  height: 112px;
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid transparent;
+  border-radius: 16px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cm-item svg {
+  display: block;
+}
+
+.cm-item.on {
+  border-color: var(--yellow);
+}
+
+.cm-item-live {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.cm-item-name {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-view,
+  .cm-scan,
+  .cm-dot {
+    animation: none;
+  }
+}

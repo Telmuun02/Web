@@ -24,33 +24,6 @@
   gap: 16px;
 }
 
-/* Нэвтэрсэн хэрэглэгч — нэрийн эхний үсэг + нэр, дарахад самбар руу */
-.landing-user {
-  min-width: 0;
-  padding: 4px 16px 4px 4px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.landing-user:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-/* Урт нэр утсан дээр "…" болж таслагдана */
-.landing-user-name {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .landing-intro {
   max-width: 720px;
   margin: 72px auto 0;

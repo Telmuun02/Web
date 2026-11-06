@@ -1,0 +1,33 @@
+.resident {
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--navy);
+  font-family: 'Onest', system-ui, sans-serif;
+}
+
+/* Агуулга голдоо, хамгийн ихдээ 1240px */
+.resident-main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.resident-main h1 {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+/* index.css-ийн dark mode h2-ийг бараг цагаан болгодог — цагаан карт дээр үл харагдана */
+.resident-main h2 {
+  color: var(--navy);
+}
+
+@media (max-width: 600px) {
+  .resident-main {
+    padding: 20px 16px;
+  }
+}

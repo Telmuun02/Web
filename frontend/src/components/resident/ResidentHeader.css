@@ -1,0 +1,130 @@
+.res-header {
+  background: var(--navy);
+  color: #fff;
+}
+
+/* Агуулгатай ижил өргөнтэй — лого, цэс, баруун талын товчнууд нэг мөрөнд */
+.res-header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 32px;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 28px;
+}
+
+.res-nav {
+  flex: 1 1 520px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.res-nav-link {
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--link);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.res-nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Одоо нээлттэй хуудас — шар */
+.res-nav-link.active {
+  background: var(--yellow);
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.res-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.res-bell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.res-bell-count {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.res-profile {
+  padding: 4px 12px 4px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  text-decoration: none;
+}
+
+.res-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.res-profile-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Утсан дээр — цэс доод мөрөнд, хажуу тийш гүйлгэнэ */
+@media (max-width: 600px) {
+  .res-header-inner {
+    padding: 12px 16px;
+  }
+
+  .res-header-actions {
+    margin-left: auto;
+  }
+
+  .res-nav {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .res-nav-link {
+    white-space: nowrap;
+  }
+}

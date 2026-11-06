@@ -1,0 +1,265 @@
+.res-news {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.res-news h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.nw-muted {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.nw-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* ---------- Зарлалууд ---------- */
+.nw-posts {
+  flex: 3 1 480px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nw-post {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.nw-post.important {
+  border-color: #fde7e5;
+}
+
+.nw-post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nw-post h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--navy);
+}
+
+.nw-post p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #3e3a57;
+}
+
+.nw-link {
+  padding: 6px 0;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ---------- Хажуу тал ---------- */
+.nw-side {
+  flex: 2 1 360px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nw-poll {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 24px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.resident-main .nw-poll h2 {
+  font-size: 21px;
+  line-height: 1.3;
+  color: #fff;
+}
+
+.nw-poll-tag {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--yellow);
+}
+
+.nw-poll-where {
+  font-weight: 600;
+  color: var(--link);
+}
+
+.nw-poll-info {
+  font-size: 14px;
+  color: var(--link);
+}
+
+.nw-poll-info.small {
+  font-size: 13px;
+}
+
+.nw-vote {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nw-yes,
+.nw-no {
+  height: 54px;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nw-yes {
+  border: 0;
+  background: var(--yellow);
+  color: var(--navy);
+}
+
+.nw-no {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+}
+
+.nw-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nw-mine {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffe7b0;
+}
+
+.nw-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nw-result-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Дүнгийн зурвас зүүнээс баруун тийш "ургана" */
+@keyframes nw-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.nw-result .ui-progress-fill {
+  transform-origin: left;
+  animation: nw-grow 0.6s ease-out both;
+}
+
+.nw-undo {
+  align-self: flex-start;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nw-meeting {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 20px;
+  background: #ffe9c2;
+  color: #17142e;
+  text-decoration: none;
+}
+
+.nw-meeting-tag {
+  font-size: 13px;
+  font-weight: 800;
+  color: #7a4300;
+}
+
+.nw-meeting-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.nw-meeting-go {
+  font-size: 14px;
+  color: #5c3300;
+}
+
+.nw-past {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.res-news .nw-past h2 {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.nw-past-item {
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.nw-past-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.nw-past-q {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nw-result .ui-progress-fill {
+    animation: none;
+  }
+}

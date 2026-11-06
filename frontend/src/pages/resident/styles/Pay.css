@@ -1,0 +1,316 @@
+.res-pay {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.res-pay h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.pay-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* ---------- Задаргаа ---------- */
+.pay-breakdown {
+  flex: 2 1 340px;
+  min-width: 0;
+  padding: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.pay-breakdown h2 {
+  margin-bottom: 10px;
+}
+
+.pay-line {
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 15px;
+  color: #3e3a57;
+}
+
+.pay-line-amount {
+  font-weight: 700;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-total {
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  border-top: 2px solid var(--navy);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.pay-total-amount {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 30px;
+}
+
+.pay-note {
+  margin-top: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 16px;
+  background: var(--page-bg);
+  font-size: 14px;
+  line-height: 1.5;
+  color: #3e3a57;
+}
+
+.pay-note svg {
+  flex-shrink: 0;
+  color: var(--navy);
+}
+
+/* ---------- QPay ---------- */
+.pay-qpay {
+  flex: 3 1 460px;
+  min-width: 0;
+  min-height: 470px;
+  padding: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-radius: 24px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.resident-main .pay-qpay h2 {
+  font-size: 20px;
+  color: #fff;
+}
+
+.pay-qr-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+}
+
+.pay-qr {
+  width: 210px;
+  height: 210px;
+  flex-shrink: 0;
+  padding: 14px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(21, minmax(0, 1fr));
+  border-radius: 18px;
+  background: #fff;
+}
+
+.pay-qr span {
+  aspect-ratio: 1;
+}
+
+.pay-qr span.on {
+  background: #17142e;
+}
+
+.pay-qr-text {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pay-qr-hint {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--link);
+}
+
+@keyframes pay-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.pay-checking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #ffe7b0;
+}
+
+.pay-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--yellow);
+  animation: pay-pulse 1.2s ease-in-out infinite;
+}
+
+.pay-banks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pay-banks-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pay-bank {
+  height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pay-bank:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.pay-demo {
+  height: 48px;
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--link);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Төлсний дараа */
+@keyframes pay-switch {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes pay-pop {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.pay-done {
+  flex: 1;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.pay-done-icon {
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: var(--yellow);
+  color: var(--navy);
+  box-shadow: 0 0 40px rgba(255, 194, 75, 0.6);
+  animation: pay-switch 0.6s ease-out both;
+}
+
+.pay-done-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: pay-pop 0.5s 0.2s ease-out both;
+}
+
+.resident-main .pay-done h2 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 26px;
+}
+
+.pay-done-thanks {
+  font-size: 16px;
+  color: var(--link);
+}
+
+.pay-done-light {
+  font-size: 14px;
+  color: #ffe7b0;
+}
+
+.pay-done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pay-ghost {
+  height: 44px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---------- Түүх ---------- */
+.pay-history {
+  padding: 24px 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 24px;
+  background: #fff;
+}
+
+@media (max-width: 600px) {
+  .pay-breakdown,
+  .pay-qpay,
+  .pay-history {
+    padding: 20px;
+  }
+
+  .pay-banks-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pay-dot,
+  .pay-done-icon,
+  .pay-done-text {
+    animation: none;
+  }
+}

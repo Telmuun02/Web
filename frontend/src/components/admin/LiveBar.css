@@ -1,0 +1,98 @@
+.live-bar {
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  border-radius: 18px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.live-bar-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #7ce0a8;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums; /* цаг өөрчлөгдөхөд бичиг хөдлөхгүй */
+}
+
+@keyframes live-bar-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.live-bar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #12a15e;
+  animation: live-bar-pulse 1.2s ease-in-out infinite;
+}
+
+.live-bar-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.live-bar-label {
+  font-size: 11px;
+  color: var(--link);
+}
+
+.live-bar-value {
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-bar-value.yellow { color: var(--yellow); }
+.live-bar-value.green { color: #7ce0a8; }
+
+/* Сүүлийн үйл явдал — баруун талд, шинээр солигдоход дээрээс гулсаж орж ирнэ */
+@keyframes live-bar-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.live-bar-event {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 13px;
+  color: #ffe7b0;
+  text-align: right;
+  animation: live-bar-in 0.5s ease-out both;
+}
+
+.live-bar-event::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--yellow);
+}
+
+/* Нарийн дэлгэцэнд үйл явдал зүүн тийш */
+@media (max-width: 600px) {
+  .live-bar-event {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+/* Хөдөлгөөн багасгах тохиргоотой хэрэглэгчид анивчихгүй */
+@media (prefers-reduced-motion: reduce) {
+  .live-bar-dot,
+  .live-bar-event {
+    animation: none;
+  }
+}

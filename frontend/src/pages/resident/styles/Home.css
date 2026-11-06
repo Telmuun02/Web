@@ -1,0 +1,438 @@
+.res-home {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.home-muted {
+  font-size: 14px;
+  color: var(--muted-text);
+}
+
+.home-muted.small {
+  font-size: 13px;
+}
+
+/* ---------- Дээд мөр: орц | төлбөр ---------- */
+.home-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.home-hero {
+  flex: 3 1 520px;
+  min-width: 0;
+  min-height: 340px;
+  position: relative;
+  overflow: hidden;
+  padding: 32px;
+  box-sizing: border-box;
+  border-radius: 28px;
+  background: var(--navy);
+  color: #fff;
+}
+
+@keyframes home-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.home-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff6de;
+  animation: home-twinkle 3s ease-in-out infinite;
+}
+
+/* Хавирган сар — сүүдрээр зурна */
+.home-moon {
+  position: absolute;
+  right: 48px;
+  top: 40px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: 9px -6px 0 0 #fff3d6;
+}
+
+.home-greet {
+  position: relative;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-date,
+.home-greet-text {
+  font-size: 15px;
+  color: var(--link);
+  line-height: 1.5;
+}
+
+.resident-main .home-greet h1 {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.home-building {
+  position: absolute;
+  right: 64px;
+  bottom: 0;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-roof {
+  width: 150px;
+  height: 14px;
+  border-radius: 8px 8px 0 0;
+  background: #3a3190;
+}
+
+.home-windows {
+  width: 250px;
+  padding: 18px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  border-radius: 12px 12px 0 0;
+  background: #2a2366;
+}
+
+@keyframes home-lit {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 194, 75, 0.5); }
+  50% { box-shadow: 0 0 14px rgba(255, 194, 75, 0.85); }
+}
+
+@keyframes home-mine {
+  0%, 100% { outline-color: rgba(255, 194, 75, 0.3); }
+  50% { outline-color: rgba(255, 194, 75, 1); }
+}
+
+.home-window {
+  position: relative;
+  height: 20px;
+  border-radius: 3px;
+  background: #3a3190;
+}
+
+.home-window.lit {
+  background: var(--yellow);
+  animation: home-lit 3.2s ease-in-out infinite;
+}
+
+/* Таны цонх — тасархай хүрээгээр анивчина */
+.home-window.mine {
+  outline: 2px dashed var(--yellow);
+  outline-offset: 3px;
+  animation: home-mine 1.4s ease-in-out infinite;
+}
+
+.home-window-tag {
+  position: absolute;
+  left: 50%;
+  top: -30px;
+  width: 84px;
+  margin-left: -42px;
+  padding: 3px 0;
+  border-radius: 6px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.home-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  background: #110e33;
+}
+
+.home-bill {
+  flex: 2 1 340px;
+  min-width: 0;
+  padding: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 28px;
+  background: #fff;
+}
+
+.home-bill-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.resident-main .home-bill-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+.home-due {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #ffe7b0;
+  color: #3a2600;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.home-amount {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.home-bill-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-spacer {
+  flex: 1;
+}
+
+.home-pay {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 16px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 17px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.home-history {
+  padding: 6px 0;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ---------- Хурал | зарлал | хүсэлт ---------- */
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.home-meeting {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 24px;
+  background: #2a2366;
+  color: #fff;
+  text-decoration: none;
+}
+
+.home-meeting-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-meeting-date {
+  width: 60px;
+  height: 64px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--yellow);
+  color: var(--navy);
+}
+
+.home-meeting-month {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.home-meeting-day {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.home-meeting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.home-meeting-when {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yellow);
+}
+
+.home-meeting-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.home-meeting-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--link);
+}
+
+.home-meeting-go {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--yellow);
+}
+
+.home-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.home-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.resident-main .home-card-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.home-card-link {
+  padding: 8px 0;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.home-news {
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--line-soft);
+  color: #17142e;
+  text-decoration: none;
+}
+
+.home-news-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+.home-news-tag.important {
+  color: #b42318;
+}
+
+.home-news-title,
+.home-request-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.home-request {
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.home-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.home-step {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line-soft);
+}
+
+.home-step.done {
+  background: var(--navy);
+}
+
+/* ---------- Камер ---------- */
+.home-cams {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resident-main .home-cams h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.home-cams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* Нарийн дэлгэцэнд байрны зураг бичгийн доор, урсгалд орно */
+@media (max-width: 700px) {
+  .home-hero {
+    padding: 24px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  .home-building {
+    position: relative;
+    right: auto;
+    align-self: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-star,
+  .home-window.lit,
+  .home-window.mine {
+    animation: none;
+  }
+}

@@ -1,0 +1,245 @@
+.res-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.res-requests h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.rq-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* ---------- Маягт ---------- */
+.rq-form {
+  flex: 3 1 460px;
+  min-width: 0;
+  padding: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.rq-form .ui-field {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rq-form .ui-field input {
+  height: 52px;
+  font-size: 16px;
+}
+
+.rq-types {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rq-types legend {
+  padding: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rq-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.rq-type {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--navy);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rq-type.on {
+  border-color: var(--navy);
+}
+
+.rq-type-letter {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.rq-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.rq-photo {
+  flex: 1 1 220px;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px dashed var(--field-border);
+  border-radius: 16px;
+  background: var(--page-bg);
+  color: var(--muted-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Нэрээ нууцлах — Switch-ийг хүрээтэй хайрцагт */
+.rq-anon {
+  flex: 1 1 240px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.rq-anon .ui-item {
+  flex: 1;
+  border-top: 0;
+}
+
+.rq-send {
+  height: 56px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--yellow);
+  color: var(--navy);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rq-send:disabled {
+  background: var(--line-soft);
+  color: var(--muted-text);
+  cursor: not-allowed;
+}
+
+/* ---------- Миний хүсэлт ---------- */
+.rq-mine {
+  flex: 2 1 360px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@keyframes rq-slide {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.rq-item {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.rq-item.fresh {
+  animation: rq-slide 0.5s ease-out both;
+}
+
+.rq-meta {
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.rq-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.rq-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.rq-steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-text);
+}
+
+.rq-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line-soft);
+}
+
+.rq-steps li.reached {
+  color: var(--navy);
+}
+
+.rq-steps li.reached .rq-bar {
+  background: var(--navy);
+}
+
+.rq-steps li.current {
+  font-weight: 800;
+}
+
+/* Бүрэн шийдсэн — ногоон */
+.rq-steps.done li.reached .rq-bar {
+  background: #0b7a4b;
+}
+
+.rq-note {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--page-bg);
+  color: #3e3a57;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (max-width: 600px) {
+  .rq-form {
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rq-item.fresh {
+    animation: none;
+  }
+}

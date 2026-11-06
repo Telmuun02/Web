@@ -1,0 +1,56 @@
+.cam-thumb {
+  position: relative;
+  height: 150px;
+  display: block;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #2b2e44;
+  text-decoration: none;
+}
+
+.cam-thumb svg {
+  display: block;
+}
+
+.cam-thumb-live {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@keyframes cam-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.cam-thumb-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff5a4e;
+  animation: cam-live 1.2s ease-in-out infinite;
+}
+
+.cam-thumb-name {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cam-thumb-dot {
+    animation: none;
+  }
+}

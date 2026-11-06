@@ -1,34 +1,30 @@
-
 var express = require('express');
 var auth = require('../middleware/auth');
+var requireRole = require('../middleware/requireRole');
 var authController = require('../controllers/authController');
-var dashboardController = require('../controllers/dashboardController');
-var invoicesController = require('../controllers/invoicesController');
 var profileController = require('../controllers/profileController');
-var requestsController = require('../controllers/requestsController');
+var adminRoutes = require('./admin');
+var residentRoutes = require('./resident');
 
 var router = express.Router();
+
+// ---------- Хоёулаа ----------
 
 // Нэвтрэлт
 router.post('/auth/login', authController.login);
 router.post('/auth/logout', authController.logout);
 router.get('/auth/me', auth, authController.me); // auth — эхлээд token шалгана
 
-// Самбар — нэвтэрсэн хэрэглэгч л харна
-router.get('/dashboard', auth, dashboardController.show);
-router.get('/dashboard/monthly', auth, dashboardController.monthlyChart);
-router.get('/dashboard/debtors', auth, dashboardController.topDebtors);
-router.get('/dashboard/categories', auth, dashboardController.requestCategories);
-
-router.get('/invoices', auth, invoicesController.index);
-router.get('/invoices/counts', auth, invoicesController.counts); // табуудын тоо
-
 // Профайл — өөрийн мэдээллээ солих (нууц үгээр дахин баталгаажуулна)
 router.put('/profile', auth, profileController.update);
 
-// Засварын хүсэлт
-router.get('/requests', auth, requestsController.index);
-router.get('/requests/counts', auth, requestsController.counts); // табуудын тоо
-router.get('/requests/open-count', auth, requestsController.openCount); // Navbar дээрх тоо
+// ---------- Role-оор ----------
+// Хамгаалалтыг бүлэг бүрд НЭГ удаа тавина — доторх шинэ route бүр автоматаар хамгаалагдана
+
+// Ажилтан — /api/admin/... Оршин суугч дуудвал 403
+router.use('/admin', auth, requireRole('admin'), adminRoutes);
+
+// Оршин суугч — /api/resident/... Ажилтан дуудвал 403
+router.use('/resident', auth, requireRole('user'), residentRoutes);
 
 module.exports = router;

@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/Auth/AuthLayout'
 import PasswordInput from '../components/Auth/PasswordInput'
 import api from '../api/client'
+import { homePath } from '../utils/home'
 import './styles/Auth.css'
 
-export default function Login({ user, onLogin }) {
+export default function Login({ onLogin }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [login, setLogin] = useState(location.state?.login ?? '')
@@ -16,17 +17,15 @@ export default function Login({ user, onLogin }) {
   // Нууц үг сэргээсний дараа ирсэн бол амжилтын мессеж харуулна
   const notice = location.state?.notice
 
-  // Нэвтэрсэн хэрэглэгч энэ хуудсанд орвол самбар руу буцаана
-  if (user) return <Navigate to="/dashboard" replace />
-
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
       await api.post('/auth/login', { login: login.trim(), password }) // cookie тавигдана
-      onLogin(await api.get('/auth/me'))                               // App руу хэрэглэгчийг дамжуулна
-      navigate('/dashboard', { replace: true })
+      const me = await api.get('/auth/me')
+      onLogin(me)                                                       // App руу хэрэглэгчийг дамжуулна
+      navigate(homePath(me), { replace: true })                         // admin → /admin, оршин суугч → /
     } catch (err) {
       setError(err.message || 'Нэвтрэх нэр эсвэл нууц үг буруу байна')
       setSubmitting(false)

@@ -30,7 +30,7 @@
   padding: 32px;
   box-sizing: border-box;
   border-radius: 28px;
-  background: var(--navy);
+  background: var(--brand-bg);
   color: #fff;
 }
 
@@ -171,7 +171,7 @@
   flex-direction: column;
   gap: 16px;
   border-radius: 28px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .home-bill-head {
@@ -191,8 +191,8 @@
 .home-due {
   padding: 5px 10px;
   border-radius: 999px;
-  background: #ffe7b0;
-  color: #3a2600;
+  background: var(--tint-yellow);
+  color: var(--on-yellow);
   font-size: 13px;
   font-weight: 800;
 }
@@ -230,7 +230,7 @@
 
 .home-history {
   padding: 6px 0;
-  color: var(--navy);
+  color: var(--text);
   font-size: 14px;
   font-weight: 600;
   text-align: center;
@@ -320,7 +320,7 @@
   flex-direction: column;
   gap: 12px;
   border-radius: 24px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .home-card-head {
@@ -338,7 +338,7 @@
 
 .home-card-link {
   padding: 8px 0;
-  color: var(--navy);
+  color: var(--text);
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
@@ -350,7 +350,7 @@
   flex-direction: column;
   gap: 4px;
   border-top: 1px solid var(--line-soft);
-  color: #17142e;
+  color: var(--text);
   text-decoration: none;
 }
 
@@ -361,7 +361,7 @@
 }
 
 .home-news-tag.important {
-  color: #b42318;
+  color: var(--on-red);
 }
 
 .home-news-title,
@@ -391,7 +391,7 @@
 }
 
 .home-step.done {
-  background: var(--navy);
+  background: var(--accent);
 }
 
 /* ---------- Камер ---------- */

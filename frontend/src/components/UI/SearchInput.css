@@ -8,13 +8,13 @@
   gap: 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface);
   color: var(--muted-text);
 }
 
 /* Бичиж байхад бүхэл хайрцагны хүрээ тодорно */
 .ui-search:focus-within {
-  border-color: var(--navy);
+  border-color: var(--accent);
 }
 
 .ui-search input {
@@ -23,7 +23,7 @@
   border: 0;
   outline: none;
   background: transparent;
-  color: var(--navy);
+  color: var(--text);
   font: inherit;
   font-size: 14px;
 }

@@ -27,7 +27,7 @@
   flex-direction: column;
   gap: 18px;
   border-radius: 24px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .rq-form .ui-field {
@@ -66,8 +66,8 @@
   gap: 10px;
   border: 2px solid var(--line);
   border-radius: 16px;
-  background: #fff;
-  color: var(--navy);
+  background: var(--surface);
+  color: var(--text);
   font: inherit;
   font-size: 15px;
   font-weight: 700;
@@ -75,7 +75,7 @@
 }
 
 .rq-type.on {
-  border-color: var(--navy);
+  border-color: var(--accent);
 }
 
 .rq-type-letter {
@@ -86,6 +86,7 @@
   justify-content: center;
   border-radius: 10px;
   font-weight: 800;
+  color: var(--navy); /* цайвар өнгөт дэвсгэр дээр — theme-ээс үл хамаарна */
 }
 
 .rq-extras {
@@ -165,7 +166,7 @@
   flex-direction: column;
   gap: 10px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .rq-item.fresh {
@@ -207,11 +208,11 @@
 }
 
 .rq-steps li.reached {
-  color: var(--navy);
+  color: var(--text);
 }
 
 .rq-steps li.reached .rq-bar {
-  background: var(--navy);
+  background: var(--accent);
 }
 
 .rq-steps li.current {
@@ -227,7 +228,7 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: var(--page-bg);
-  color: #3e3a57;
+  color: var(--text-soft);
   font-size: 14px;
   line-height: 1.45;
 }

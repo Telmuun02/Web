@@ -4,8 +4,8 @@
   gap: 10px;
   padding: 12px 16px;
   border-radius: 14px;
-  background: #ddf5e9;
-  color: #0b5c38;
+  background: var(--tint-green);
+  color: var(--on-green);
   font-size: 14px;
   font-weight: 600;
 }

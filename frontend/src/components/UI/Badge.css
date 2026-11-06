@@ -11,9 +11,9 @@
   font-size: 11px;
 }
 
-.ui-badge.green { background: #ddf5e9; color: #0b5c38; }
-.ui-badge.red { background: #fde7e5; color: #b42318; }
-.ui-badge.orange { background: #ffe9c2; color: #7a4300; }
-.ui-badge.yellow { background: #ffe7b0; color: var(--navy); }
-.ui-badge.navy { background: #e4e1f7; color: var(--navy); }
-.ui-badge.gray { background: var(--line-soft); color: #3e3a57; }
+.ui-badge.green { background: var(--tint-green); color: var(--on-green); }
+.ui-badge.red { background: var(--tint-red); color: var(--on-red); }
+.ui-badge.orange { background: var(--tint-orange); color: var(--on-orange); }
+.ui-badge.yellow { background: var(--tint-yellow); color: var(--text); }
+.ui-badge.navy { background: var(--tint-navy); color: var(--text); }
+.ui-badge.gray { background: var(--line-soft); color: var(--text-soft); }

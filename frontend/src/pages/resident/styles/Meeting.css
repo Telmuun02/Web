@@ -27,7 +27,7 @@
   align-items: center;
   gap: 20px;
   border-radius: 24px;
-  background: var(--navy);
+  background: var(--brand-bg);
   color: #fff;
 }
 
@@ -109,7 +109,7 @@
   flex-direction: column;
   gap: 4px;
   border-radius: 24px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .mt-agenda h2 {
@@ -157,8 +157,8 @@
 .mt-vote {
   padding: 5px 10px;
   border-radius: 999px;
-  background: #ffe7b0;
-  color: #3a2600;
+  background: var(--tint-yellow);
+  color: var(--on-yellow);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
@@ -174,7 +174,7 @@
   flex-direction: column;
   gap: 18px;
   border-radius: 24px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .mt-preview {
@@ -250,14 +250,14 @@
   gap: 2px;
   border: 2px solid var(--line);
   border-radius: 16px;
-  background: #fff;
-  color: var(--navy);
+  background: var(--surface);
+  color: var(--text);
   font: inherit;
   cursor: pointer;
 }
 
 .mt-mode.on {
-  border-color: var(--navy);
+  border-color: var(--accent);
 }
 
 .mt-mode-title {

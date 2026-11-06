@@ -20,7 +20,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #2a2366;
+  color: var(--text);
   font-size: 14px;
   font-weight: 700;
 }
@@ -37,17 +37,17 @@
   padding: 0 14px;
   border: 1px solid var(--field-border);
   border-radius: 10px;
-  background: #fff;
-  color: var(--navy);
+  background: var(--surface);
+  color: var(--text);
   font-size: 13px;
   font-weight: 600;
 }
 
 /* Сонгогдсон — хар хөх. Дээрх хоёрын дараа байх ёстой */
 .ui-segmented .ui-segment.active {
-  border-color: var(--navy);
-  background: var(--navy);
-  color: #fff;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .ui-segment-note {

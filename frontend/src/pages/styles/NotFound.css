@@ -9,7 +9,7 @@
   justify-content: center;
   gap: 12px;
   background: var(--page-bg);
-  color: var(--navy);
+  color: var(--text);
   font-family: 'Onest', system-ui, sans-serif;
   text-align: center;
 }
@@ -29,7 +29,7 @@
   font-size: 28px;
   font-weight: 600;
   letter-spacing: normal;
-  color: var(--navy);
+  color: var(--text);
 }
 
 .notfound p {

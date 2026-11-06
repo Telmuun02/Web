@@ -55,7 +55,7 @@ tr.units-row.selected {
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: var(--navy);
+  color: var(--text);
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -74,11 +74,11 @@ tr.units-row.selected {
 .units-app {
   font-size: 12px;
   font-weight: 700;
-  color: #7a4300;
+  color: var(--on-orange);
 }
 
 .units-app.ok {
-  color: #0b5c38;
+  color: var(--on-green);
 }
 
 .units-debt {
@@ -86,7 +86,7 @@ tr.units-row.selected {
 }
 
 .units-debt.bad {
-  color: #b42318;
+  color: var(--on-red);
 }
 
 .units-empty {
@@ -152,18 +152,18 @@ tr.units-row.selected {
 }
 
 .units-balance-value.bad {
-  color: #b42318;
+  color: var(--on-red);
 }
 
 .units-balance-value.ok {
-  color: #0b5c38;
+  color: var(--on-green);
 }
 
 .units-link {
   padding: 10px 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text);
   text-decoration: none;
 }
 

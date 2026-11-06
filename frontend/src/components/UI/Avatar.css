@@ -7,12 +7,12 @@
   justify-content: center;
   border-radius: 50%;
   background: var(--line-soft);
-  color: var(--navy);
+  color: var(--text);
   font-size: 14px;
   font-weight: 700;
 }
 
 .ui-avatar.dark {
-  background: var(--navy);
+  background: var(--brand-bg);
   color: var(--yellow);
 }

@@ -27,7 +27,7 @@
   flex-direction: column;
   gap: 4px;
   border-radius: 24px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .pay-breakdown h2 {
@@ -41,12 +41,12 @@
   gap: 12px;
   border-top: 1px solid var(--line-soft);
   font-size: 15px;
-  color: #3e3a57;
+  color: var(--text-soft);
 }
 
 .pay-line-amount {
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 
@@ -76,12 +76,12 @@
   background: var(--page-bg);
   font-size: 14px;
   line-height: 1.5;
-  color: #3e3a57;
+  color: var(--text-soft);
 }
 
 .pay-note svg {
   flex-shrink: 0;
-  color: var(--navy);
+  color: var(--text);
 }
 
 /* ---------- QPay ---------- */
@@ -95,7 +95,7 @@
   flex-direction: column;
   gap: 20px;
   border-radius: 24px;
-  background: var(--navy);
+  background: var(--brand-bg);
   color: #fff;
 }
 
@@ -292,7 +292,7 @@
   flex-direction: column;
   gap: 8px;
   border-radius: 24px;
-  background: #fff;
+  background: var(--surface);
 }
 
 @media (max-width: 600px) {

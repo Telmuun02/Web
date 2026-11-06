@@ -4,7 +4,7 @@
   flex-direction: column;
   gap: 8px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .ui-stat-label,
@@ -26,16 +26,16 @@
 }
 
 .ui-stat-note.good {
-  color: #0b7a4b;
+  color: var(--on-green);
   font-weight: 600;
 }
 
 .ui-stat.bad .ui-stat-value {
-  color: #b42318;
+  color: var(--on-red);
 }
 
 .ui-stat.dark {
-  background: var(--navy);
+  background: var(--brand-bg);
   color: #fff;
 }
 

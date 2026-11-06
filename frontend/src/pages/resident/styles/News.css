@@ -38,11 +38,11 @@
   gap: 8px;
   border: 2px solid transparent;
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .nw-post.important {
-  border-color: #fde7e5;
+  border-color: var(--tint-red);
 }
 
 .nw-post-meta {
@@ -56,19 +56,19 @@
   font-size: 18px;
   font-weight: 800;
   line-height: 1.35;
-  color: var(--navy);
+  color: var(--text);
 }
 
 .nw-post p {
   margin: 0;
   font-size: 15px;
   line-height: 1.55;
-  color: #3e3a57;
+  color: var(--text-soft);
 }
 
 .nw-link {
   padding: 6px 0;
-  color: var(--navy);
+  color: var(--text);
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
@@ -89,7 +89,7 @@
   flex-direction: column;
   gap: 14px;
   border-radius: 24px;
-  background: var(--navy);
+  background: var(--brand-bg);
   color: #fff;
 }
 
@@ -203,15 +203,15 @@
   flex-direction: column;
   gap: 6px;
   border-radius: 20px;
-  background: #ffe9c2;
-  color: #17142e;
+  background: var(--tint-orange);
+  color: var(--text);
   text-decoration: none;
 }
 
 .nw-meeting-tag {
   font-size: 13px;
   font-weight: 800;
-  color: #7a4300;
+  color: var(--on-orange);
 }
 
 .nw-meeting-title {
@@ -221,7 +221,7 @@
 
 .nw-meeting-go {
   font-size: 14px;
-  color: #5c3300;
+  color: var(--on-orange);
 }
 
 .nw-past {
@@ -230,7 +230,7 @@
   flex-direction: column;
   gap: 4px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .res-news .nw-past h2 {

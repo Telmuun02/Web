@@ -28,7 +28,6 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import NotFound from './pages/NotFound'
 import Landing from './pages/Landing'
-import './App.css'
 
 function App() {
   const [user, setUser] = useState(null)

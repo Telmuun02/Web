@@ -6,7 +6,7 @@
   flex-direction: column;
   gap: 16px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .ui-card-head {

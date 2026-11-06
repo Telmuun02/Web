@@ -5,7 +5,7 @@
   align-items: center;
   gap: 12px 28px;
   border-radius: 18px;
-  background: var(--navy);
+  background: var(--brand-bg);
   color: #fff;
 }
 

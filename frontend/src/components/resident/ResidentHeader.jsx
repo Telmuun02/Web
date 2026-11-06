@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutlined'
 import Brand from '../App/Brand'
+import ThemeToggle from '../../theme/ThemeToggle'
 import './ResidentHeader.css'
 
 // Оршин суугчийн дээд цэс. NavLink — идэвхтэй хуудсанд "active" класс, aria-current="page" өөрөө тавина
@@ -31,6 +32,7 @@ export default function ResidentHeader({ user }) {
         </nav>
 
         <div className="res-header-actions">
+          <ThemeToggle className="res-icon-btn" />
           {/* Түр — мэдэгдлийн жагсаалт нэмэгдэх хүртэл юу ч нээхгүй */}
           <button type="button" className="res-bell" aria-label={`Мэдэгдэл, ${unread} уншаагүй`}>
             <NotificationsNoneOutlined sx={{ fontSize: 22 }} />

@@ -1,7 +1,7 @@
 .dashboard {
-  --billed: #ffe7b0;
-  --good: #0b5c38;
-  --bad: #b42318;
+  --billed: var(--tint-yellow);
+  --good: var(--on-green);
+  --bad: var(--on-red);
 
   max-width: 1280px;
   margin: 0 auto; /* хоёр талын зайг тэнцүү хуваана */
@@ -52,7 +52,7 @@
 /* ---------- Толгой ---------- */
 .dash-user {
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text);
 }
 
 .dash-live {
@@ -74,7 +74,7 @@
   padding: 0 14px;
   box-sizing: border-box;
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   font-size: 13px;
 }
@@ -89,13 +89,13 @@
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text);
 }
 
 .dash-link {
   font-size: 13px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text);
   text-decoration: none;
 }
 
@@ -118,7 +118,7 @@
 
 /* Анхааруулга байгаа үед ягаан карт, улаан тоо */
 .dash-stats .ui-stat.alert {
-  background: #fde7e5;
+  background: var(--tint-red);
 }
 
 .dash-stats .ui-stat.alert .ui-stat-value {
@@ -126,7 +126,7 @@
 }
 
 .dash-stats .ui-stat.alert .ui-stat-note {
-  color: #7a1d14;
+  color: var(--on-red);
 }
 
 /* ---------- Төлбөрийн урсгал | Шинэ хүсэлт ---------- */
@@ -192,7 +192,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid #f1eff7;
+  border-top: 1px solid var(--line-soft);
   font-size: 14px;
 }
 
@@ -227,7 +227,7 @@
 }
 
 .req.unseen {
-  background: #fffbfa;
+  background: var(--surface);
 }
 
 .req.urgent {
@@ -244,7 +244,7 @@
 }
 
 .req-meta strong {
-  color: var(--navy);
+  color: var(--text);
 }
 
 .req-title {
@@ -315,7 +315,7 @@
 }
 
 .lift.down {
-  background: #fde7e5;
+  background: var(--tint-red);
 }
 
 .lift-name {
@@ -339,7 +339,7 @@
 }
 
 .lift-cell.here {
-  background: var(--navy);
+  background: var(--accent);
 }
 
 .lift.down .lift-cell {
@@ -384,6 +384,10 @@
 
 .temp.cold .temp-value {
   color: #1f5fa8;
+}
+
+[data-theme='dark'] .temp.cold .temp-value {
+  color: #8cc4f5;
 }
 
 .utilities {
@@ -464,8 +468,8 @@
   flex-direction: column;
   gap: 10px;
   border-radius: 20px;
-  background: #ffe9c2;
-  color: var(--navy);
+  background: var(--tint-orange);
+  color: var(--text);
   text-decoration: none;
 }
 
@@ -475,7 +479,7 @@
   gap: 8px;
   font-size: 12px;
   font-weight: 800;
-  color: #7a4300;
+  color: var(--on-orange);
 }
 
 .poll-title {
@@ -485,7 +489,7 @@
 
 .poll-note {
   font-size: 13px;
-  color: #5c3300;
+  color: var(--on-orange);
 }
 
 .spark {
@@ -509,7 +513,7 @@
   padding: 8px 0;
   display: flex;
   gap: 10px;
-  border-top: 1px solid #f1eff7;
+  border-top: 1px solid var(--line-soft);
   font-size: 13px;
 }
 
@@ -550,7 +554,7 @@
 }
 
 .swatch.collected {
-  background: var(--navy);
+  background: var(--accent);
 }
 
 .chart {
@@ -596,7 +600,7 @@
 
 .bar-fill {
   width: 100%;
-  background: var(--navy);
+  background: var(--accent);
   border-radius: 6px 6px 0 0;
 }
 

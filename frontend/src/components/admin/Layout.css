@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   background: var(--page-bg);
-  color: var(--navy);
+  color: var(--text);
   font-family: 'Onest', system-ui, sans-serif;
 }
 
@@ -18,12 +18,12 @@
   font-family: 'Unbounded', sans-serif;
   font-size: 28px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text);
 }
 
 /* index.css-ийн dark mode h2-ийг бараг цагаан болгодог — цагаан карт дээр үл харагдана */
 .content h2 {
-  color: var(--navy);
+  color: var(--text);
 }
 
 

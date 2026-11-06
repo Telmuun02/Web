@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   background: var(--page-bg);
-  color: var(--navy);
+  color: var(--text);
   font-family: 'Onest', system-ui, sans-serif;
 }
 
@@ -14,7 +14,7 @@
   padding: 32px 40px;
   display: flex;
   flex-direction: column;
-  background: var(--navy);
+  background: var(--brand-bg);
   color: #fff;
 }
 

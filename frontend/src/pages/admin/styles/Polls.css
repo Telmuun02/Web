@@ -103,7 +103,7 @@
 }
 
 .polls-need strong {
-  color: #b42318;
+  color: var(--on-red);
 }
 
 /* Орц бүрийн ирц */
@@ -148,7 +148,7 @@
 }
 
 .polls-count strong {
-  color: var(--navy);
+  color: var(--text);
 }
 
 .polls-note {

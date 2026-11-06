@@ -5,7 +5,7 @@
   box-sizing: border-box;
   padding: 32px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -22,7 +22,7 @@
   font-family: 'Unbounded', sans-serif;
   font-size: 24px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--text);
 }
 
 .auth-muted {
@@ -33,8 +33,8 @@
 .auth-error {
   padding: 10px 14px;
   border-radius: 12px;
-  background: #fde7e5;
-  color: #b42318;
+  background: var(--tint-red);
+  color: var(--on-red);
   font-size: 13px;
   font-weight: 600;
 }
@@ -42,8 +42,8 @@
 .auth-success {
   padding: 10px 14px;
   border-radius: 12px;
-  background: #e3f5ec;
-  color: #0b7a4b;
+  background: var(--tint-green);
+  color: var(--on-green);
   font-size: 13px;
   font-weight: 600;
 }
@@ -63,11 +63,11 @@
   padding: 0 14px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--surface);
   font: inherit;
   font-size: 15px;
   font-weight: 500;
-  color: var(--navy);
+  color: var(--text);
 }
 
 .auth-field input::placeholder {
@@ -76,7 +76,7 @@
 
 .auth-field input:focus {
   outline: none;
-  border-color: var(--navy);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(255, 194, 75, 0.45);
 }
 
@@ -110,7 +110,7 @@
 }
 
 .auth-submit:focus-visible {
-  outline: 2px solid var(--navy);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -131,7 +131,7 @@
   font: inherit;
   font-size: 13px;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -164,7 +164,7 @@
 }
 
 .auth-back:hover {
-  color: var(--navy);
+  color: var(--text);
 }
 
 @media (max-width: 768px) {

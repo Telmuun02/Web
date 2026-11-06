@@ -4,7 +4,7 @@
   gap: 6px;
   padding: 6px;
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .ui-tab {
@@ -16,7 +16,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #3e3a57;
+  color: var(--text-soft);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -24,8 +24,8 @@
 }
 
 .ui-tab.active {
-  background: var(--navy);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .ui-tab-count {

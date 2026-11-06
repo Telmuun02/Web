@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import api from '../../api/client'
 import Brand from '../App/Brand'
+import ThemeToggle from '../../theme/ThemeToggle'
 import './Navbar.css'
 
 // MUI аас татсан icon ууд
@@ -76,6 +77,8 @@ export default function Navbar({ user, onLogout }) {
           )}
         </NavLink>
       ))}
+
+      <ThemeToggle className="sidebar-link sidebar-theme" labelClassName="sidebar-label" />
 
       {user && (
         <button className="sidebar-link logout" onClick={onLogout} title="Гарах">

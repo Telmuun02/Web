@@ -27,7 +27,7 @@ const samplePoll = {
     { name: '3-р орц', voted: 18, units: 50 },
   ],
   results: [
-    { label: 'Тийм', votes: 38, color: 'var(--navy)' },
+    { label: 'Тийм', votes: 38, color: 'var(--accent)' },
     { label: 'Үгүй', votes: 12, color: '#b42318' },
     { label: 'Түдгэлзсэн', votes: 5, color: '#9aa3b5' },
   ],

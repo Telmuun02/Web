@@ -176,4 +176,13 @@ async function list(period, filters) {
   });
 }
 
-module.exports = { ...base, forUnit, monthlySummary, debtors, overdueTotal, list, counts };
+// Энэ сарын нэхэмжлэлээс хэд нь бүрэн төлөгдсөн
+async function monthProgress() {
+  var row = await db('invoices')
+    .where('period', db.raw("DATE_FORMAT(CURDATE(), '%Y-%m-01')"))
+    .select(db.raw("COUNT(*) AS total, COALESCE(SUM(status = 'paid'), 0) AS paid"))
+    .first();
+  return { total: Number(row.total), paid: Number(row.paid) };
+}
+
+module.exports = { ...base, forUnit, monthlySummary, debtors, overdueTotal, list, counts, monthProgress };

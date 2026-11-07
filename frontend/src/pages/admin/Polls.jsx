@@ -10,6 +10,7 @@ import ProgressBar from '../../components/UI/ProgressBar'
 import Table from '../../components/UI/Table'
 import Toast from '../../components/UI/Toast'
 import LiveBar from '../../components/admin/LiveBar'
+import useLive from '../../hooks/useLive'
 import { livePolls } from '../../samples/admin/live'
 import './styles/Polls.css'
 
@@ -63,6 +64,7 @@ function decision(p) {
 }
 
 export default function Polls() {
+  const live = useLive('polls', livePolls) // "ШУУД" мөр — /api/admin/live/polls
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin' // санал хураалт үүсгэх, сануулах товч зөвхөн admin-д
   const [showNew, setShowNew] = useState(false)
@@ -92,7 +94,7 @@ export default function Polls() {
   return (
     <div className="polls">
       {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...livePolls} />
+      <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub={`Шийдвэр хүчинтэй болох босго: ирц ${threshold}%, олонхи «Тийм»`} title="Санал хураалт">
         {isAdmin && (

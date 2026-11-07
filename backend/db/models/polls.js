@@ -62,4 +62,23 @@ async function vote(pollId, optionId, unitId, userId) {
   return results(pollId);
 }
 
-module.exports = { ...base, active, results, createWithOptions, vote };
+// Нэг санал хураалтын нийт санал, сүүлийн 1 цагийнх
+async function voteStats(pollId) {
+  var row = await db('poll_votes')
+    .where('poll_id', pollId)
+    .select(db.raw('COUNT(*) AS votes, COALESCE(SUM(created_at >= NOW() - INTERVAL 1 HOUR), 0) AS last_hour'))
+    .first();
+  return { votes: Number(row.votes), lastHour: Number(row.last_hour) };
+}
+
+// Сүүлд санал өгсөн тоотууд
+async function recentVotes(pollId, limit) {
+  return db('poll_votes as v')
+    .join('units as u', 'u.id', 'v.unit_id')
+    .where('v.poll_id', pollId)
+    .select('u.code', 'v.created_at')
+    .orderBy('v.created_at', 'desc')
+    .limit(limit);
+}
+
+module.exports = { ...base, active, results, createWithOptions, vote, voteStats, recentVotes };

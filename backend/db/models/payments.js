@@ -26,4 +26,20 @@ async function record(invoiceId, data) {
   });
 }
 
-module.exports = { ...base, forInvoice, record };
+// Өнөөдөр орсон нийт төлбөр (₮)
+async function todayTotal() {
+  var row = await db('payments').where('paid_at', '>=', db.raw('CURDATE()')).sum({ total: 'amount' }).first();
+  return Number(row.total || 0);
+}
+
+// Сүүлийн төлбөрүүд — тоотын кодтой
+async function recent(limit) {
+  return db('payments as p')
+    .join('invoices as i', 'i.id', 'p.invoice_id')
+    .join('units as u', 'u.id', 'i.unit_id')
+    .select('u.code', 'p.amount', 'p.method', 'p.paid_at')
+    .orderBy('p.paid_at', 'desc')
+    .limit(limit);
+}
+
+module.exports = { ...base, forInvoice, record, todayTotal, recent };

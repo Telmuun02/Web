@@ -6,11 +6,6 @@
   gap: 20px;
 }
 
-.inv-muted {
-  font-size: 13px;
-  color: var(--muted-text);
-}
-
 /* Толгой дахь "автоматаар үүссэн" бичиг */
 .inv-auto {
   display: flex;
@@ -45,104 +40,4 @@
   text-align: center;
   font-size: 14px;
   color: var(--muted-text);
-}
-
-/* Төлбөр бүртгэх цонх */
-.inv-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 30; /* цэснээс (z-index: 10) дээгүүр */
-  display: flex;
-  justify-content: flex-end;
-  background: rgba(18, 21, 28, 0.45);
-}
-
-.inv-drawer {
-  width: 420px;
-  max-width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  padding: 28px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  background: var(--surface);
-  color: var(--text);
-}
-
-.inv-drawer-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.inv-drawer-head > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.inv-drawer-head h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.inv-close {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 12px;
-  background: var(--page-bg);
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.inv-left {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--page-bg);
-}
-
-.inv-left-value {
-  font-family: 'Unbounded', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.inv-error {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--on-red);
-}
-
-.inv-hint {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--muted-text);
-}
-
-/* Товчнуудыг цонхны доод талд шахна; "Бүртгэх" нь 2 дахин өргөн */
-.inv-drawer-actions {
-  margin-top: auto;
-  display: flex;
-  gap: 10px;
-}
-
-.inv-drawer-actions > * {
-  flex: 1;
-}
-
-.inv-drawer-actions > :last-child {
-  flex: 2;
 }

@@ -49,16 +49,21 @@ function smsText(title, body) {
   return text.length > smsLimit ? `${text.slice(0, smsLimit - 3)}...` : text
 }
 
+// Шинэ зарлалын анхны утгууд
+const emptyForm = { title: '', body: '', audience: 'all', sms: true, important: false }
+
 export default function Announcements() {
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin' // оршин суугч зөвхөн нийтэлсэн зарлалыг харна
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
-  const [audience, setAudience] = useState('all')
-  const [sms, setSms] = useState(true)
-  const [important, setImportant] = useState(false)
+  // Шинэ зарлалын form — 5 талбар хамт хадгалагдана.
+  // Урьдчилан харах хэсэг бичих зуур шинэчлэгддэг тул FormData биш state
+  const [form, setForm] = useState(emptyForm)
   const [posts, setPosts] = useState(samplePosts)
   const [toast, setToast] = useState('')
+  const { title, body, audience, sms, important } = form
+
+  // Нэг талбарыг солино: field('sms')(true)
+  const field = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
 
   const target = audiences.find((a) => a.value === audience)
   // Урьдчилан харахад хоосон бол жишээ бичиг харуулна
@@ -79,8 +84,7 @@ export default function Announcements() {
       important,
     }
     setPosts([post, ...posts])
-    setTitle('')
-    setBody('')
+    setForm((f) => ({ ...f, title: '', body: '' })) // хэнд, SMS сонголт хэвээр үлдэнэ
     setToast(`${target.units} тоотод зарлал илгээгдлээ`)
   }
 
@@ -102,7 +106,7 @@ export default function Announcements() {
             <Field label="Гарчиг">
               <input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => field('title')(e.target.value)}
                 placeholder="Жишээ: Халуун ус түр хаагдана"
               />
             </Field>
@@ -111,7 +115,7 @@ export default function Announcements() {
               <textarea
                 rows="5"
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={(e) => field('body')(e.target.value)}
                 placeholder="Хэзээ, хаана, юу болох, оршин суугч юу хийх ёстойг товч бичнэ үү"
               />
             </Field>
@@ -123,13 +127,13 @@ export default function Announcements() {
                 label="Хэнд"
                 options={audienceOptions}
                 value={audience}
-                onChange={setAudience}
+                onChange={field('audience')}
               />
             </fieldset>
 
             <div className="ann-switches">
-              <Switch label="SMS-ээр давхар илгээх" hint="Апп суулгаагүй 24 тоотод ч хүрнэ" checked={sms} onChange={setSms} />
-              <Switch label="Чухал зарлал" hint="Мэдэгдлээ унтраасан хүнд ч очно" checked={important} onChange={setImportant} />
+              <Switch label="SMS-ээр давхар илгээх" hint="Апп суулгаагүй 24 тоотод ч хүрнэ" checked={sms} onChange={field('sms')} />
+              <Switch label="Чухал зарлал" hint="Мэдэгдлээ унтраасан хүнд ч очно" checked={important} onChange={field('important')} />
             </div>
 
             <div className="ann-footer">

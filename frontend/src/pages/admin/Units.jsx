@@ -13,6 +13,8 @@ import StatCard from '../../components/UI/StatCard'
 import Table from '../../components/UI/Table'
 import Tabs from '../../components/UI/Tabs'
 import LiveBar from '../../components/admin/LiveBar'
+import useLive from '../../hooks/useLive'
+import useTabParam from '../../hooks/useTabParam'
 import { liveUnits } from '../../samples/admin/live'
 import './styles/Units.css'
 
@@ -139,7 +141,8 @@ function debtTone(debt) {
 }
 
 export default function Units() {
-  const [tab, setTab] = useState('all')
+  const live = useLive('units', liveUnits) // "ШУУД" мөр — /api/admin/live/units
+  const [tab, setTab] = useTabParam('all') // /admin/units?tab=2
   const [query, setQuery] = useState('')
   const [selCode, setSelCode] = useState(sampleUnits[0].unit) // баруун талд дэлгэрэнгүйг нь харуулах тоот
 
@@ -150,7 +153,7 @@ export default function Units() {
   return (
     <div className="units">
       {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...liveUnits} />
+      <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub="3 орц · 120 тоот" title="Тоот ба оршин суугч">
         {/* Түр — Excel оруулах, оршин суугч нэмэх API нэмэгдэх хүртэл ажиллахгүй */}

@@ -56,24 +56,33 @@ const permissions = [
 
 export default function Profile() {
   const { user, onLogout } = useOutletContext()
-  const [name, setName] = useState(user.name ?? '')
-  const [phone, setPhone] = useState(user.phone ?? '')
-  const [email, setEmail] = useState(user.email ?? '')
-  const [password, setPassword] = useState('') // мэдээлэл солихоос өмнө баталгаажуулах нууц үг
-  const [error, setError] = useState('')
-  const [twofa, setTwofa] = useState(true)
-  const [notify, setNotify] = useState({ pay: true, debt: true, poll: true, request: false })
+  // Хувийн мэдээллийн form — 4 талбар хамт хадгалагдана. password — өөрчлөлтөө баталгаажуулах нууц үг.
+  // Нэрийг дээд хэсэгт бичих зуур харуулдаг тул FormData биш state
+  const [form, setForm] = useState({
+    name: user.name ?? '',
+    phone: user.phone ?? '',
+    email: user.email ?? '',
+    password: '',
+  })
+  // Тохиргооны бүх унтраалга нэг object-д: 2 алхамт баталгаажуулалт + мэдэгдлүүд
+  const [prefs, setPrefs] = useState({ twofa: true, pay: true, debt: true, poll: true, request: false })
   const [sessions, setSessions] = useState(sampleSessions)
+  const [error, setError] = useState('')
   const [toast, setToast] = useState('')
 
   const roleLabel = user.role === 'admin' ? 'Админ' : 'Оршин суугч'
+
+  // <input onChange={edit('phone')} /> — form-ын нэг талбарыг солино
+  const edit = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  // <Switch onChange={toggle('twofa')} /> — нэг унтраалгыг солино
+  const toggle = (key) => (value) => setPrefs((p) => ({ ...p, [key]: value }))
 
   // PUT /api/profile — нууц үг буруу (401), утас/имэйл давхардсан (409) бол backend-ийн мессежийг харуулна
   async function saveInfo() {
     setError('')
     try {
-      await api.put('/profile', { name, phone, email, password })
-      setPassword('') // нууц үгийг талбарт үлдээхгүй
+      await api.put('/profile', form)
+      setForm((f) => ({ ...f, password: '' })) // нууц үгийг талбарт үлдээхгүй
       setToast('Хувийн мэдээлэл хадгалагдлаа')
     } catch (err) {
       setError(err.message)
@@ -93,18 +102,18 @@ export default function Profile() {
       <section className="profile-hero" aria-label="Профайлын тойм">
         <span className="profile-avatar">
           {/* Зураг байхгүй тул нэрийн эхний үсэг */}
-          {name[0]?.toUpperCase()}
+          {form.name[0]?.toUpperCase()}
           <button className="profile-photo" aria-label="Зураг солих">
             <PhotoCameraOutlined sx={{ fontSize: 16 }} />
           </button>
         </span>
 
         <div className="profile-who">
-          <h1>{name}</h1>
+          <h1>{form.name}</h1>
           <span className="profile-sub">{roleLabel} · Нарны хотхоны СӨХ</span>
           <span className="profile-pills">
             {user.role === 'admin' && <Badge tone="green">Санхүүгийн эрх</Badge>}
-            <Badge tone="yellow">2 алхамт баталгаажуулалт {twofa ? 'идэвхтэй' : 'унтраалттай'}</Badge>
+            <Badge tone="yellow">2 алхамт баталгаажуулалт {prefs.twofa ? 'идэвхтэй' : 'унтраалттай'}</Badge>
           </span>
         </div>
 
@@ -128,13 +137,13 @@ export default function Profile() {
           >
             <div className="profile-form">
               <Field label="Нэр">
-                <input value={name} onChange={(e) => setName(e.target.value)} />
+                <input value={form.name} onChange={edit('name')} />
               </Field>
               <Field label="Утас">
-                <input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <input inputMode="tel" value={form.phone} onChange={edit('phone')} />
               </Field>
               <Field label="Имэйл">
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" value={form.email} onChange={edit('email')} />
               </Field>
               <Field label="Албан тушаал">
                 <input value={roleLabel} readOnly />
@@ -144,8 +153,8 @@ export default function Profile() {
                   type="password"
                   autoComplete="current-password"
                   placeholder="Өөрчлөлтөө баталгаажуулах"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={form.password}
+                  onChange={edit('password')}
                 />
               </Field>
             </div>
@@ -162,8 +171,8 @@ export default function Profile() {
               <Switch
                 label="2 алхамт баталгаажуулалт"
                 hint="Нэвтрэх бүрт SMS код · санхүүгийн эрхтэй ажилтанд зөвлөнө"
-                checked={twofa}
-                onChange={setTwofa}
+                checked={prefs.twofa}
+                onChange={toggle('twofa')}
               />
 
               <span className="profile-subhead">Идэвхтэй төхөөрөмж</span>
@@ -195,8 +204,8 @@ export default function Profile() {
                   key={n.key}
                   label={n.label}
                   hint={n.hint}
-                  checked={notify[n.key]}
-                  onChange={(value) => setNotify({ ...notify, [n.key]: value })}
+                  checked={prefs[n.key]}
+                  onChange={toggle(n.key)}
                 />
               ))}
             </div>

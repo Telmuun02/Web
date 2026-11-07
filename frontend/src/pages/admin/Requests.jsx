@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import api from '../../api/client'
 import ImageOutlined from '@mui/icons-material/ImageOutlined'
 import Badge from '../../components/UI/Badge'
 import Button from '../../components/UI/Button'
@@ -10,6 +9,10 @@ import PageHeader from '../../components/UI/PageHeader'
 import Tabs from '../../components/UI/Tabs'
 import Toast from '../../components/UI/Toast'
 import LiveBar from '../../components/admin/LiveBar'
+import useApi from '../../hooks/useApi'
+import useLive from '../../hooks/useLive'
+import usePagedList from '../../hooks/usePagedList'
+import useTabParam from '../../hooks/useTabParam'
 import { liveRequests } from '../../samples/admin/live'
 import './styles/Requests.css'
 
@@ -73,80 +76,21 @@ function toRow(r) {
 }
 
 export default function Requests() {
+  const live = useLive('requests', liveRequests) // "ШУУД" мөр — /api/admin/live/requests
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin' // оршин суугч зөвхөн харна, томилох/хаах товч admin-д л
-  const [items, setItems] = useState([])
-  const [counts, setCounts] = useState({}) // табуудын тоо — /api/requests/counts
-  const [tab, setTab] = useState('open')
-  const [selId, setSelId] = useState(null)
+  const [tab, setTab] = useTabParam('open') // /admin/requests?tab=new
+  const [selId, setSelId] = useState(null) // дарж сонгосон хүсэлт
   const [toast, setToast] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [nextOffset, setNextOffset] = useState(null) // null бол дараагийн хуудас алга
-  const sentinelRef = useRef(null) // жагсаалтын доорх үл үзэгдэх div — харагдахад дараагийн хуудсыг татна
-  const requestId = useRef(0) // таб солигдоход хуучин хүсэлтийн хариуг хаяна
 
-  // Нэг хуудас хүсэлт татна. offset 0 бол жагсаалтыг шинээр эхлүүлнэ, үгүй бол араас нь залгана.
-  // Шүүлт, хуудаслалтыг backend хийнэ: { rows, has_more, next_offset }
-  // setLoading(true)-г дуудагч нь хийнэ — effect дотор шууд setState дуудахгүйн тулд
-  function loadPage(offset, stage) {
-    const id = ++requestId.current
+  // ---------- Server state ----------
+  // Таб солигдоход эхний хуудаснаас дахин татна, доош гүйлгэхэд дараагийн хуудас
+  const { rows: items, loading, error, setRows, sentinelRef } = usePagedList('/admin/requests', { stage: tab }, toRow)
+  const { data: counts } = useApi('/admin/requests/counts', null, { fallback: {} }) // табуудын тоо
 
-    api.get('/admin/requests', { params: { stage, offset } })
-      .then((data) => {
-        if (id !== requestId.current) return // энэ хооронд таб солигдсон
-        const page = data.rows.map(toRow)
-        setItems((prev) => (offset === 0 ? page : [...prev, ...page]))
-        if (offset === 0) setSelId(page[0]?.id ?? null) // шинэ табын эхнийхийг сонгоно
-        setNextOffset(data.next_offset)
-        setError('')
-      })
-      .catch((err) => {
-        if (id === requestId.current) setError(err.message)
-      })
-      .finally(() => {
-        if (id === requestId.current) setLoading(false)
-      })
-  }
-
-  // Анх нээгдэхэд "Нээлттэй" табын эхний хуудас (loading анхнаасаа true)
-  useEffect(() => {
-    loadPage(0, 'open')
-  }, [])
-
-  // Таб солигдоход эхний хуудаснаас дахин эхэлнэ
-  function selectTab(key) {
-    if (key === tab) return
-    setTab(key)
-    setItems([])
-    setNextOffset(null)
-    setLoading(true)
-    loadPage(0, key)
-  }
-
-  // Infinite scroll — жагсаалтын доод хэсэг дэлгэцэнд ойртоход (200px) дараагийн хуудсыг татна
-  useEffect(() => {
-    const el = sentinelRef.current
-    if (!el || nextOffset == null || loading) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return
-        setLoading(true)
-        loadPage(nextOffset, tab)
-      },
-      { rootMargin: '200px' },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [nextOffset, loading]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Табуудын тоо — бүх табынх нэг дор
-  useEffect(() => {
-    api.get('/admin/requests/counts').then(setCounts).catch(() => setCounts({}))
-  }, [])
-
-  const sel = items.find((r) => r.id === selId)
+  // Derived — сонгосон нь энэ табд байхгүй (эсвэл юу ч сонгоогүй) бол эхнийх нь.
+  // Тэгэхээр таб солиход "эхнийхийг сонгох" state шинэчлэл хэрэггүй
+  const sel = items.find((r) => r.id === selId) ?? items[0]
   const step = sel ? order.indexOf(sel.status) : 0
 
   // DB-д засварчин томилогдсон бол сонголтод түүнийг ч нэмнэ
@@ -155,7 +99,7 @@ export default function Requests() {
     : sampleTechs
 
   function change(id, patch) {
-    setItems(items.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+    setRows((list) => list.map((r) => (r.id === id ? { ...r, ...patch } : r)))
   }
 
   function pick(r) {
@@ -182,14 +126,14 @@ export default function Requests() {
   return (
     <div className="requests">
       {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...liveRequests} />
+      <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub={`${counts.open ?? 0} нээлттэй`} title="Засварын хүсэлт">
         <Tabs
           label="Төлөвөөр шүүх"
           items={tabs.map((t) => ({ ...t, count: counts[t.key] }))}
           value={tab}
-          onChange={selectTab}
+          onChange={setTab}
         />
       </PageHeader>
 
@@ -202,8 +146,8 @@ export default function Requests() {
           {items.map((r) => (
             <button
               key={r.id}
-              aria-pressed={r.id === selId}
-              className={r.id === selId ? 'requests-row selected' : 'requests-row'}
+              aria-pressed={r.id === sel.id}
+              className={r.id === sel.id ? 'requests-row selected' : 'requests-row'}
               onClick={() => pick(r)}
             >
               <span className="requests-row-meta"><b>R-{r.id}</b> {r.unit} тоот · {r.cat}</span>

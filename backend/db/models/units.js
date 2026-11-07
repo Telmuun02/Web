@@ -25,4 +25,13 @@ async function withResidents(id) {
   return unit;
 }
 
-module.exports = { ...base, all, byEntrance, withResidents };
+// Нийт тоот, оршин суугчтай тоот
+async function occupancy() {
+  var [total, occupied] = await Promise.all([
+    db('units').count({ n: '*' }).first(),
+    db('users').where('role', 'user').whereNotNull('unit_id').countDistinct({ n: 'unit_id' }).first(),
+  ]);
+  return { total: Number(total.n), occupied: Number(occupied.n) };
+}
+
+module.exports = { ...base, all, byEntrance, withResidents, occupancy };

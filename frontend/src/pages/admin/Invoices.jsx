@@ -1,18 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import api from '../../api/client'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import Badge from '../../components/UI/Badge'
 import Button from '../../components/UI/Button'
 import Card from '../../components/UI/Card'
-import Field from '../../components/UI/Field'
 import PageHeader from '../../components/UI/PageHeader'
 import SearchInput from '../../components/UI/SearchInput'
 import Table from '../../components/UI/Table'
 import Tabs from '../../components/UI/Tabs'
 import Toast from '../../components/UI/Toast'
+import PayDrawer from '../../components/admin/PayDrawer'
 import LiveBar from '../../components/admin/LiveBar'
+import useApi from '../../hooks/useApi'
+import useLive from '../../hooks/useLive'
+import usePagedList from '../../hooks/usePagedList'
+import useTabParam from '../../hooks/useTabParam'
 import { liveInvoices } from '../../samples/admin/live'
 import './styles/Invoices.css'
 
@@ -86,87 +88,30 @@ function toRow(inv) {
 }
 
 export default function Invoices() {
-  const [searchParams] = useSearchParams()
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  // /invoices?tab=debtors гэж ирвэл тэр табаар нээгдэнэ (Dashboard-ийн "Бүгдийг харах")
-  const [tab, setTab] = useState(searchParams.get('tab') ?? 'all')
+  const live = useLive('invoices', liveInvoices) // "ШУУД" мөр — /api/admin/live/invoices
+  // /admin/invoices?tab=debtors гэж ирвэл тэр табаар нээгдэнэ (Dashboard-ийн "Бүгдийг харах")
+  const [tab, setTab] = useTabParam('all')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(null) // төлбөр бүртгэж буй нэхэмжлэл
-  const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState('cash')
-  const [note, setNote] = useState('')
   const [toast, setToast] = useState('')
-  const [debtors, setDebtors] = useState([])
-  const [counts, setCounts] = useState({}) // табуудын тоо — /api/invoices/counts
-  const [nextOffset, setNextOffset] = useState(null) // null бол дараагийн хуудас алга
-  const sentinelRef = useRef(null) // хүснэгтийн доорх үл үзэгдэх div — харагдахад дараагийн хуудсыг татна
-  const requestId = useRef(0) // таб/хайлт солигдоход хуучин хүсэлтийн хариуг хаяна
 
-  // Өр ихтэй бүх тоот — Dashboard-ийн API-г limit-гүйгээр (бүгдийг) дуудна.
-  // Backend өр ихээс нь эрэмбэлж, өргүй (0) тоотыг оруулдаггүй
-  useEffect(() => {
-    api.get('/admin/dashboard/debtors', { params: { limit: 1000 } }).then(setDebtors)
-  }, [])
+  // ---------- Server state ----------
+  // undefined утгатай param-ыг axios илгээдэггүй
+  const q = query.trim() || undefined
+  const status = tab === 'all' ? undefined : tab
 
-  // Нэг хуудас нэхэмжлэл татна. offset 0 бол жагсаалтыг шинээр эхлүүлнэ, үгүй бол араас нь залгана.
-  // Хуудаслалт, шүүлтийг backend хийнэ: { rows, has_more, next_offset }
-  function loadPage(offset) {
-    const id = ++requestId.current
-    setLoading(true)
-
-    const params = { offset }
-    if (tab !== 'all') params.status = tab
-    if (query.trim()) params.q = query.trim()
-
-    api.get('/admin/invoices', { params })
-      .then((data) => {
-        if (id !== requestId.current) return // энэ хооронд таб/хайлт солигдсон
-        const page = data.rows.map(toRow)
-        setRows((prev) => (offset === 0 ? page : [...prev, ...page]))
-        setNextOffset(data.next_offset)
-        setError('')
-      })
-      .catch((err) => {
-        if (id === requestId.current) setError(err.message)
-      })
-      .finally(() => {
-        if (id === requestId.current) setLoading(false)
-      })
-  }
-
-  // Таб, хайлт солигдоход эхний хуудаснаас дахин эхэлнэ.
-  // Хайлтыг 300мс хүлээгээд илгээнэ — үсэг бүрд хүсэлт явуулахгүйн тулд
-  useEffect(() => {
-    if (tab === 'debtors') return // "Өр ихтэй" таб /dashboard/debtors-ийг ашиглана
-
-    const timer = setTimeout(() => loadPage(0), 300)
-    return () => clearTimeout(timer) // дахин бичвэл өмнөх хүлээлтийг цуцална
-  }, [tab, query]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Infinite scroll — хүснэгтийн доод хэсэг дэлгэцэнд ойртоход (200px) дараагийн хуудсыг татна
-  useEffect(() => {
-    const el = sentinelRef.current
-    if (!el || nextOffset == null || loading) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadPage(nextOffset) },
-      { rootMargin: '200px' },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [nextOffset, loading]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Табуудын тоо — бүх табынх нэг дор. Таб солиход өөрчлөгдөхгүй, зөвхөн хайлтаас хамаарна
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const params = query.trim() ? { q: query.trim() } : {}
-      api.get('/admin/invoices/counts', { params }).then(setCounts).catch(() => setCounts({}))
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [query])
+  // Нэхэмжлэлийн жагсаалт. "Өр ихтэй" таб өөр API-тай тул тэр үед татахгүй (url = null).
+  // Хайлтыг 300мс хүлээгээд илгээнэ
+  const { rows, loading, error, next: nextOffset, setRows, sentinelRef } = usePagedList(
+    tab === 'debtors' ? null : '/admin/invoices',
+    { status, q },
+    toRow,
+    { delay: 300 },
+  )
+  // Табуудын тоо — таб солиход өөрчлөгдөхгүй, зөвхөн хайлтаас хамаарна
+  const { data: counts } = useApi('/admin/invoices/counts', { q }, { fallback: {}, delay: 300 })
+  // Өр ихтэй бүх тоот — backend өр ихээс нь эрэмбэлж, өргүй тоотыг оруулдаггүй
+  const { data: debtors } = useApi('/admin/dashboard/debtors', { limit: 1000 }, { fallback: [] })
 
   const now = new Date()
   // Төлөх хугацаа — дараа сарын 10 (12-р сард 1-р сар болно)
@@ -175,44 +120,33 @@ export default function Invoices() {
   // Таб бүрийн тоо: нэхэмжлэлийнх backend-ээс, "Өр ихтэй"-нх debtors-оос
   const tabCounts = { ...counts, debtors: debtors.length }
 
-  const q = query.trim().toLowerCase()
-
   // Өр ихтэй таб — тоотын дугаараар хайна
-  const visibleDebtors = debtors.filter((d) => !q || d.code.toLowerCase().includes(q))
+  const search = query.trim().toLowerCase()
+  const visibleDebtors = debtors.filter((d) => !search || d.code.toLowerCase().includes(search))
   const totalDebt = visibleDebtors.reduce((sum, d) => sum + d.debt, 0)
-
-  // Бүртгэх цонхны шалгалт — үлдэгдлээс их дүн оруулж болохгүй
-  const left = selected ? selected.total - selected.paid : 0
-  const amountNum = Number(amount.replace(/\D/g, '')) || 0
-  const tooMuch = amountNum > left
-  const cantSave = !selected || amountNum <= 0 || tooMuch
 
   function openPay(r) {
     setSelected(r)
-    setAmount(String(r.total - r.paid))
-    setMethod('cash')
-    setNote('')
     setToast('')
   }
 
-  function save() {
-    if (cantSave) return
-    const methodLabel = method === 'cash' ? 'Бэлэн' : 'Данс'
-    // Түр — pay API нэмэгдэх хүртэл зөвхөн дэлгэц дээр шинэчилнэ (DB-д хадгалагдахгүй)
-    setRows(rows.map((r) => {
+  // PayDrawer-ийн "Бүртгэх" — { amount, method } ирнэ.
+  // Түр — pay API нэмэгдэх хүртэл зөвхөн дэлгэц дээр шинэчилнэ (DB-д хадгалагдахгүй)
+  function applyPayment({ amount, method }) {
+    setRows((list) => list.map((r) => {
       if (r.id !== selected.id) return r
-      const paid = r.paid + amountNum
+      const paid = r.paid + amount
       const status = paid >= r.total ? 'paid' : r.status === 'overdue' ? 'overdue' : 'partial'
-      return { ...r, paid, status, last: `${methodLabel} · одоо` }
+      return { ...r, paid, status, last: `${methodLabels[method]} · одоо` }
     }))
-    setToast(`${selected.unit} тоотод ${money(amountNum)} бүртгэгдлээ`)
+    setToast(`${selected.unit} тоотод ${money(amount)} бүртгэгдлээ`)
     setSelected(null)
   }
 
   return (
     <div className="invoices">
       {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...liveInvoices} />
+      <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader
         sub={`${now.getFullYear()} оны ${now.getMonth() + 1}-р сар · төлөх хугацаа ${due.getMonth() + 1}/${due.getDate()}`}
@@ -284,58 +218,8 @@ export default function Invoices() {
         </Card>
       )}
 
-      {/* Төлбөр бүртгэх цонх — баруун талаас гарна */}
-      {selected && (
-        <div className="inv-overlay" onClick={() => setSelected(null)}>
-          {/* stopPropagation — цонхны дотор дарахад хаагдахгүй */}
-          <div className="inv-drawer" role="dialog" aria-modal="true" aria-labelledby="pay-title" onClick={(e) => e.stopPropagation()}>
-            <div className="inv-drawer-head">
-              <div>
-                <h2 id="pay-title">Төлбөр бүртгэх</h2>
-                <span className="inv-muted">{selected.unit} тоот · {selected.name} · {selected.period}</span>
-              </div>
-              <button className="inv-close" onClick={() => setSelected(null)} aria-label="Хаах">
-                <CloseOutlined sx={{ fontSize: 20 }} />
-              </button>
-            </div>
-
-            <div className="inv-left">
-              <span className="inv-muted">Үлдэгдэл</span>
-              <span className="inv-left-value">{money(left)}</span>
-            </div>
-
-            <Field label="Төлсөн дүн (₮)">
-              <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </Field>
-            {tooMuch && <span className="inv-error">Үлдэгдлээс их дүн бүртгэх боломжгүй</span>}
-
-            <Field label="Төлбөрийн хэлбэр">
-              <select value={method} onChange={(e) => setMethod(e.target.value)}>
-                <option value="cash">Бэлэн мөнгө</option>
-                <option value="bank">Дансаар шилжүүлсэн</option>
-              </select>
-            </Field>
-
-            <Field label="Тэмдэглэл">
-              <textarea
-                rows="3"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Жишээ: жижүүрийн өрөөнд хүлээж авсан"
-              />
-            </Field>
-
-            <span className="inv-hint">
-              Бүртгэсэн төлбөрийг устгах боломжгүй; алдаатай бол буцаалт бичлэг нэмнэ.
-            </span>
-
-            <div className="inv-drawer-actions">
-              <Button onClick={() => setSelected(null)}>Цуцлах</Button>
-              <Button variant="dark" onClick={save} disabled={cantSave}>Бүртгэх</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Төлбөр бүртгэх цонх — хаагдахад (selected = null) component устана */}
+      {selected && <PayDrawer invoice={selected} onClose={() => setSelected(null)} onSave={applyPayment} />}
     </div>
   )
 }

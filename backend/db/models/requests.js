@@ -106,4 +106,34 @@ async function setStatus(id, status) {
   });
 }
 
-module.exports = { ...base, stages, list, stageCounts, openCount, countByCategory, avgResolveHours, setStatus };
+// Өнөөдөр шийдсэн хүсэлтийн тоо
+async function resolvedToday() {
+  var row = await db('requests')
+    .where('status', 'resolved')
+    .where('resolved_at', '>=', db.raw('CURDATE()'))
+    .count({ n: '*' })
+    .first();
+  return Number(row.n);
+}
+
+// Сүүлд өөрчлөгдсөн хүсэлтүүд — тоотын кодтой
+async function recent(limit) {
+  return db('requests as r')
+    .leftJoin('units as u', 'u.id', 'r.unit_id')
+    .select('u.code', 'r.title', 'r.status', 'r.updated_at')
+    .orderBy('r.updated_at', 'desc')
+    .limit(limit);
+}
+
+module.exports = {
+  ...base,
+  stages,
+  list,
+  stageCounts,
+  openCount,
+  countByCategory,
+  avgResolveHours,
+  setStatus,
+  resolvedToday,
+  recent,
+};

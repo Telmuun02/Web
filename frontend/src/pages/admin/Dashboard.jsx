@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
@@ -17,6 +17,7 @@ import {
   sampleTemps, sampleUtilities,
 } from '../../samples/admin/dashboard'
 import './styles/Dashboard.css'
+import useNow from '../../hooks/useNow'
 
 const chartTop = 12000000 // ₮ — графикийн дээд хязгаар (12 сая)
 const lowTemp = 20        // °C — үүнээс доош бол хүйтэн
@@ -73,11 +74,7 @@ export default function Dashboard() {
   const { user } = useOutletContext()
 
   // Секунд тутам шинэчлэгдэх цаг — дээрх цаг, "40 сек өмнө" зэрэг бичиг үүгээр өөрчлөгдөнө
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(timer) // хуудаснаас гарахад зогсооно
-  }, [])
+  const now = useNow()
 
   // Товч дарахад өөрчлөгдөх хэсгүүд — одоохондоо зөвхөн дэлгэц дээр (backend-д хадгалахгүй)
   const [requests, setRequests] = useState(sampleRequests)

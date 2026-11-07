@@ -19,10 +19,14 @@ function AvatarIcon({ d, size }) {
 
 export default function Meeting() {
   const { user } = useOutletContext()
-  const [mode, setMode] = useState('avatar') // 'avatar' — нүүрээ нууцлах, 'cam' — камертай
-  const [avatar, setAvatar] = useState(0)
-  const [micOff, setMicOff] = useState(true)
+  // Хуралд хэрхэн орох тохиргоо — 3 утга хамт.
+  // mode: 'avatar' — нүүрээ нууцлах, 'cam' — камертай; avatar — сонгосон аватарын дугаар
+  const [look, setLook] = useState({ mode: 'avatar', avatar: 0, micOff: true })
   const [toast, setToast] = useState('')
+  const { mode, avatar, micOff } = look
+
+  // Нэг утгыг солино: set('mode')('cam')
+  const set = (key) => (value) => setLook((l) => ({ ...l, [key]: value }))
 
   const current = meetingAvatars[avatar]
   const avatarMode = mode === 'avatar'
@@ -82,11 +86,11 @@ export default function Meeting() {
         <span className="mt-mode-text">{modeText}</span>
 
         <div className="mt-modes">
-          <button type="button" aria-pressed={!avatarMode} className={avatarMode ? 'mt-mode' : 'mt-mode on'} onClick={() => setMode('cam')}>
+          <button type="button" aria-pressed={!avatarMode} className={avatarMode ? 'mt-mode' : 'mt-mode on'} onClick={() => set('mode')('cam')}>
             <span className="mt-mode-title">Камертай</span>
             <span className="mt-mode-hint">Нүүр харагдана</span>
           </button>
-          <button type="button" aria-pressed={avatarMode} className={avatarMode ? 'mt-mode on' : 'mt-mode'} onClick={() => setMode('avatar')}>
+          <button type="button" aria-pressed={avatarMode} className={avatarMode ? 'mt-mode on' : 'mt-mode'} onClick={() => set('mode')('avatar')}>
             <span className="mt-mode-title">Аватартай</span>
             <span className="mt-mode-hint">Нүүрээ нууцална</span>
           </button>
@@ -102,7 +106,7 @@ export default function Meeting() {
                 aria-label={`${a.name} аватар`}
                 className={i === avatar ? 'mt-avatar on' : 'mt-avatar'}
                 style={{ background: a.bg, color: a.fg }}
-                onClick={() => setAvatar(i)}
+                onClick={() => set('avatar')(i)}
               >
                 <AvatarIcon d={a.d} size={24} />
               </button>
@@ -110,7 +114,7 @@ export default function Meeting() {
           </div>
         )}
 
-        <Switch label="Микрофон унтраалттай орох" checked={micOff} onChange={setMicOff} />
+        <Switch label="Микрофон унтраалттай орох" checked={micOff} onChange={set('micOff')} />
 
         <Toast>{toast}</Toast>
 

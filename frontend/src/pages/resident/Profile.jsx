@@ -16,10 +16,13 @@ const initialNotify = Object.fromEntries(sampleNotifySettings.map((s) => [s.key,
 export default function Profile() {
   const { user, onLogout } = useOutletContext()
   // Түр — тохиргоо хадгалах API нэмэгдэх хүртэл зөвхөн дэлгэц дээр
-  const [notify, setNotify] = useState(initialNotify)
-  const [fontSize, setFontSize] = useState('m')
+  // Бүх тохиргоо нэг object-д: мэдэгдлийн унтраалгууд + үсгийн хэмжээ
+  const [prefs, setPrefs] = useState({ ...initialNotify, fontSize: 'm' })
 
-  const previewPx = fontSizes.find((f) => f.value === fontSize).px
+  // Нэг тохиргоог солино: set('pay')(false), set('fontSize')('l')
+  const set = (key) => (value) => setPrefs((p) => ({ ...p, [key]: value }))
+
+  const previewPx = fontSizes.find((f) => f.value === prefs.fontSize).px
 
   return (
     <div className="res-profile-page">
@@ -72,7 +75,7 @@ export default function Profile() {
           {/* Үсгийн хэмжээ */}
           <section className="pf-card" aria-labelledby="size-title">
             <h2 id="size-title">Үсгийн хэмжээ</h2>
-            <Segmented label="Үсгийн хэмжээ" options={fontSizes} value={fontSize} onChange={setFontSize} />
+            <Segmented label="Үсгийн хэмжээ" options={fontSizes} value={prefs.fontSize} onChange={set('fontSize')} />
             <span className="pf-preview" style={{ fontSize: previewPx }}>Жишээ: 11-р сарын төлбөр 85,000₮</span>
           </section>
         </div>
@@ -86,8 +89,8 @@ export default function Profile() {
                 key={s.key}
                 label={s.label}
                 hint={s.hint}
-                checked={notify[s.key]}
-                onChange={(on) => setNotify({ ...notify, [s.key]: on })}
+                checked={prefs[s.key]}
+                onChange={set(s.key)}
               />
             ))}
           </section>

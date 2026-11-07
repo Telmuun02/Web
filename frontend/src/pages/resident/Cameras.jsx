@@ -1,22 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import FullscreenOutlined from '@mui/icons-material/FullscreenOutlined'
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined'
 import Button from '../../components/UI/Button'
 import PageHeader from '../../components/UI/PageHeader'
+import useNow from '../../hooks/useNow'
 // Backend-тэй түр холбоогүй — бүх өгөгдөл жишээ файлаас
 import { sampleCameraList } from '../../samples/resident/cameras'
 import './styles/Cameras.css'
 
 export default function Cameras() {
   const [selectedId, setSelectedId] = useState(sampleCameraList[0].id)
-  const [now, setNow] = useState(() => Date.now())
+  const now = useNow() // дүрсний баруун дээд буланд секунд тутам явах цаг
   const viewRef = useRef(null) // том дэлгэц — бүтэн дэлгэцээр харуулахад
-
-  // Дүрсний баруун дээд буланд секунд тутам явах цаг
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(timer)
-  }, [])
 
   const cam = sampleCameraList.find((c) => c.id === selectedId)
 

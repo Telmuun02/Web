@@ -8,13 +8,19 @@ import Toast from '../../components/UI/Toast'
 import { requestSteps, requestTypes, sampleMyRequests } from '../../samples/resident/requests'
 import './styles/Requests.css'
 
+// Шинэ хүсэлтийн анхны утгууд
+const emptyForm = { type: 'fix', title: '', body: '', anonymous: false }
+
 export default function Requests() {
-  const [type, setType] = useState('fix')
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
-  const [anonymous, setAnonymous] = useState(false)
+  // Шинэ хүсэлтийн form — 4 талбар хамт.
+  // "Илгээх" товч гарчгийн уртаас хамаарч идэвхжих тул FormData биш state
+  const [form, setForm] = useState(emptyForm)
   const [list, setList] = useState(sampleMyRequests)
   const [toast, setToast] = useState('')
+  const { type, title, body, anonymous } = form
+
+  // Нэг талбарыг солино: set('type')('complaint')
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
 
   const cantSend = title.trim().length < 3
 
@@ -23,8 +29,7 @@ export default function Requests() {
     if (cantSend) return
     const item = { id: Date.now(), type, title: title.trim(), when: 'Одоо', step: 1, note: 'СӨХ хүлээн авахыг хүлээж байна', fresh: true }
     setList([item, ...list])
-    setTitle('')
-    setBody('')
+    setForm((f) => ({ ...f, title: '', body: '' })) // төрөл, нэр нууцлах сонголт хэвээр үлдэнэ
     setToast('Хүсэлт илгээгдлээ. Хариуг мэдэгдлээр авна.')
   }
 
@@ -46,7 +51,7 @@ export default function Requests() {
                   type="button"
                   aria-pressed={type === t.id}
                   className={type === t.id ? 'rq-type on' : 'rq-type'}
-                  onClick={() => setType(t.id)}
+                  onClick={() => set('type')(t.id)}
                 >
                   <span className="rq-type-letter" style={{ background: t.tint }} aria-hidden="true">{t.label[0]}</span>
                   {t.label}
@@ -58,7 +63,7 @@ export default function Requests() {
           <Field label="Гарчиг">
             <input
               value={title}
-              onChange={(e) => { setTitle(e.target.value); setToast('') }}
+              onChange={(e) => { set('title')(e.target.value); setToast('') }}
               placeholder="Жишээ: Угаалтуурын доор ус дусаж байна"
             />
           </Field>
@@ -67,7 +72,7 @@ export default function Requests() {
             <textarea
               rows="4"
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => set('body')(e.target.value)}
               placeholder="Хаана, хэзээнээс, ямар байдалтай байгааг бичнэ үү"
             />
           </Field>
@@ -78,7 +83,7 @@ export default function Requests() {
               <AddPhotoAlternateOutlined sx={{ fontSize: 22 }} /> Зураг нэмэх · 3 хүртэл
             </button>
             <div className="rq-anon">
-              <Switch label="Нэрээ нууцлах" hint="Зөвхөн СӨХ-ийн дарга харна" checked={anonymous} onChange={setAnonymous} />
+              <Switch label="Нэрээ нууцлах" hint="Зөвхөн СӨХ-ийн дарга харна" checked={anonymous} onChange={set('anonymous')} />
             </div>
           </div>
 

@@ -10,14 +10,15 @@ import PageHeader from '../../components/UI/PageHeader'
 import ProgressBar from '../../components/UI/ProgressBar'
 import StatCard from '../../components/UI/StatCard'
 import Table from '../../components/UI/Table'
-// Backend-тэй түр холбоогүй — бүх өгөгдөл жишээ файлаас
+import useApi from '../../hooks/useApi'
+import useNow from '../../hooks/useNow'
+// sampleDashboard — API хариулахаас өмнө харуулах fallback.
+// Бусад sample (лифт, дулаан, камер, онлайн, ажилтны үйлдэл) — DB-д өгөгдөл нь байхгүй тул түр
 import {
-  liftFloors, sampleCameras, sampleDebtors, sampleHours, sampleLifts, sampleLog, sampleMonths,
-  sampleOnline, samplePayments, samplePoll, sampleRequests, sampleStats, sampleSupplyTemp,
-  sampleTemps, sampleUtilities,
+  liftFloors, sampleCameras, sampleDashboard, sampleLifts, sampleLog, sampleOnline, sampleStats,
+  sampleSupplyTemp, sampleTemps, sampleUtilities,
 } from '../../samples/admin/dashboard'
 import './styles/Dashboard.css'
-import useNow from '../../hooks/useNow'
 
 const chartTop = 12000000 // ₮ — графикийн дээд хязгаар (12 сая)
 const lowTemp = 20        // °C — үүнээс доош бол хүйтэн
@@ -50,9 +51,10 @@ function million(n) {
   return (n / 1000000).toFixed(1)
 }
 
-// Хэдий хугацааны өмнө болсныг үгээр: '40 сек өмнө', '7 мин өмнө'
+// Хэдий хугацааны өмнө болсныг үгээр: '40 сек өмнө', '7 мин өмнө'.
+// date — Date эсвэл API-ийн string ('2026-11-01T04:00:00.000Z')
 function timeAgo(date, now) {
-  const sec = Math.floor((now - date) / 1000)
+  const sec = Math.floor((now - new Date(date)) / 1000)
   if (sec < 5) return 'дөнгөж сая'
   if (sec < 60) return `${sec} сек өмнө`
   if (sec < 3600) return `${Math.floor(sec / 60)} мин өмнө`
@@ -61,7 +63,7 @@ function timeAgo(date, now) {
 
 // Хариугүй хүлээсэн хугацаа: '45 сек', '7 мин'
 function waitTime(date, now) {
-  const sec = Math.floor((now - date) / 1000)
+  const sec = Math.floor((now - new Date(date)) / 1000)
   return sec < 60 ? `${sec} сек` : `${Math.floor(sec / 60)} мин`
 }
 
@@ -76,14 +78,23 @@ export default function Dashboard() {
   // Секунд тутам шинэчлэгдэх цаг — дээрх цаг, "40 сек өмнө" зэрэг бичиг үүгээр өөрчлөгдөнө
   const now = useNow()
 
+  // ---------- Server state ----------
+  // GET /api/admin/dashboard — 30 сек тутам шинэчилнэ (WebSocket нэмэгдэхэд түлхэлтээр солигдоно)
+  const { data } = useApi('/admin/dashboard', null, { fallback: sampleDashboard, refreshEvery: 30 })
+  const { today, month, openRequests, hours, payments, poll, months, debtors } = data
+  const { online } = sampleStats // апп-д онлайн — DB-д өгөгдөл алга
+
   // Товч дарахад өөрчлөгдөх хэсгүүд — одоохондоо зөвхөн дэлгэц дээр (backend-д хадгалахгүй)
-  const [requests, setRequests] = useState(sampleRequests)
+  const [seenIds, setSeenIds] = useState({}) // "Хүлээж авах" дарсан хүсэлтүүд: { 1042: true }
   const [log, setLog] = useState(sampleLog)
   const [reminded, setReminded] = useState({}) // SMS илгээсэн тоотууд: { '1-12': true }
 
+  // Derived — серверийн жагсаалтыг state-д хуулахгүй, дарсан id-гаар seen-ийг тооцоолно
+  const requests = data.requests.map((r) => ({ ...r, seen: r.seen || Boolean(seenIds[r.id]) }))
+
   // "Хүлээж авах" — хүсэлтийг харсан болгоод, ажилтны үйлдэлд нэмнэ
   function acknowledge(request) {
-    setRequests((list) => list.map((r) => (r.id === request.id ? { ...r, seen: true } : r)))
+    setSeenIds((map) => ({ ...map, [request.id]: true }))
     setLog((list) => [
       { id: Date.now(), who: user.name, what: `R-${request.id} хүсэлтийг хүлээж авав`, at: new Date() },
       ...list,
@@ -95,8 +106,7 @@ export default function Dashboard() {
   }
 
   // Картуудын тоо
-  const { today, month, openRequests, online } = sampleStats
-  const paidPercent = Math.round((month.paidUnits / month.units) * 100)
+  const paidPercent = month.units ? Math.round((month.paidUnits / month.units) * 100) : 0
   const unseen = requests.filter((r) => !r.seen).length
 
   const liftsDown = sampleLifts.filter((l) => !l.ok).length
@@ -105,15 +115,16 @@ export default function Dashboard() {
   const alerts = liftsDown + (sampleCameras.length - camsOnline) + coldEntrances
 
   // Графикуудын өндрийг хамгийн их утгатай харьцуулж бодно
-  const hourTop = Math.max(400000, ...sampleHours.map((h) => h.amount))
+  const hourTop = Math.max(400000, ...hours.map((h) => h.amount))
   const onlineTop = 60
 
-  const votePercent = Math.round((samplePoll.voted / samplePoll.units) * 100)
-  const voteNeed = Math.ceil((samplePoll.units * samplePoll.threshold) / 100) - samplePoll.voted
+  // Идэвхтэй санал хураалт байхгүй бол poll = null
+  const votePercent = poll?.units ? Math.round((poll.voted / poll.units) * 100) : 0
+  const voteNeed = poll ? Math.ceil((poll.units * poll.threshold) / 100) - poll.voted : 0
 
   // 14:03:22
   const clock = new Date(now).toLocaleTimeString('en-GB')
-  const currentMonth = Number(sampleMonths.at(-1).period.split('-')[1])
+  const currentMonth = Number(months.at(-1).period.split('-')[1])
 
   return (
     <div className="dashboard">
@@ -167,10 +178,10 @@ export default function Dashboard() {
           className="dash-feed"
         >
           <div className="hour-bars" role="img" aria-label="Өнөөдрийн цагийн орлогын график">
-            {sampleHours.map((h, i) => (
+            {hours.map((h, i) => (
               <span key={h.label} className="hour">
                 <span
-                  className={i === sampleHours.length - 1 ? 'hour-bar current' : 'hour-bar'}
+                  className={i === hours.length - 1 ? 'hour-bar current' : 'hour-bar'}
                   style={{ height: `${(h.amount / hourTop) * 100}%` }}
                 />
                 <span className="hour-label">{h.label}</span>
@@ -178,7 +189,7 @@ export default function Dashboard() {
             ))}
           </div>
           <ul className="feed">
-            {samplePayments.map((p) => (
+            {payments.map((p) => (
               <li key={p.id} className="feed-item">
                 <span className="bold">{p.unit}</span>
                 <span className="feed-who">
@@ -280,17 +291,26 @@ export default function Dashboard() {
       <div className="dash-trio">
         <Link to="/admin/polls" className="poll-card">
           <span className="poll-tag"><LiveDot tone="orange" />Санал хураалт · шууд ирц</span>
-          <span className="poll-title">{samplePoll.title}</span>
-          <ProgressBar
-            value={votePercent}
-            size={12}
-            track="rgba(122, 67, 0, 0.15)"
-            marker={samplePoll.threshold}
-            label={`Ирц ${votePercent}%, босго ${samplePoll.threshold}%`}
-          />
-          <span className="poll-note">
-            {samplePoll.voted}/{samplePoll.units} тоот · {votePercent}% · {voteNeed > 0 ? `босго хүртэл ${voteNeed} тоот` : 'босго хүрсэн'}
-          </span>
+          {poll ? (
+            <>
+              <span className="poll-title">{poll.title}</span>
+              <ProgressBar
+                value={votePercent}
+                size={12}
+                track="rgba(122, 67, 0, 0.15)"
+                marker={poll.threshold}
+                label={`Ирц ${votePercent}%, босго ${poll.threshold}%`}
+              />
+              <span className="poll-note">
+                {poll.voted}/{poll.units} тоот · {votePercent}% · {voteNeed > 0 ? `босго хүртэл ${voteNeed} тоот` : 'босго хүрсэн'}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="poll-title">Идэвхтэй санал хураалт алга</span>
+              <span className="poll-note">Шинэ санал хураалт эхлүүлэх →</span>
+            </>
+          )}
         </Link>
 
         <Card title="Апп-ын идэвх · сүүлийн 30 мин" className="dash-small">
@@ -335,10 +355,10 @@ export default function Dashboard() {
           </div>
           <div className="chart-body" role="img" aria-label="12 сарын нэхэмжилсэн ба цугларсан дүнгийн баганан график">
             <div className="chart-bars">
-              {sampleMonths.map((m, i) => (
+              {months.map((m, i) => (
                 <div key={m.period} className="bar" style={{ height: `${(m.billed / chartTop) * 100}%` }}>
                   <div
-                    className={i === sampleMonths.length - 1 ? 'bar-fill current' : 'bar-fill'}
+                    className={i === months.length - 1 ? 'bar-fill current' : 'bar-fill'}
                     style={{ height: `${m.billed ? (m.collected / m.billed) * 100 : 0}%` }}
                   />
                 </div>
@@ -346,7 +366,7 @@ export default function Dashboard() {
             </div>
             <div className="chart-labels">
               {/* '2026-10-01' → 10 */}
-              {sampleMonths.map((m) => <span key={m.period}>{Number(m.period.split('-')[1])}</span>)}
+              {months.map((m) => <span key={m.period}>{Number(m.period.split('-')[1])}</span>)}
             </div>
           </div>
         </div>
@@ -354,13 +374,13 @@ export default function Dashboard() {
 
       <Card title="Өр ихтэй тоотууд" action={<Link to="/admin/invoices?tab=debtors" className="dash-link">Бүгдийг харах →</Link>}>
         <Table columns={debtorColumns} minWidth={560}>
-          {sampleDebtors.map((d) => (
+          {debtors.map((d) => (
             <tr key={d.unit_id}>
               <td className="bold">{d.code}</td>
-              <td>{d.name}</td>
+              <td>{d.name ?? '—'}</td>
               <td className="num bold">{money(d.debt)}</td>
               <td><Badge tone={d.months >= 2 ? 'red' : 'orange'}>{d.months} сар</Badge></td>
-              <td className={d.last_seen === 'Одоо онлайн' ? 'seen-online' : 'dim'}>{d.last_seen}</td>
+              <td className={d.last_seen === 'Одоо онлайн' ? 'seen-online' : 'dim'}>{d.last_seen ?? '—'}</td>
               <td className="num">
                 <Button size="small" onClick={() => remind(d.code)} disabled={reminded[d.code]}>
                   {reminded[d.code] ? 'Илгээсэн' : 'SMS сануулах'}

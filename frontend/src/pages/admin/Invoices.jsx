@@ -11,6 +11,7 @@ import Tabs from '../../components/UI/Tabs'
 import Toast from '../../components/UI/Toast'
 import PayDrawer from '../../components/admin/PayDrawer'
 import LiveBar from '../../components/admin/LiveBar'
+import api from '../../api/client'
 import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import usePagedList from '../../hooks/usePagedList'
@@ -109,7 +110,7 @@ export default function Invoices() {
     { delay: 300 },
   )
   // Табуудын тоо — таб солиход өөрчлөгдөхгүй, зөвхөн хайлтаас хамаарна
-  const { data: counts } = useApi('/admin/invoices/counts', { q }, { fallback: {}, delay: 300 })
+  const { data: counts, reload: reloadCounts } = useApi('/admin/invoices/counts', { q }, { fallback: {}, delay: 300 })
   // Өр ихтэй бүх тоот — backend өр ихээс нь эрэмбэлж, өргүй тоотыг оруулдаггүй
   const { data: debtors } = useApi('/admin/dashboard/debtors', { limit: 1000 }, { fallback: [] })
 
@@ -130,16 +131,23 @@ export default function Invoices() {
     setToast('')
   }
 
-  // PayDrawer-ийн "Бүртгэх" — { amount, method } ирнэ.
-  // Түр — pay API нэмэгдэх хүртэл зөвхөн дэлгэц дээр шинэчилнэ (DB-д хадгалагдахгүй)
-  function applyPayment({ amount, method }) {
-    setRows((list) => list.map((r) => {
-      if (r.id !== selected.id) return r
-      const paid = r.paid + amount
-      const status = paid >= r.total ? 'paid' : r.status === 'overdue' ? 'overdue' : 'partial'
-      return { ...r, paid, status, last: `${methodLabels[method]} · одоо` }
-    }))
-    setToast(`${selected.unit} тоотод ${money(amount)} бүртгэгдлээ`)
+  // PayDrawer-ийн "Бүртгэх" — { amount, method, note } ирнэ.
+  // POST /api/admin/invoices/:id/payments — DB-д хадгалаад, дэлгэц дээрх мөрийг шинэчилнэ
+  async function applyPayment({ amount, method, note }) {
+    const invoice = selected
+    try {
+      const payment = await api.post(`/admin/invoices/${invoice.id}/payments`, { amount, method, note })
+      setRows((list) => list.map((r) => {
+        if (r.id !== invoice.id) return r
+        const paid = r.paid + payment.amount
+        const status = paid >= r.total ? 'paid' : r.status === 'overdue' ? 'overdue' : 'partial'
+        return { ...r, paid, status, last: lastLabel(payment) }
+      }))
+      reloadCounts() // табуудын тоо өөрчлөгдсөн
+      setToast(`${invoice.unit} тоотод ${money(payment.amount)} бүртгэгдлээ`)
+    } catch (err) {
+      setToast(err.message) // backend-ийн мессеж: "Үлдэгдлээс их дүн..." гэх мэт
+    }
     setSelected(null)
   }
 

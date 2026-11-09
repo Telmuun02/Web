@@ -1,5 +1,5 @@
 var bcrypt = require('bcryptjs');
-var { Users } = require('../db/models');
+var { Users, Admins } = require('../db/models');
 
 /**
  * update -- нэвтэрсэн хэрэглэгч өөрийн хувийн мэдээллийг солино
@@ -28,7 +28,9 @@ async function update(req, res, next) {
       return res.status(400).json({ error: 'Имэйл буруу байна' });
     }
 
-    var user = await Users.findWithPassword(req.user.id);
+    // Ажилтан бол admins, оршин суугч бол users хүснэгтэд хадгална
+    var Model = req.user.role === 'admin' ? Admins : Users;
+    var user = await Model.findWithPassword(req.user.id);
 
     if (!user) {
       return res.status(401).json({ error: 'Хэрэглэгч олдсонгүй' });
@@ -39,10 +41,10 @@ async function update(req, res, next) {
       return res.status(401).json({ error: 'Нууц үг буруу байна' });
     }
 
-    // Зөвхөн эдгээр талбарыг солино — role, unit_id-г хэрэглэгч өөрөө өөрчилж болохгүй
-    var updated = await Users.update(user.id, { name: name, phone: phone, email: email });
+    // Зөвхөн эдгээр талбарыг солино — unit_id-г хэрэглэгч өөрөө өөрчилж болохгүй
+    var updated = await Model.update(user.id, { name: name, phone: phone, email: email });
 
-    res.json(updated);
+    res.json({ ...updated, role: req.user.role });
   } catch (err) {
     // phone, email нь unique — өөр хэрэглэгч ашиглаж байвал MySQL энэ алдааг өгнө
     if (err.code === 'ER_DUP_ENTRY') {

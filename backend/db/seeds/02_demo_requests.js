@@ -32,8 +32,8 @@ async function seed(knex) {
   var units = await knex('units').select('id').orderBy('id');
   if (!units.length) throw new Error('Эхлээд 01_demo_invoices.js-ийг ажиллуулж тоот үүсгэнэ үү');
 
-  var admin = await knex('users').select('id').where({ role: 'admin' }).first();
-  var resident = await knex('users').select('id', 'unit_id').where({ role: 'user' }).whereNotNull('unit_id').first();
+  var admin = await knex('admins').select('id').first();
+  var resident = await knex('users').select('id', 'unit_id').whereNotNull('unit_id').first();
 
   var today = new Date().getDate();
   var requests = [];

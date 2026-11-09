@@ -42,9 +42,35 @@ function paidShare(unitIndex, monthsAgo) {
 }
 
 async function seed(knex) {
+  // Хамааралтай нь эхэлж — invoices, payments, poll_votes нь RESTRICT (түүх санамсаргүй устахгүй)
+  await knex('poll_votes').del();
   await knex('payments').del();
   await knex('invoices').del();
   await knex('units').del(); // users.unit_id нь SET NULL болно
+  await knex('entrances').del(); // тоотуудын дараа — units → entrances нь RESTRICT
+  await knex('buildings').del(); // орцуудын дараа — entrances.building_id нь RESTRICT
+
+  // 0. Байр — 3 орц, 10 давхар (давхар бүрт орц бүрт 4 тоот)
+  var FLOORS = Math.ceil(UNITS_PER_ENTRANCE / 4);
+  var [buildingId] = await knex('buildings').insert({
+    name: '12-р байр',
+    address: 'Сүхбаатар дүүрэг, 1-р хороо, 12-р байр',
+    district: 'Сүхбаатар',
+    khoroo: '1-р хороо',
+    built_year: 2015,
+    phone: '7711 2233',
+    bank_name: 'Хаан банк',
+    bank_account: '5012345678',
+  });
+
+  // Орцууд — тоот нэмэхээс өмнө (units → entrances FK)
+  var entrances = [];
+  for (var en = 1; en <= ENTRANCES; en++) {
+    entrances.push({ building_id: buildingId, number: en, floors: FLOORS, door_code: en + '0' + en + '#' });
+  }
+  await knex('entrances').insert(entrances);
+  var entranceIds = {}; // орцны дугаар → id
+  (await knex('entrances').where({ building_id: buildingId })).forEach(function (row) { entranceIds[row.number] = row.id; });
 
   // 1. Тоотууд: 1-01 … 3-120
   var units = [];
@@ -52,8 +78,8 @@ async function seed(knex) {
     for (var i = 1; i <= UNITS_PER_ENTRANCE; i++) {
       var n = (e - 1) * UNITS_PER_ENTRANCE + i;
       units.push({
+        entrance_id: entranceIds[e],
         code: e + '-' + String(n).padStart(2, '0'),
-        entrance: e,
         floor: Math.ceil(i / 4),
         area_m2: 45 + Math.round(random(n) * 45),
       });
@@ -63,7 +89,7 @@ async function seed(knex) {
   var unitRows = await knex('units').select('id', 'code').orderBy('id');
 
   // Оршин суугч хэрэглэгчдийг эхний тоотуудад холбоно — debtors-д нэр нь гарна
-  var residents = await knex('users').select('id').where({ role: 'user' }).orderBy('id');
+  var residents = await knex('users').select('id').orderBy('id'); // users-д зөвхөн оршин суугчид
   for (var r = 0; r < residents.length; r++) {
     await knex('users').where({ id: residents[r].id }).update({ unit_id: unitRows[r].id });
   }

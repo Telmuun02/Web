@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react'
 import api from '../api/client'
 
 // Server state — GET хүсэлтийн өгөгдөл, ачаалж буй эсэх, алдаа нэг дор.
-//   const { data, loading, error } = useApi('/admin/requests/counts', null, { fallback: {} })
+//   const { data, loading, error, reload } = useApi('/admin/requests/counts', null, { fallback: {} })
 // url   — null бол юу ч татахгүй
 // params — өөрчлөгдөхөд дахин татна
 // fallback — хариу ирэхээс өмнө / алдаа гарвал харуулах утга
 // delay — мс: хайлтын талбарт үсэг бүрд хүсэлт явуулахгүйн тулд (жишээ 300)
 // refreshEvery — сек: тэгээс их бол тэр хугацаа тутам дахин татна
+// reload() — хадгалсны дараа (POST, PATCH) жагсаалтыг шинээр татна
 export default function useApi(url, params, { fallback, delay = 0, refreshEvery = 0 } = {}) {
   const [state, setState] = useState({ data: fallback, loading: Boolean(url), error: '' })
+  const [version, setVersion] = useState(0) // reload() дуудах бүрд нэмэгдэж, effect-ийг дахин ажиллуулна
   const key = JSON.stringify(params ?? {}) // object-ийг харьцуулж болохуйц болгоно
 
   useEffect(() => {
@@ -28,7 +30,9 @@ export default function useApi(url, params, { fallback, delay = 0, refreshEvery 
       clearTimeout(first)
       clearInterval(timer)
     }
-  }, [url, key]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [url, key, version]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return state
+  const reload = () => setVersion((v) => v + 1)
+
+  return { ...state, reload }
 }

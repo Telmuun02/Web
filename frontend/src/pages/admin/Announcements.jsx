@@ -10,28 +10,29 @@ import Segmented from '../../components/UI/Segmented'
 import Switch from '../../components/UI/Switch'
 import Table from '../../components/UI/Table'
 import Toast from '../../components/UI/Toast'
+import api from '../../api/client'
 import LiveBar from '../../components/admin/LiveBar'
+import useApi from '../../hooks/useApi'
 import { liveAnnouncements } from '../../samples/admin/live'
 import './styles/Announcements.css'
 
-// Хэнд илгээх — орц бүрийн тоотын тоо (түр жишээ, тоотын API нэмэгдэх хүртэл)
-const audiences = [
-  { value: 'all', label: 'Бүх орц', units: 120 },
-  { value: 'e1', label: '1-р орц', units: 40 },
-  { value: 'e2', label: '2-р орц', units: 30 },
-  { value: 'e3', label: '3-р орц', units: 50 },
-]
+// Хэнд илгээх — backend-ийн audience утга: 'all' эсвэл орцны дугаар
+const audienceLabels = { all: 'Бүх орц', 1: '1-р орц', 2: '2-р орц', 3: '3-р орц' }
 
-// Segmented-д өгөх сонголтууд — нэрийн ард тоотын тоо
-const audienceOptions = audiences.map((a) => ({ value: a.value, label: a.label, note: `${a.units} тоот` }))
-
-// Түр жишээ өгөгдөл — зарлалын API нэмэгдэх хүртэл. read — уншсан хувь
-const samplePosts = [
-  { id: 4, title: 'Хурал 11/20, Пүрэв 19:00 цагт онлайнаар', audience: 'Бүх орц', date: '11/10', channel: 'Апп', read: 64, important: false },
-  { id: 3, title: '2-р орцны лифтний засвар 11/08-нд', audience: '2-р орц', date: '11/06', channel: 'Апп · SMS', read: 72, important: true },
-  { id: 2, title: 'Өвлийн бэлтгэл: цонхоо битүүлэх зөвлөмж', audience: 'Бүх орц', date: '11/01', channel: 'Апп', read: 48, important: false },
-  { id: 1, title: '11-р сарын нэхэмжлэл гарлаа', audience: 'Бүх орц', date: '11/01', channel: 'Апп · SMS', read: 91, important: false },
-]
+// /api/admin/announcements-ийн мөр → хүснэгтийн мөр.
+// read — уншсан хувь: уншсаныг хадгалах хүснэгт DB-д одоохондоо алга тул null
+function toPost(a) {
+  const d = new Date(a.created_at)
+  return {
+    id: a.id,
+    title: a.title,
+    audience: audienceLabels[a.audience] ?? a.audience,
+    date: `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`,
+    channel: a.sms ? 'Апп · SMS' : 'Апп',
+    read: null,
+    important: Boolean(a.important),
+  }
+}
 
 const columns = [
   { label: 'Гарчиг' },
@@ -58,34 +59,41 @@ export default function Announcements() {
   // Шинэ зарлалын form — 5 талбар хамт хадгалагдана.
   // Урьдчилан харах хэсэг бичих зуур шинэчлэгддэг тул FormData биш state
   const [form, setForm] = useState(emptyForm)
-  const [posts, setPosts] = useState(samplePosts)
   const [toast, setToast] = useState('')
   const { title, body, audience, sms, important } = form
+
+  // ---------- Server state ----------
+  const { data: list, reload } = useApi('/admin/announcements', null, { fallback: [] })
+  const { data: units } = useApi('/admin/units', null, { fallback: [] }) // орц бүрийн тоотын тоонд
+  const posts = list.map(toPost)
+
+  // Derived — "Хэнд" сонголт бүрийн тоотын тоо
+  const unitCount = (value) => (value === 'all' ? units.length : units.filter((u) => String(u.entrance) === value).length)
+  const audienceOptions = Object.entries(audienceLabels).map(([value, label]) => ({
+    value, label, note: `${unitCount(value)} тоот`,
+  }))
+  const target = { label: audienceLabels[audience], units: unitCount(audience) }
 
   // Нэг талбарыг солино: field('sms')(true)
   const field = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
 
-  const target = audiences.find((a) => a.value === audience)
   // Урьдчилан харахад хоосон бол жишээ бичиг харуулна
   const previewTitle = title.trim() || 'Гарчиг энд харагдана'
   const previewBody = body.trim() || 'Агуулга энд харагдана'
   const cantPublish = !title.trim() || !body.trim()
 
-  // Түр — зарлалын API нэмэгдэх хүртэл зөвхөн дэлгэц дээр нэмнэ (DB-д хадгалагдахгүй)
-  function publish() {
+  // POST /api/admin/announcements — хадгалаад жагсаалтыг дахин татна.
+  // SMS-ийг backend одоохондоо илгээхгүй, зөвхөн тэмдэглэнэ
+  async function publish() {
     if (cantPublish) return
-    const post = {
-      id: Date.now(),
-      title: title.trim(),
-      audience: target.label,
-      date: 'Одоо',
-      channel: sms ? 'Апп · SMS' : 'Апп',
-      read: 0,
-      important,
+    try {
+      await api.post('/admin/announcements', form)
+      reload()
+      setForm((f) => ({ ...f, title: '', body: '' })) // хэнд, SMS сонголт хэвээр үлдэнэ
+      setToast(`${target.units} тоотод зарлал илгээгдлээ`)
+    } catch (err) {
+      setToast(err.message)
     }
-    setPosts([post, ...posts])
-    setForm((f) => ({ ...f, title: '', body: '' })) // хэнд, SMS сонголт хэвээр үлдэнэ
-    setToast(`${target.units} тоотод зарлал илгээгдлээ`)
   }
 
   return (
@@ -185,14 +193,18 @@ export default function Announcements() {
               <td className="dim">{p.date}</td>
               <td className="dim">{p.channel}</td>
               <td>
-                <span className="ann-read">
-                  <ProgressBar value={p.read} size={8} />
-                  <b>{p.read}%</b>
-                </span>
+                {/* read — уншсаныг хадгалах хүснэгт нэмэгдэх хүртэл null */}
+                {p.read == null ? <span className="dim">—</span> : (
+                  <span className="ann-read">
+                    <ProgressBar value={p.read} size={8} />
+                    <b>{p.read}%</b>
+                  </span>
+                )}
               </td>
             </tr>
           ))}
         </Table>
+        {posts.length === 0 && <p className="dim">Нийтэлсэн зарлал алга</p>}
       </Card>
     </div>
   )

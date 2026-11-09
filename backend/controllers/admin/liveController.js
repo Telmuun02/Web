@@ -19,7 +19,7 @@ async function invoices() {
 
   return {
     stats: [
-      { label: 'Өнөөдөр орсон', value: money(today) },
+      { label: 'Өнөөдөр орсон', value: money(today.amount) },
       { label: 'Сарын төлөлт', value: month.paid + '/' + month.total + ' тоот', tone: 'yellow' },
       {
         label: 'Хугацаа хэтэрсэн',

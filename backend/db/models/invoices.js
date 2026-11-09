@@ -1,5 +1,6 @@
 var db = require('..');
 var createModel = require('./base');
+var Units = require('./units');
 
 var base = createModel('invoices');
 
@@ -18,8 +19,8 @@ async function forUnit(unitId) {
 }
 
 // Сар бүрийн нэхэмжилсэн / цугларсан дүн — Dashboard-ийн график, статистик
-async function monthlySummary(fromPeriod) {
-  var rows = await db('invoices as i')
+async function monthlySummary(fromPeriod, buildingId) {
+  var q = db('invoices as i')
     .leftJoin(paidPerInvoice(), 'p.invoice_id', 'i.id')
     .select('i.period')
     .sum({ billed: 'i.amount' })
@@ -29,6 +30,7 @@ async function monthlySummary(fromPeriod) {
     .where('i.period', '>=', fromPeriod)
     .groupBy('i.period')
     .orderBy('i.period');
+  var rows = await Units.inBuilding(q, buildingId, 'i.unit_id');
 
   // MySQL SUM нь string буцаадаг тул тоо болгоно
   return rows.map(function (r) {
@@ -43,18 +45,20 @@ async function monthlySummary(fromPeriod) {
 }
 
 // Хугацаа хэтэрсэн өртэй тоотууд, өр ихээс нь эрэмбэлсэн
-async function debtors(limit) {
-  var rows = await db('invoices as i')
+async function debtors(limit, buildingId) {
+  var q = db('invoices as i')
     .join('units as u', 'u.id', 'i.unit_id')
+    .join('entrances as e', 'e.id', 'u.entrance_id')
     .leftJoin(paidPerInvoice(), 'p.invoice_id', 'i.id')
-    .select('u.id as unit_id', 'u.code', 'u.entrance', 'u.floor', 'u.area_m2')
+    .select('u.id as unit_id', 'u.code', 'e.number as entrance', 'u.floor', 'u.area_m2', Units.residentName('u.id'))
     .select(db.raw('SUM(i.amount - COALESCE(p.paid, 0)) AS debt'))
     .count({ months: 'i.id' })
     .whereIn('i.status', ['unpaid', 'partial'])
     .where('i.due_date', '<', db.fn.now())
-    .groupBy('u.id', 'u.code', 'u.entrance', 'u.floor', 'u.area_m2')
+    .groupBy('u.id', 'u.code', 'e.number', 'u.floor', 'u.area_m2')
     .orderBy('debt', 'desc')
     .limit(limit || 10);
+  var rows = await Units.inBuilding(q, buildingId, 'i.unit_id');
 
   return rows.map(function (r) {
     return { ...r, debt: Number(r.debt), months: Number(r.months) };
@@ -62,14 +66,15 @@ async function debtors(limit) {
 }
 
 // Нийт хугацаа хэтэрсэн өр болон хэдэн тоот
-async function overdueTotal() {
-  var row = await db('invoices as i')
+async function overdueTotal(buildingId) {
+  var q = db('invoices as i')
     .leftJoin(paidPerInvoice(), 'p.invoice_id', 'i.id')
     .select(db.raw('COALESCE(SUM(i.amount - COALESCE(p.paid, 0)), 0) AS debt'))
     .countDistinct({ units: 'i.unit_id' })
     .whereIn('i.status', ['unpaid', 'partial'])
     .where('i.due_date', '<', db.fn.now())
     .first();
+  var row = await Units.inBuilding(q, buildingId, 'i.unit_id');
 
   return { debt: Number(row.debt), units: Number(row.units) };
 }
@@ -104,7 +109,7 @@ function inScope(q, period, search) {
 
 // Таб бүрийн нэхэмжлэлийн тоо нэг query-ээр — { all, unpaid, partial, paid, overdue }
 // Нөхцөл нь list()-ийн таб шүүлттэй ижил (overdue нь due_date-ээс тооцогдоно)
-async function counts(period, search) {
+async function counts(period, search, buildingId) {
   var q = db('invoices as i')
     .join('units as u', 'u.id', 'i.unit_id')
     .select(db.raw('COUNT(*) AS total')) // `all` нь MySQL-ийн нөөц үг тул total гэж нэрлэв
@@ -114,7 +119,7 @@ async function counts(period, search) {
     .select(db.raw("COALESCE(SUM(i.status <> 'paid' AND i.due_date < NOW()), 0) AS overdue"))
     .first();
 
-  var row = await inScope(q, period, search);
+  var row = await Units.inBuilding(inScope(q, period, search), buildingId, 'i.unit_id');
 
   return {
     all: Number(row.total),
@@ -129,7 +134,7 @@ async function counts(period, search) {
 // filters.status — 'unpaid' | 'partial' | 'paid' | 'overdue', null бол бүгд
 // filters.q — тоотын дугаар эсвэл оршин суугчийн нэрээр хайх
 // Буцаах status-д хугацаа хэтэрсэн бол 'overdue' гэж орно (DB-д тусдаа төлөв биш, due_date-ээс тооцно)
-async function list(period, filters) {
+async function list(period, filters, buildingId) {
   filters = filters || {};
 
   var q = db('invoices as i')
@@ -147,6 +152,7 @@ async function list(period, filters) {
     .orderBy([{ column: 'i.period' }, { column: 'u.code' }, { column: 'i.id' }]);
 
   inScope(q, period, filters.q);
+  Units.inBuilding(q, buildingId, 'i.unit_id');
 
   // Хуудаслалт — filters.limit өгөөгүй бол бүгдийг
   if (filters.limit) q.limit(filters.limit).offset(filters.offset || 0);
@@ -177,11 +183,12 @@ async function list(period, filters) {
 }
 
 // Энэ сарын нэхэмжлэлээс хэд нь бүрэн төлөгдсөн
-async function monthProgress() {
-  var row = await db('invoices')
+async function monthProgress(buildingId) {
+  var q = db('invoices')
     .where('period', db.raw("DATE_FORMAT(CURDATE(), '%Y-%m-01')"))
     .select(db.raw("COUNT(*) AS total, COALESCE(SUM(status = 'paid'), 0) AS paid"))
     .first();
+  var row = await Units.inBuilding(q, buildingId, 'unit_id');
   return { total: Number(row.total), paid: Number(row.paid) };
 }
 

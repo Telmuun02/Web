@@ -9,6 +9,7 @@ import PageHeader from '../../components/UI/PageHeader'
 import Tabs from '../../components/UI/Tabs'
 import Toast from '../../components/UI/Toast'
 import LiveBar from '../../components/admin/LiveBar'
+import api from '../../api/client'
 import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import usePagedList from '../../hooks/usePagedList'
@@ -44,13 +45,13 @@ const categoryLabels = {
   other: 'Бусад',
 }
 
-// Түр жишээ засварчид — засварчны API нэмэгдэх хүртэл
-const sampleTechs = [
-  { id: 'bat', name: 'Бат-Эрдэнэ · сантехник' },
-  { id: 'ganzo', name: 'Ганзориг · цахилгаан' },
-  { id: 'clean', name: 'Цэвэрлэгээний баг' },
-  { id: 'lift', name: 'Лифт Сервис ХХК · гэрээт' },
-]
+// Дараагийн алхам руу шилжихэд backend-д илгээх өөрчлөлт (PATCH /api/admin/requests/:id).
+// assigned — status 'open' хэвээр, засварчин томилогдсон
+const nextPatch = {
+  assigned: (r) => ({ assigned_to: Number(r.tech) }),
+  progress: () => ({ status: 'in_progress' }),
+  done: () => ({ status: 'resolved' }),
+}
 
 // '2026-11-14T08:20:00' → '11/14 08:20'
 function timeLabel(value) {
@@ -86,17 +87,14 @@ export default function Requests() {
   // ---------- Server state ----------
   // Таб солигдоход эхний хуудаснаас дахин татна, доош гүйлгэхэд дараагийн хуудас
   const { rows: items, loading, error, setRows, sentinelRef } = usePagedList('/admin/requests', { stage: tab }, toRow)
-  const { data: counts } = useApi('/admin/requests/counts', null, { fallback: {} }) // табуудын тоо
+  const { data: counts, reload: reloadCounts } = useApi('/admin/requests/counts', null, { fallback: {} }) // табуудын тоо
+  const { data: staff } = useApi('/admin/staff', null, { fallback: [] }) // хариуцагч сонгох жагсаалт
 
   // Derived — сонгосон нь энэ табд байхгүй (эсвэл юу ч сонгоогүй) бол эхнийх нь.
   // Тэгэхээр таб солиход "эхнийхийг сонгох" state шинэчлэл хэрэггүй
   const sel = items.find((r) => r.id === selId) ?? items[0]
   const step = sel ? order.indexOf(sel.status) : 0
-
-  // DB-д засварчин томилогдсон бол сонголтод түүнийг ч нэмнэ
-  const techOptions = sel?.techName && !sampleTechs.some((t) => t.id === sel.tech)
-    ? [{ id: sel.tech, name: sel.techName }, ...sampleTechs]
-    : sampleTechs
+  const techOptions = staff.map((s) => ({ id: String(s.id), name: s.name }))
 
   function change(id, patch) {
     setRows((list) => list.map((r) => (r.id === id ? { ...r, ...patch } : r)))
@@ -107,20 +105,43 @@ export default function Requests() {
     setToast('')
   }
 
+  // PATCH /api/admin/requests/:id — хадгалаад дэлгэц дээрх мөрийг серверийн хариугаар шинэчилнэ
+  async function save(r, body) {
+    const updated = await api.patch(`/admin/requests/${r.id}`, body)
+    change(r.id, { status: updated.stage, tech: updated.assigned_to ? String(updated.assigned_to) : '' })
+    reloadCounts() // табуудын тоо өөрчлөгдсөн
+  }
+
+  // Засварчин сонгох. Шинэ хүсэлтэд зөвхөн дэлгэц дээр сонгоно ("Засварчин томилох" дарахад хадгална),
+  // аль хэдийн томилсон бол шууд солино
+  async function pickTech(value) {
+    change(sel.id, { tech: value })
+    if (sel.status === 'new' || !value) return
+    try {
+      await save(sel, { assigned_to: Number(value) })
+      setToast('Хариуцагч солигдлоо')
+    } catch (err) {
+      setToast(err.message)
+    }
+  }
+
   // Дараагийн төлөв рүү — Шинэ → Томилсон бол засварчин сонгосон байх ёстой
-  // Түр — төлөв солих API нэмэгдэх хүртэл зөвхөн дэлгэц дээр шинэчилнэ (DB-д хадгалагдахгүй)
-  function advance() {
+  async function advance() {
     if (sel.status === 'new' && !sel.tech) {
       setToast('Эхлээд хариуцах засварчнаа сонгоно уу')
       return
     }
     const next = order[step + 1]
-    change(sel.id, { status: next })
-    setToast(
-      next === 'assigned' ? `${sel.unit} тоотын хүсэлтэд засварчин томилогдлоо`
-        : next === 'progress' ? `R-${sel.id} ажил эхэлсэн гэж тэмдэглэлээ`
-          : `R-${sel.id} шийдэгдлээ`,
-    )
+    try {
+      await save(sel, nextPatch[next](sel))
+      setToast(
+        next === 'assigned' ? `${sel.unit} тоотын хүсэлтэд засварчин томилогдлоо`
+          : next === 'progress' ? `R-${sel.id} ажил эхэлсэн гэж тэмдэглэлээ`
+            : `R-${sel.id} шийдэгдлээ`,
+      )
+    } catch (err) {
+      setToast(err.message)
+    }
   }
 
   return (
@@ -192,7 +213,7 @@ export default function Requests() {
                 <select
                   value={sel.tech}
                   disabled={sel.status === 'done'}
-                  onChange={(e) => change(sel.id, { tech: e.target.value })}
+                  onChange={(e) => pickTech(e.target.value)}
                 >
                   <option value="">Сонгох…</option>
                   {techOptions.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}

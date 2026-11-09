@@ -6,4 +6,8 @@ module.exports = {
   Payments: require('./payments'),
   Requests: require('./requests'),
   Polls: require('./polls'),
+  Announcements: require('./announcements'),
+  Buildings: require('./buildings'),
+  Entrances: require('./entrances'),
+  Admins: require('./admins'),
 };

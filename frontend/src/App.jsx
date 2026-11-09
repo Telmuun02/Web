@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import api from './api/client'
 import { homePath } from './utils/home'
 import RequireRole from './components/RequireRole'
+
 // Ажилтан
 import Layout from './components/admin/Layout'
 import Dashboard from './pages/admin/Dashboard'
@@ -14,6 +15,7 @@ import Polls from './pages/admin/Polls'
 import Units from './pages/admin/Units'
 import Reports from './pages/admin/Reports'
 import Settings from './pages/admin/Settings'
+
 // Оршин суугч
 import ResidentLayout from './components/resident/ResidentLayout'
 import Home from './pages/resident/Home'
@@ -23,17 +25,20 @@ import ResidentMeeting from './pages/resident/Meeting'
 import ResidentNews from './pages/resident/News'
 import ResidentCameras from './pages/resident/Cameras'
 import ResidentProfile from './pages/resident/Profile'
+
 // Хоёулаа
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import NotFound from './pages/NotFound'
 import Landing from './pages/Landing'
 
+// admin болон resident хуудсууд тус тусад нь үүсгэсэн.
+// тус тусдаа өөр өөр хуудас болон layout ууд тай
+
 function App() {
   const [user, setUser] = useState(null)
   const [checking, setChecking] = useState(true)
 
-  // Апп ачаалагдахад (F5 дарсан ч) cookie хүчинтэй эсэхийг серверээс асууна
   useEffect(() => {
     api.get('/auth/me')
       .then((me) => setUser(me))
@@ -41,10 +46,8 @@ function App() {
       .finally(() => setChecking(false))
   }, [])
 
-  // Шалгаж дуустал юу ч харуулахгүй — эс бөгөөс шууд /login руу шилжүүлнэ
   if (checking) return null
 
-  // Нэвтрээгүй үед — танилцуулга, нэвтрэх, нууц үг сэргээх. Бусад бүх зам → /login
   if (!user) {
     return (
       <Routes>
@@ -56,7 +59,6 @@ function App() {
     )
   }
 
-  // Гарах — cookie-г серверт устгуулаад, алдаа гарсан ч дэлгэц дээр гарсан болгоно
   async function logout() {
     try {
       await api.post('/auth/logout')
@@ -65,18 +67,16 @@ function App() {
     }
   }
 
-  // Нэвтэрсэн үед — role-оор нь хоёр хэсэг
   return (
     <Routes>
-      {/* Нэвтэрсэн хүн нэвтрэх хуудсанд орвол өөрийнхөө нүүр рүү */}
+      {/**login huudas */}
       <Route path="/login" element={<Navigate to={homePath(user)} replace />} />
 
-      {/* Ажилтан — /admin/... Admin биш бол өөрийнх нь нүүр рүү буцаана */}
+      {/**admin huudas */}
       <Route path="admin" element={<RequireRole user={user} role="admin" />}>
         <Route element={<Layout user={user} onLogout={logout} />}>
           <Route index element={<Dashboard />} />
           <Route path="invoices" element={<Invoices />} />
-          {/* Хураамжийн тохиргоо Тохиргоо хуудасны "Хураамж" хэсэгт байгаа */}
           <Route path="invoices/settings" element={<Settings />} />
           <Route path="requests" element={<Requests />} />
           <Route path="announcements" element={<Announcements />} />
@@ -88,7 +88,7 @@ function App() {
         </Route>
       </Route>
 
-      {/* Оршин суугч — /... */}
+      {/**orshin suugchiin huudas */}
       <Route element={<RequireRole user={user} role="user" />}>
         <Route element={<ResidentLayout user={user} onLogout={logout} />}>
           <Route index element={<Home />} />
@@ -101,7 +101,7 @@ function App() {
         </Route>
       </Route>
 
-      {/* Layout-ийн гадна — navbar-гүй 404 */}
+      {/** Not Found huudas */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   )

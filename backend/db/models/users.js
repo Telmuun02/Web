@@ -1,8 +1,9 @@
 var db = require('..');
 var createModel = require('./base');
+var Units = require('./units');
 
 // password_hash-ийг API руу хэзээ ч буцаахгүй
-var publicColumns = ['id', 'unit_id', 'name', 'phone', 'email', 'role', 'created_at', 'updated_at'];
+var publicColumns = ['id', 'unit_id', 'name', 'phone', 'email', 'created_at', 'updated_at'];
 
 var base = createModel('users', { columns: publicColumns });
 
@@ -16,25 +17,22 @@ async function findWithPassword(id) {
   return db('users').where({ id: id }).first();
 }
 
-// Бүх admin
-async function admins() {
-  return db('users').select(publicColumns).where({ role: 'admin' }).orderBy('name');
-}
-
-// Бүртгэлтэй оршин суугчийн тоо
-async function residentCount() {
-  var row = await db('users').where('role', 'user').count({ n: '*' }).first();
+// Бүртгэлтэй оршин суугчийн тоо — тоотод холбогдсон хэрэглэгч
+async function residentCount(buildingId) {
+  var q = db('users').whereNotNull('unit_id').count({ n: '*' }).first();
+  var row = await Units.inBuilding(q, buildingId, 'unit_id');
   return Number(row.n);
 }
 
 // Сүүлд бүртгэгдсэн оршин суугчид — тоотын кодтой
-async function recentResidents(limit) {
-  return db('users as s')
+async function recentResidents(limit, buildingId) {
+  var q = db('users as s')
     .leftJoin('units as u', 'u.id', 's.unit_id')
-    .where('s.role', 'user')
+    .whereNotNull('s.unit_id')
     .select('s.name', 'u.code', 's.created_at')
     .orderBy('s.created_at', 'desc')
     .limit(limit);
+  return Units.inBuilding(q, buildingId, 's.unit_id');
 }
 
-module.exports = { ...base, findForLogin, findWithPassword, admins, residentCount, recentResidents };
+module.exports = { ...base, findForLogin, findWithPassword, residentCount, recentResidents };

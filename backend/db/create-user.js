@@ -1,7 +1,10 @@
 // Хэрэглэгч нэмэх / нууц үгийг нь шинэчлэх:
-//   npm run user:create -- --email a@b.mn --name "Нэр" --role admin [--phone 99112233] [--password ...]
+//   npm run user:create -- --email a@b.mn --name "Нэр" [--role admin] [--position chairman] [--unit 1-12] [--phone 99112233] [--password ...]
+// --role admin     — ажилтан (admins хүснэгт). --position: chairman, accountant, technician, staff
+// --role user      — оршин суугч (users хүснэгт, анхдагч). --unit 1-12 — тоотод холбоно (нэвтрэхэд хэрэгтэй)
+// Байрандаа амьдардаг ажилтан хоёр тусдаа бүртгэлтэй: нэг удаа --role admin, нэг удаа --role user
 // --password өгөхгүй бол санамсаргүй нууц үг үүсгээд нэг удаа хэвлэнэ.
-// Ийм имэйлтэй хэрэглэгч байвал нэр, role, нууц үгийг нь шинэчилнэ.
+// Тухайн хүснэгтэд ийм имэйлтэй хүн байвал мэдээллийг нь шинэчилнэ.
 var crypto = require('crypto');
 var bcrypt = require('bcryptjs');
 var db = require('./index');
@@ -29,6 +32,8 @@ async function main() {
 
   var role = args.role || 'user';
   if (role !== 'admin' && role !== 'user') throw new Error("--role нь 'admin' эсвэл 'user' байна");
+  var positions = ['chairman', 'accountant', 'technician', 'staff'];
+  if (args.position && !positions.includes(args.position)) throw new Error('--position нь ' + positions.join(', ') + ' байна');
 
   var generated = !args.password;
   var password = args.password || randomPassword();
@@ -37,19 +42,26 @@ async function main() {
   var data = {
     name: args.name,
     email: args.email.toLowerCase(),
-    role: role,
     password_hash: await bcrypt.hash(password, BCRYPT_ROUNDS),
   };
   if (args.phone) data.phone = args.phone;
-
-  var existing = await db('users').where({ email: data.email }).first();
-  if (existing) {
-    await db('users').where({ id: existing.id }).update({ ...data, updated_at: db.fn.now() });
-    console.log('Шинэчиллээ: #' + existing.id + ' ' + data.email + ' (' + role + ')');
-  } else {
-    var [id] = await db('users').insert(data);
-    console.log('Нэмлээ: #' + id + ' ' + data.email + ' (' + role + ')');
+  if (role === 'admin') {
+    data.position = args.position || 'staff';
+  } else if (args.unit) {
+    var unit = await db('units').where({ code: args.unit }).first();
+    if (!unit) throw new Error(args.unit + ' тоот олдсонгүй');
+    data.unit_id = unit.id;
   }
+
+  var table = role === 'admin' ? 'admins' : 'users';
+  var existing = await db(table).where({ email: data.email }).first();
+  var id = existing && existing.id;
+  if (existing) {
+    await db(table).where({ id: id }).update({ ...data, updated_at: db.fn.now() });
+  } else {
+    [id] = await db(table).insert(data);
+  }
+  console.log((existing ? 'Шинэчиллээ: #' : 'Нэмлээ: #') + id + ' ' + data.email + ' (' + role + ')');
 
   if (generated) console.log('Нууц үг: ' + password + '  ← нэвтэрсний дараа сольж болно');
 }

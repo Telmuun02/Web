@@ -10,20 +10,23 @@ import StatCard from '../../components/UI/StatCard'
 import Switch from '../../components/UI/Switch'
 import Table from '../../components/UI/Table'
 import LiveBar from '../../components/admin/LiveBar'
+import useApi from '../../hooks/useApi'
 import { liveReports } from '../../samples/admin/live'
 import './styles/Reports.css'
 
-// Түр жишээ өгөгдөл — тайлангийн API нэмэгдэх хүртэл
-const months = ['2026 оны 10-р сар', '2026 оны 9-р сар', '2026 оны 8-р сар']
-
-const sampleStats = [
-  { label: 'Орлого', value: '9.6 сая₮', note: 'Нэхэмжилсний 94%' },
+// Түр жишээ — зарлага, нөөц сангийн өгөгдөл DB-д одоохондоо алга
+const sampleExpenseStats = [
   { label: 'Зарлага', value: '8.4 сая₮', note: 'Төсвөөс 0.2 сая₮ бага' },
   { label: 'Нөөц сан', value: '14.2 сая₮', note: 'Энэ сард +1.2 сая₮', tone: 'dark' },
-  { label: 'Хуримтлагдсан өр', value: '1.3 сая₮', note: '14 тоот', tone: 'bad' },
 ]
 
-// Зарлага ангиллаар (₮)
+// '2026-10-01' → '2026 оны 10-р сар'
+function monthLabel(period) {
+  const [year, month] = period.split('-')
+  return `${year} оны ${Number(month)}-р сар`
+}
+
+// Зарлага ангиллаар (₮) — түр жишээ
 const sampleExpenses = [
   { name: 'Ажилчдын цалин', amount: 3200000 },
   { name: 'Нийтийн дулаан, ус', amount: 1900000 },
@@ -33,7 +36,7 @@ const sampleExpenses = [
   { name: 'Бусад', amount: 600000 },
 ]
 
-// Орц бүрийн төлөлтийн хувь
+// Орц бүрийн төлөлтийн хувь — түр жишээ
 const sampleEntrances = [
   { name: '1-р орц', percent: 82 },
   { name: '2-р орц', percent: 77 },
@@ -65,6 +68,26 @@ export default function Reports() {
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin'
   const [shared, setShared] = useState(true) // тайланг оршин суугчдад нийтлэх эсэх
+  const [period, setPeriod] = useState(null) // сонгосон сар, null бол хамгийн сүүлийн хаагдсан сар
+
+  // ---------- Server state ----------
+  // Сүүлийн 4 сар — явагдаж буй сар + хаагдсан 3 сар
+  const { data: report } = useApi('/admin/reports', { months: 4 }, { fallback: null })
+
+  // Derived — зөвхөн хаагдсан саруудыг сонгоно (явагдаж буй сар дуусаагүй), шинээс нь
+  const thisMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`
+  const closed = (report?.months ?? []).filter((m) => m.period !== thisMonth).reverse()
+  const month = closed.find((m) => m.period === period) ?? closed[0]
+
+  const stats = [
+    month
+      ? { label: 'Орлого', value: `${million(month.collected)} сая₮`, note: `Нэхэмжилсний ${month.billed ? Math.round((month.collected / month.billed) * 100) : 0}%` }
+      : { label: 'Орлого', value: '—', note: 'Хаагдсан сар алга' },
+    ...sampleExpenseStats,
+    report
+      ? { label: 'Хуримтлагдсан өр', value: `${million(report.overdue.debt)} сая₮`, note: `${report.overdue.units} тоот`, tone: 'bad' }
+      : { label: 'Хуримтлагдсан өр', value: '—', tone: 'bad' },
+  ]
 
   const total = sampleExpenses.reduce((sum, x) => sum + x.amount, 0)
   // Хамгийн том зарлага — зурвасын уртыг үүнтэй харьцуулна (= 100%)
@@ -79,8 +102,8 @@ export default function Reports() {
       <PageHeader sub="Хаагдсан сарын санхүү" title="Тайлан">
         <label className="reports-month">
           <span>Сар</span>
-          <select>
-            {months.map((m) => <option key={m}>{m}</option>)}
+          <select value={month?.period ?? ''} onChange={(e) => setPeriod(e.target.value)}>
+            {closed.map((m) => <option key={m.period} value={m.period}>{monthLabel(m.period)}</option>)}
           </select>
         </label>
         {/* Түр — PDF үүсгэх API нэмэгдэх хүртэл ажиллахгүй */}
@@ -90,7 +113,7 @@ export default function Reports() {
       </PageHeader>
 
       <div className="reports-stats">
-        {sampleStats.map((s) => <StatCard key={s.label} {...s} />)}
+        {stats.map((s) => <StatCard key={s.label} {...s} />)}
       </div>
 
       <div className="reports-columns">
@@ -108,7 +131,7 @@ export default function Reports() {
           ))}
         </Card>
 
-        <Card title="Төлөлт орцоор" sub="10-р сарын нэхэмжлэлийн төлөлт" className="reports-entrances">
+        <Card title="Төлөлт орцоор" sub={month ? `${Number(month.period.split('-')[1])}-р сарын нэхэмжлэлийн төлөлт` : 'Нэхэмжлэлийн төлөлт'} className="reports-entrances">
           {sampleEntrances.map((e) => (
             <div key={e.name} className="reports-entrance">
               <div className="reports-entrance-head">

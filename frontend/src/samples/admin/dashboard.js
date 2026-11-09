@@ -116,3 +116,16 @@ export const sampleDebtors = [
   { unit_id: 64, code: '3-64', name: 'Тэмүүлэн Г.', debt: 45000, months: 1, last_seen: 'Одоо онлайн' },
   { unit_id: 18, code: '2-18', name: 'Нарантуяа С.', debt: 85000, months: 1, last_seen: '3 хоногийн өмнө' },
 ]
+
+// GET /api/admin/dashboard-ийн хариутай яг ижил хэлбэр — сервер хариулахаас өмнө / алдаа гарвал харуулна
+export const sampleDashboard = {
+  today: sampleStats.today,
+  month: sampleStats.month,
+  openRequests: sampleStats.openRequests,
+  hours: sampleHours,
+  payments: samplePayments,
+  requests: sampleRequests,
+  poll: samplePoll,
+  months: sampleMonths,
+  debtors: sampleDebtors,
+}

@@ -1,6 +1,6 @@
 var bcrypt = require('bcryptjs');
 var jwt = require('jsonwebtoken');
-var { Users } = require('../db/models');
+var { Users, Admins } = require('../db/models');
 
 /**
  * login - имейл болон нууц үгээр нэвтрэх
@@ -8,17 +8,21 @@ var { Users } = require('../db/models');
  * me - одоо нэвтэрсэн хэрэглэгчийн мэдээлэл
  */
 
-// POST /api/auth/login — { login, password }, login нь имэйл эсвэл утас
+// POST /api/auth/login — { login, password, as }, login нь имэйл эсвэл утас
+// as — хаанаас хайх: 'user' (оршин суугч, users, анхдагч) эсвэл 'admin' (ажилтан, admins).
+// Хоёр тусдаа хүснэгт — token-ийн id нь сонгосон хүснэгтийн id
 async function login(req, res, next) {
     try {
         var login = (req.body.login || "").trim();
         var password = req.body.password;
+        var as = req.body.as === 'admin' ? 'admin' : 'user';
 
         if(!login || !password) {
             return res.status(400).json({ error: 'login болон password хоёрыг заавал оруулна' });
         }
 
-        var user = await Users.findForLogin(login);
+        var Model = as === 'admin' ? Admins : Users;
+        var user = await Model.findForLogin(login);
 
         var ok = user && user.password_hash && (await bcrypt.compare(password, user.password_hash));
 
@@ -26,7 +30,16 @@ async function login(req, res, next) {
             return res.status(401).json({ error: 'login эсвэл password буруу байна' });
         }
 
-        var token = jwt.sign({ id: user.id, role: user.role }, 
+        // Ажлаас гарсан ажилтан нэвтрэхгүй — устгахгүй, идэвхгүй болгодог
+        if (as === 'admin' && !user.active) {
+            return res.status(403).json({ error: 'Таны ажилтны эрх хаагдсан байна' });
+        }
+        // Оршин суугч тоотод холбогдсон байх ёстой (нүүсэн бол unit_id нь null)
+        if (as === 'user' && !user.unit_id) {
+            return res.status(403).json({ error: 'Та ямар нэг тоотод бүртгэлгүй байна' });
+        }
+
+        var token = jwt.sign({ id: user.id, role: as }, 
             process.env.JWT_SECRET, 
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
@@ -56,14 +69,16 @@ async function logout(req, res, next) {
 // мэдээлэл өгөх 
 async function me(req, res, next) {
     try {
-        var user = await Users.find(req.user.id);
+        var Model = req.user.role === 'admin' ? Admins : Users;
+        var user = await Model.find(req.user.id);
 
         // Token хүчинтэй ч хэрэглэгч устгагдсан байж болно
         if (!user) {
             return res.status(401).json({ error: 'Хэрэглэгч олдсонгүй' });
         }
 
-        res.json(user);
+        // role — аль хүснэгтийн хэрэглэгч вэ (token-оос)
+        res.json({ ...user, role: req.user.role });
     } catch (err) {
         next(err);
     }

@@ -2,15 +2,32 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/Auth/AuthLayout'
 import PasswordInput from '../components/Auth/PasswordInput'
+import Segmented from '../components/UI/Segmented'
 import api from '../api/client'
 import { homePath } from '../utils/home'
 import './styles/Auth.css'
+
+// Аль эрхээр нэвтрэх — нэг хүн хоёулаа байж болно (байрандаа амьдардаг дарга)
+const roles = [
+  { value: 'user', label: 'Оршин суугч' },
+  { value: 'admin', label: 'Ажилтан' },
+]
+const roleKey = 'login-as' // сүүлд сонгосныг санана
+
+function savedRole() {
+  try {
+    return localStorage.getItem(roleKey) === 'admin' ? 'admin' : 'user'
+  } catch {
+    return 'user'
+  }
+}
 
 export default function Login({ onLogin }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [login, setLogin] = useState(location.state?.login ?? '')
   const [password, setPassword] = useState('')
+  const [as, setAs] = useState(savedRole)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -22,7 +39,8 @@ export default function Login({ onLogin }) {
     setError('')
     setSubmitting(true)
     try {
-      await api.post('/auth/login', { login: login.trim(), password }) // cookie тавигдана
+      await api.post('/auth/login', { login: login.trim(), password, as }) // cookie тавигдана
+      try { localStorage.setItem(roleKey, as) } catch { /* хадгалж чадахгүй бол дараа дахин сонгоно */ }
       const me = await api.get('/auth/me')
       onLogin(me)                                                       // App руу хэрэглэгчийг дамжуулна
       navigate(homePath(me), { replace: true })                         // admin → /admin, оршин суугч → /
@@ -39,6 +57,8 @@ export default function Login({ onLogin }) {
           <h2>Нэвтрэх</h2>
           <span className="auth-muted">Имэйл эсвэл утасны дугаараа оруулна уу</span>
         </div>
+
+        <Segmented label="Аль эрхээр нэвтрэх" options={roles} value={as} onChange={setAs} />
 
         {notice && !error && <div className="auth-success" role="status">{notice}</div>}
         {error && <div className="auth-error" role="alert">{error}</div>}

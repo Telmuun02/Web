@@ -1,4 +1,4 @@
-var { Invoices } = require('../../db/models');
+var { Invoices, Payments } = require('../../db/models');
 
 /**
  * index -- нэхэмжлэлийн жагсаалт. Бүх таб (Бүгд … Хэтэрсэн) энэ нэг функцээр:
@@ -57,4 +57,44 @@ async function counts(req, res, next) {
   }
 }
 
-module.exports = { index, counts };
+var methods = ['cash', 'bank', 'qpay', 'card'];
+
+/**
+ * pay -- нэхэмжлэлд төлбөр бүртгэх (жижүүрийн өрөөнд бэлнээр, дансаар орсон төлбөр)
+ *   POST /api/admin/invoices/12/payments — { amount: 85000, method: 'cash', note }
+ * Нэхэмжлэлийн төлөв (unpaid/partial/paid) автоматаар шинэчлэгдэнэ.
+ * Хариу: бүртгэгдсэн төлбөр
+ */
+async function pay(req, res, next) {
+  try {
+    var amount = Number(req.body.amount);
+    var method = methods.includes(req.body.method) ? req.body.method : null;
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Дүн 0-ээс их бүхэл тоо байна' });
+    }
+    if (!method) return res.status(400).json({ error: 'Төлбөрийн хэлбэр буруу байна' });
+
+    var invoice = await Invoices.find(req.params.id);
+    if (!invoice) return res.status(404).json({ error: 'Нэхэмжлэл олдсонгүй' });
+
+    // Үлдэгдлээс их дүн бүртгэхгүй
+    var paid = (await Payments.forInvoice(invoice.id)).reduce(function (sum, p) { return sum + p.amount; }, 0);
+    if (amount > invoice.amount - paid) {
+      return res.status(400).json({ error: 'Үлдэгдлээс их дүн бүртгэх боломжгүй' });
+    }
+
+    var payment = await Payments.record(invoice.id, {
+      recorded_by: req.user.id, // бүртгэсэн ажилтан
+      amount: amount,
+      method: method,
+      note: String(req.body.note || '').trim().slice(0, 255) || null,
+    });
+
+    res.status(201).json(payment);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { index, counts, pay };

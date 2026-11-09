@@ -1,4 +1,5 @@
 var { Announcements, Entrances } = require('../../db/models');
+var log = require('../../lib/logger').child({ module: 'admin/announcements' });
 
 /**
  * index -- нийтэлсэн зарлалууд, шинээс нь
@@ -43,6 +44,14 @@ async function store(req, res, next) {
       important: Boolean(req.body.important),
     });
 
+    log.info({
+      by: req.user.id,
+      announcementId: post.id,
+      entrance: entrance ? entrance.number : 'all',
+      sms: Boolean(req.body.sms),
+      important: Boolean(req.body.important),
+    }, 'Зарлал нийтэллээ');
+
     res.status(201).json(post);
   } catch (err) {
     next(err);
@@ -57,6 +66,8 @@ async function destroy(req, res, next) {
   try {
     var removed = await Announcements.remove(req.params.id);
     if (!removed) return res.status(404).json({ error: 'Зарлал олдсонгүй' });
+
+    log.info({ by: req.user.id, announcementId: Number(req.params.id) }, 'Зарлал устгалаа');
     res.status(204).end();
   } catch (err) {
     next(err);

@@ -7,6 +7,16 @@
 var app = require('../app');
 var debug = require('debug')('backend:server');
 var http = require('http');
+var log = require('../lib/logger').child({ module: 'server' });
+
+// Барьж аваагүй алдаа — catch хийгээгүй promise, санамсаргүй throw
+process.on('unhandledRejection', function (err) {
+  log.error({ err: err }, 'Барьж аваагүй promise алдаа');
+});
+process.on('uncaughtException', function (err) {
+  log.fatal({ err: err }, 'Барьж аваагүй алдаа');
+  process.exit(1);
+});
 
 /**
  * Get port from environment and store in Express.
@@ -65,11 +75,11 @@ function onError(error) {
   // handle specific listen errors with friendly messages
   switch (error.code) {
     case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+      log.fatal({ port: port }, bind + ' requires elevated privileges');
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+      log.fatal({ port: port }, bind + ' is already in use');
       process.exit(1);
       break;
     default:
@@ -87,4 +97,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+  log.info({ port: addr.port }, 'Сервер асав');
 }

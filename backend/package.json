@@ -11,7 +11,8 @@
     "migrate:status": "knex --knexfile db/knexfile.js migrate:status",
     "migrate:make": "knex --knexfile db/knexfile.js migrate:make",
     "seed:make": "knex --knexfile db/knexfile.js seed:make",
-    "user:create": "node db/create-user.js"
+    "user:create": "node db/create-user.js",
+    "logs": "node scripts/logs.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -22,6 +23,8 @@
     "jsonwebtoken": "^9.0.3",
     "knex": "^3.3.0",
     "morgan": "~1.9.1",
-    "mysql2": "^3.24.6"
+    "mysql2": "^3.24.6",
+    "pino": "^10.4.0",
+    "pino-pretty": "^13.2.0"
   }
 }

@@ -1,4 +1,5 @@
 var { Requests, Admins } = require('../../db/models');
+var log = require('../../lib/logger').child({ module: 'admin/requests' });
 
 /**
  * index -- засварын хүсэлтийн жагсаалт, таб бүр энэ нэг функцээр:
@@ -92,6 +93,14 @@ async function update(req, res, next) {
     if (hasStatus) await Requests.setStatus(request.id, req.body.status);
 
     var updated = await Requests.find(request.id);
+
+    log.info({
+      by: req.user.id,
+      requestId: request.id,
+      status: hasStatus ? { from: request.status, to: updated.status } : undefined,
+      assignedTo: hasAssignee ? { from: request.assigned_to, to: updated.assigned_to } : undefined,
+    }, 'Засварын хүсэлт шинэчиллээ');
+
     res.json({ ...updated, stage: Requests.stageOf(updated) });
   } catch (err) {
     next(err);

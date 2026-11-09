@@ -1,4 +1,5 @@
 var { Invoices, Payments } = require('../../db/models');
+var log = require('../../lib/logger').child({ module: 'admin/invoices' });
 
 /**
  * index -- нэхэмжлэлийн жагсаалт. Бүх таб (Бүгд … Хэтэрсэн) энэ нэг функцээр:
@@ -81,6 +82,7 @@ async function pay(req, res, next) {
     // Үлдэгдлээс их дүн бүртгэхгүй
     var paid = (await Payments.forInvoice(invoice.id)).reduce(function (sum, p) { return sum + p.amount; }, 0);
     if (amount > invoice.amount - paid) {
+      log.warn({ by: req.user.id, invoiceId: invoice.id, amount: amount, remaining: invoice.amount - paid }, 'Үлдэгдлээс их төлбөр бүртгэх оролдлого');
       return res.status(400).json({ error: 'Үлдэгдлээс их дүн бүртгэх боломжгүй' });
     }
 
@@ -90,6 +92,15 @@ async function pay(req, res, next) {
       method: method,
       note: String(req.body.note || '').trim().slice(0, 255) || null,
     });
+
+    log.info({
+      by: req.user.id,
+      invoiceId: invoice.id,
+      paymentId: payment.id,
+      amount: amount,
+      method: method,
+      remaining: invoice.amount - paid - amount,
+    }, 'Төлбөр бүртгэлээ');
 
     res.status(201).json(payment);
   } catch (err) {

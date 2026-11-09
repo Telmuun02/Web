@@ -1,6 +1,7 @@
 var bcrypt = require('bcryptjs');
 var jwt = require('jsonwebtoken');
 var { Users, Admins } = require('../db/models');
+var log = require('../lib/logger').child({ module: 'auth' });
 
 /**
  * login - имейл болон нууц үгээр нэвтрэх
@@ -27,15 +28,18 @@ async function login(req, res, next) {
         var ok = user && user.password_hash && (await bcrypt.compare(password, user.password_hash));
 
         if(!ok) {
+            log.warn({ login: login, as: as, ip: req.ip }, 'Нэвтрэлт амжилтгүй');
             return res.status(401).json({ error: 'login эсвэл password буруу байна' });
         }
 
         // Ажлаас гарсан ажилтан нэвтрэхгүй — устгахгүй, идэвхгүй болгодог
         if (as === 'admin' && !user.active) {
+            log.warn({ id: user.id, as: as, ip: req.ip }, 'Хаагдсан ажилтан нэвтрэх оролдлого');
             return res.status(403).json({ error: 'Таны ажилтны эрх хаагдсан байна' });
         }
         // Оршин суугч тоотод холбогдсон байх ёстой (нүүсэн бол unit_id нь null)
         if (as === 'user' && !user.unit_id) {
+            log.warn({ id: user.id, as: as, ip: req.ip }, 'Тоотгүй оршин суугч нэвтрэх оролдлого');
             return res.status(403).json({ error: 'Та ямар нэг тоотод бүртгэлгүй байна' });
         }
 
@@ -50,6 +54,7 @@ async function login(req, res, next) {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 хоног, JWT_EXPIRES_IN-тэй ижил
         });
 
+        log.info({ id: user.id, as: as, ip: req.ip }, 'Нэвтэрлээ');
         res.json({ token });
     } catch (err) {
         next(err);
@@ -58,6 +63,7 @@ async function login(req, res, next) {
 
 // cookie устгах 
 async function logout(req, res, next) {
+    log.info({ id: req.user && req.user.id, as: req.user && req.user.role, ip: req.ip }, 'Гарлаа');
     res.clearCookie('token', {
         httpOnly: true,
         sameSite: 'lax',

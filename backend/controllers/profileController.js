@@ -1,5 +1,6 @@
 var bcrypt = require('bcryptjs');
 var { Users, Admins } = require('../db/models');
+var log = require('../lib/logger').child({ module: 'profile' });
 
 /**
  * update -- нэвтэрсэн хэрэглэгч өөрийн хувийн мэдээллийг солино
@@ -38,11 +39,18 @@ async function update(req, res, next) {
 
     var ok = user.password_hash && (await bcrypt.compare(password, user.password_hash));
     if (!ok) {
+      log.warn({ id: user.id, as: req.user.role, ip: req.ip }, 'Профайл солих: нууц үг буруу');
       return res.status(401).json({ error: 'Нууц үг буруу байна' });
     }
 
     // Зөвхөн эдгээр талбарыг солино — unit_id-г хэрэглэгч өөрөө өөрчилж болохгүй
     var updated = await Model.update(user.id, { name: name, phone: phone, email: email });
+
+    log.info({
+      id: user.id,
+      as: req.user.role,
+      changed: ['name', 'phone', 'email'].filter(function (k) { return user[k] !== updated[k]; }),
+    }, 'Профайл шинэчиллээ');
 
     res.json({ ...updated, role: req.user.role });
   } catch (err) {

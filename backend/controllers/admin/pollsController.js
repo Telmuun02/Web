@@ -1,4 +1,5 @@
 var { Polls } = require('../../db/models');
+var log = require('../../lib/logger').child({ module: 'admin/polls' });
 
 /**
  * index -- бүх санал хураалт, шинээс нь
@@ -58,6 +59,14 @@ async function store(req, res, next) {
       threshold_percent: threshold,
       ends_at: endsAt,
     }, options);
+
+    log.info({
+      by: req.user.id,
+      pollId: poll.id,
+      options: options.length,
+      threshold: threshold,
+      endsAt: endsAt.toISOString(),
+    }, 'Санал хураалт үүсгэлээ');
 
     res.status(201).json(poll);
   } catch (err) {

@@ -12,7 +12,8 @@
     "migrate:make": "knex --knexfile db/knexfile.js migrate:make",
     "seed:make": "knex --knexfile db/knexfile.js seed:make",
     "user:create": "node db/create-user.js",
-    "logs": "node scripts/logs.js"
+    "logs": "node scripts/logs.js",
+    "logs:clear": "node scripts/clear-logs.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

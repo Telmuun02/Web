@@ -1,17 +1,11 @@
-// Лог файлыг терминалд гоё харуулж, шинэ мөрийг шууд дагана (tail -f шиг)
-//   npm run logs          — бүгд (app.log)
-//   npm run logs -- warn  — зөвхөн warn.log (debug, info, warn, error, access)
+// logs/app.log-ийг терминалд гоё харуулж, шинэ мөрийг шууд дагана (tail -f шиг)
+//   npm run logs
 var fs = require('fs');
 var path = require('path');
 var pretty = require('pino-pretty');
 
-var name = (process.argv[2] || 'app') + '.log';
-var file = path.join(__dirname, '..', 'logs', name);
-
-// access.log нь JSON биш — шууд хэвлэнэ
-var out = name === 'access.log'
-  ? process.stdout
-  : pretty({ colorize: true, translateTime: 'SYS:yyyy-mm-dd HH:MM:ss' });
+var file = path.join(__dirname, '..', 'logs', 'app.log');
+var out = pretty({ colorize: true, translateTime: 'SYS:yyyy-mm-dd HH:MM:ss' });
 
 var pos = 0;
 
@@ -27,6 +21,6 @@ function read() {
   pos = size;
 }
 
-console.log('📄 ' + name + ' — шинэ мөрийг хүлээж байна (Ctrl+C зогсооно)\n');
+console.log('📄 app.log — шинэ мөрийг хүлээж байна (Ctrl+C зогсооно)\n');
 read();
 setInterval(read, 500);

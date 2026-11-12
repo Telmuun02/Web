@@ -1,23 +1,15 @@
 var express = require('express');
-var fs = require('fs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
-var log = require('./lib/logger'); // logs/ хавтсыг мөн үүсгэнэ
+var log = require('./lib/logger');
 
 var apiRouter = require('./routes/api');
 
 var app = express();
 
-// Хүсэлт бүр: терминалд товч, logs/access.log-д дэлгэрэнгүй
-var accessLog = fs.createWriteStream(path.join(__dirname, 'logs', 'access.log'), { flags: 'a' });
+// Хүсэлт бүр терминалд товч харагдана (файлд бичихгүй)
 app.use(morgan('dev'));
-app.use(morgan('combined', { stream: accessLog }));
-
-// access.log-ийг өөр програм түгжвэл сервер унахгүй
-accessLog.on('error', function (err) {
-  log.error({ err: err }, 'access.log руу бичиж чадсангүй');
-});
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());

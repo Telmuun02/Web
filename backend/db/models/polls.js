@@ -117,4 +117,14 @@ async function list() {
   });
 }
 
-module.exports = { ...base, active, results, createWithOptions, vote, voteStats, recentVotes, list };
+// Тоотын өгсөн саналууд — { [poll_id]: option_id }
+async function votesOfUnit(unitId) {
+  var rows = await db('poll_votes').select('poll_id', 'option_id').where('unit_id', unitId);
+  var map = {};
+  rows.forEach(function (r) {
+    map[r.poll_id] = r.option_id;
+  });
+  return map;
+}
+
+module.exports = { ...base, active, results, createWithOptions, vote, voteStats, recentVotes, list, votesOfUnit };

@@ -63,4 +63,14 @@ async function recent(limit, buildingId) {
   return Units.inBuilding(q, buildingId, 'i.unit_id');
 }
 
-module.exports = { ...base, forInvoice, record, todayTotal, hourly, recent };
+// Нэг тоотын төлбөрийн түүх, шинээс нь — аль сарын нэхэмжлэлд орсон нь (period)-той
+async function forUnit(unitId, limit) {
+  return db('payments as p')
+    .join('invoices as i', 'i.id', 'p.invoice_id')
+    .select('p.id', 'i.period', 'p.amount', 'p.method', 'p.paid_at')
+    .where('i.unit_id', unitId)
+    .orderBy([{ column: 'p.paid_at', order: 'desc' }, { column: 'p.id', order: 'desc' }])
+    .limit(limit || 12);
+}
+
+module.exports = { ...base, forInvoice, record, todayTotal, hourly, recent, forUnit };

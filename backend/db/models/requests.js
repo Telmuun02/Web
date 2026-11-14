@@ -6,6 +6,9 @@ var base = createModel('requests');
 
 var openStatuses = ['open', 'in_progress'];
 
+// Хүсэлтийн ангилал — DB-ийн enum-тэй ижил
+var categories = ['plumbing', 'electrical', 'cleaning', 'elevator', 'other'];
+
 // Табууд (stage) DB-д шууд байхгүй — status, assigned_to-оос гаргана:
 //   open     — шийдээгүй бүгд (open, in_progress)
 //   new      — open, засварчин томилоогүй
@@ -133,8 +136,26 @@ async function recent(limit, buildingId) {
   return Units.inBuilding(q, buildingId, 'r.unit_id');
 }
 
+// Оршин суугчийн өөрийн илгээсэн хүсэлтүүд, шинээс нь — засварчны нэр, stage-тэй
+async function forUser(userId, limit) {
+  var rows = await db('requests as r')
+    .leftJoin('admins as a', 'a.id', 'r.assigned_to')
+    .select(
+      'r.id', 'r.category', 'r.title', 'r.description', 'r.status', 'r.assigned_to',
+      'r.created_at', 'r.updated_at', 'r.resolved_at', 'a.name as assigned_name'
+    )
+    .where('r.created_by', userId)
+    .orderBy([{ column: 'r.created_at', order: 'desc' }, { column: 'r.id', order: 'desc' }])
+    .limit(limit || 50);
+  return rows.map(function (r) {
+    return Object.assign({}, r, { stage: stageOf(r) });
+  });
+}
+
 module.exports = {
   ...base,
+  categories,
+  forUser,
   stages,
   stageOf,
   list,

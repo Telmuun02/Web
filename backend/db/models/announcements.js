@@ -38,4 +38,17 @@ async function create(data) {
   return find(created.id);
 }
 
-module.exports = { ...base, list, find, create };
+// Оршин суугчид харагдах зарлал — бүх орцынх (entrance_id NULL) + өөрийн орцных, шинээс нь
+async function forEntrance(entranceId, limit) {
+  var rows = await db('announcements as a')
+    .leftJoin('entrances as e', 'e.id', 'a.entrance_id')
+    .select('a.id', 'a.title', 'a.body', 'a.important', 'a.created_at', 'e.number as entrance_number')
+    .where(function () {
+      this.whereNull('a.entrance_id').orWhere('a.entrance_id', entranceId);
+    })
+    .orderBy([{ column: 'a.created_at', order: 'desc' }, { column: 'a.id', order: 'desc' }])
+    .limit(limit || 30);
+  return rows.map(toAudience);
+}
+
+module.exports = { ...base, list, find, create, forEntrance };

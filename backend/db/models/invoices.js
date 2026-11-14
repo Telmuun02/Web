@@ -192,4 +192,59 @@ async function monthProgress(buildingId) {
   return { total: Number(row.total), paid: Number(row.paid) };
 }
 
-module.exports = { ...base, forUnit, monthlySummary, debtors, overdueTotal, list, counts, monthProgress };
+// Энэ сарын 1-ний өдөр — period баганатай харьцуулна
+function thisMonth() {
+  return db.raw("DATE_FORMAT(CURDATE(), '%Y-%m-01')");
+}
+
+// Тоотын энэ сарын нэхэмжлэл, төлсөн дүнтэй — байхгүй бол undefined
+async function currentForUnit(unitId) {
+  var row = await db('invoices as i')
+    .leftJoin(paidPerInvoice(), 'p.invoice_id', 'i.id')
+    .select('i.*', db.raw('COALESCE(p.paid, 0) AS paid'))
+    .where('i.unit_id', unitId)
+    .where('i.period', thisMonth())
+    .first();
+  return row && { ...row, paid: Number(row.paid) };
+}
+
+// Орцны тоот бүр энэ сард төлсөн эсэх — оршин суугчийн "орцны гэрэл", Home-ийн цонхнууд.
+// Дээд давхраас доош, давхар дотроо тоотоор эрэмбэлнэ
+async function entranceMonth(entranceId) {
+  var rows = await db('units as u')
+    .leftJoin('invoices as i', function () {
+      this.on('i.unit_id', 'u.id').andOn('i.period', thisMonth());
+    })
+    .select('u.id', 'u.code', 'u.floor', 'i.status')
+    .where('u.entrance_id', entranceId)
+    .orderBy([{ column: 'u.floor', order: 'desc' }, { column: 'u.code' }]);
+  return rows.map(function (r) {
+    return { id: r.id, code: r.code, floor: r.floor, paid: r.status === 'paid' };
+  });
+}
+
+// Сүүлийн 12 сард хугацаандаа (due_date-ийн өдрийн төгсгөл хүртэл) бүрэн төлсөн сарын тоо
+async function onTimeCount(unitId) {
+  var row = await db('invoices as i')
+    .where('i.unit_id', unitId)
+    .where('i.status', 'paid')
+    .where('i.period', '>=', db.raw("DATE_FORMAT(CURDATE() - INTERVAL 12 MONTH, '%Y-%m-01')"))
+    .whereRaw('(SELECT MAX(p.paid_at) FROM payments p WHERE p.invoice_id = i.id) < i.due_date + INTERVAL 1 DAY')
+    .count({ n: '*' })
+    .first();
+  return Number(row.n);
+}
+
+module.exports = {
+  ...base,
+  onTimeCount,
+  forUnit,
+  monthlySummary,
+  debtors,
+  overdueTotal,
+  list,
+  counts,
+  monthProgress,
+  currentForUnit,
+  entranceMonth,
+};

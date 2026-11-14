@@ -1,0 +1,5 @@
+# Бүх төсөлд (backend, frontend, mobile) нийтлэг
+node_modules/
+.env
+logs/
+dist/

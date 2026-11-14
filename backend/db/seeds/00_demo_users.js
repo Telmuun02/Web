@@ -1,4 +1,5 @@
 // Туршилтын хэрэглэгчид: admin1, admin2 (ажилтан), user1, user2 (оршин суугч)
+// user1 нь admins-д ч бүртгэлтэй — ажилтан бас оршин суугч
 //   npm run seed
 // Дахин ажиллуулж болно — имэйлээр нь upsert хийнэ, бусад хэрэглэгчийг устгахгүй.
 // 01_demo_invoices.js нь user1, user2-ийг 1-01, 1-02 тоотод холбоно.
@@ -11,6 +12,8 @@ var PASSWORD = 'password123';
 var ADMINS = [
   { name: 'Admin 1', email: 'admin1@sokh.mn', phone: '99110001', position: 'chairman' },
   { name: 'Admin 2', email: 'admin2@sokh.mn', phone: '99110002', position: 'accountant' },
+  // Байрандаа амьдардаг ажилтан — users-д ч бүртгэлтэй, нэвтрэхдээ аль нэгийг сонгоно
+  { name: 'User 1', email: 'user1@sokh.mn', phone: '88110001', position: 'staff' },
 ];
 
 var USERS = [

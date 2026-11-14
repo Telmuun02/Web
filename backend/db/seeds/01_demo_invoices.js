@@ -44,6 +44,7 @@ function paidShare(unitIndex, monthsAgo) {
 async function seed(knex) {
   // Хамааралтай нь эхэлж — invoices, payments, poll_votes нь RESTRICT (түүх санамсаргүй устахгүй)
   await knex('poll_votes').del();
+  await knex('announcements').del(); // entrance_id → entrances RESTRICT
   await knex('payments').del();
   await knex('invoices').del();
   await knex('units').del(); // users.unit_id нь SET NULL болно
@@ -89,7 +90,8 @@ async function seed(knex) {
   var unitRows = await knex('units').select('id', 'code').orderBy('id');
 
   // Оршин суугч хэрэглэгчдийг эхний тоотуудад холбоно — debtors-д нэр нь гарна
-  var residents = await knex('users').select('id').orderBy('id'); // users-д зөвхөн оршин суугчид
+  // Жинхэнэ хэрэглэгчдийг эхний тоотуудад — демо оршин суугчдыг 03_demo_users.js холбоно
+  var residents = await knex('users').select('id').whereNot('email', 'like', '%sokh.mn').orderBy('id');
   for (var r = 0; r < residents.length; r++) {
     await knex('users').where({ id: residents[r].id }).update({ unit_id: unitRows[r].id });
   }

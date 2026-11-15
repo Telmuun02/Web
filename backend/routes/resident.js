@@ -4,6 +4,8 @@ var payController = require('../controllers/user/payController');
 var requestsController = require('../controllers/user/requestsController');
 var newsController = require('../controllers/user/newsController');
 var profileController = require('../controllers/user/profileController');
+var chatController = require('../controllers/user/chatController');
+var voiceController = require('../controllers/user/voiceController');
 
 // Оршин суугчийн API — /api/resident/...
 // auth болон requireRole('user')-ийг api.js-д нэг удаа тавьсан.
@@ -27,5 +29,11 @@ router.post('/polls/:id(\\d+)/vote', newsController.vote);
 
 // Профайл (засах нь PUT /api/profile)
 router.get('/profile', profileController.show);
+
+// Чатбот
+router.post('/chat', chatController.send);
+
+// Дуу → текст (чатботын микрофон). Body нь JSON биш WAV — controller өөрөө уншина
+router.post('/transcribe', voiceController.transcribe);
 
 module.exports = router;

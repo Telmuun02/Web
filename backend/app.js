@@ -8,8 +8,13 @@ var apiRouter = require('./routes/api');
 
 var app = express();
 
-// Хүсэлт бүр терминалд товч харагдана (файлд бичихгүй)
-app.use(morgan('dev'));
+// Хүсэлт бүр терминалд товч харагдана (файлд бичихгүй).
+// Чатботын хүсэлтүүдийг алгасна — тэдгээрийн лог зөвхөн npm run logs-д (logger.fileOnly)
+var quietPaths = ['/api/resident/chat', '/api/resident/transcribe'];
+app.use(morgan('dev', {
+  // originalUrl — router дотор req.url өөрчлөгддөг тул анхны замыг (query-гүй) шалгана
+  skip: function (req) { return quietPaths.indexOf(req.originalUrl.split('?')[0]) !== -1; },
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());

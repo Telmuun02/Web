@@ -1,0 +1,247 @@
+/* Баруун доод буланд тогтмол, бусад агуулгын дээр */
+.chat {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  font-family: 'Onest', system-ui, sans-serif;
+}
+
+/* Бөөрөнхий товч */
+.chat-fab {
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--navy);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s;
+}
+
+.chat-fab:hover {
+  transform: scale(1.06);
+}
+
+/* Чатын цонх */
+.chat-panel {
+  width: 360px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  animation: chat-in 0.18s ease-out;
+}
+
+@keyframes chat-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Дээд хэсэг — header-тэй ижил хар хөх */
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--brand-bg);
+  color: #fff;
+}
+
+.chat-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--navy);
+  display: grid;
+  place-items: center;
+}
+
+.chat-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-title span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chat-close {
+  border: 0;
+  background: none;
+  color: var(--link);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.chat-close:hover {
+  color: #fff;
+}
+
+/* Мессежийн жагсаалт */
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--page-bg);
+}
+
+.chat-msg {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Ботын мессеж — зүүн талд, цагаан карт */
+.chat-msg-bot {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+
+/* Хэрэглэгчийн мессеж — баруун талд, accent өнгө */
+.chat-msg-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-bottom-right-radius: 4px;
+}
+
+/* Алдааны мессеж — улаан шошго */
+.chat-msg-error {
+  background: var(--tint-red);
+  color: var(--on-red);
+  border-color: transparent;
+}
+
+/* Бот хариулж байх үеийн "..." */
+.chat-typing {
+  color: var(--muted-text);
+  letter-spacing: 2px;
+}
+
+/* Бичих хэсэг */
+.chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.chat-form input:focus {
+  border-color: var(--accent);
+}
+
+.chat-send {
+  width: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* Микрофон товч — илгээх товчны хажууд, хүрээтэй */
+.chat-mic {
+  width: 40px;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.chat-mic:hover {
+  border-color: var(--accent);
+}
+
+/* Бичиж байх үед — улаан, анивчина */
+.chat-mic-on {
+  background: var(--tint-red);
+  color: var(--on-red);
+  border-color: var(--on-red);
+  animation: chat-pulse 1.2s ease-in-out infinite;
+}
+
+/* Бичлэгийн үлдсэн хугацаа — микрофоны хажууд */
+.chat-timer {
+  align-self: center;
+  min-width: 34px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--muted-text);
+}
+
+.chat-timer-low {
+  color: var(--on-red);
+}
+
+@keyframes chat-pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.chat-mic:disabled,
+.chat-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Утсан дээр — цонх дэлгэцийн өргөнийг дүүргэнэ */
+@media (max-width: 600px) {
+  .chat {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .chat-panel {
+    width: calc(100vw - 32px);
+    height: 70vh;
+  }
+}

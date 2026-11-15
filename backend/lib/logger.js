@@ -10,14 +10,22 @@ var pretty = require('pino-pretty');
 var logDir = path.join(__dirname, '..', 'logs');
 fs.mkdirSync(logDir, { recursive: true });
 
-var logger = pino({
+var options = {
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
   timestamp: pino.stdTimeFunctions.isoTime,
   // Нууц үг, token логт хэзээ ч бичигдэхгүй
   redact: ['password', '*.password', 'token', '*.token'],
-}, pino.multistream([
+};
+
+var file = pino.destination({ dest: path.join(logDir, 'app.log'), sync: true });
+
+var logger = pino(options, pino.multistream([
   { level: 'debug', stream: pretty({ colorize: true, translateTime: 'SYS:yyyy-mm-dd HH:MM:ss' }) },
-  { level: 'debug', stream: pino.destination({ dest: path.join(logDir, 'app.log'), sync: true }) },
+  { level: 'debug', stream: file },
 ]));
+
+// Зөвхөн logs/app.log-д — терминалд (npm run start) гарахгүй, npm run logs-оор харна.
+// Чатбот гэх мэт олон давтагддаг лог терминалыг дүүргэхгүйн тулд
+logger.fileOnly = pino(options, file);
 
 module.exports = logger;

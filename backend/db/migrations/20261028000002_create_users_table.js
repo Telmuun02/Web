@@ -1,10 +1,17 @@
-// Хэрэглэгч — оршин суугч (user) болон СӨХ-ийн ажилтан (admin)
+/**
+ * users хүснэгт - хэрэглэгч
+ * Анх оршин суугч, ажилтан хоёулаа энд байсан (role). 04, 05-д ажилтныг admins руу салгасан
+ *
+ * up(knex) - хүснэгт үүсгэнэ
+ * down(knex) - хүснэгт устгана
+ */
+
 async function up(knex) {
   await knex.schema.createTable('users', function (t) {
     t.increments('id');
-    t.integer('unit_id').unsigned().references('units.id').onDelete('SET NULL'); // admin тоотгүй байж болно
+    t.integer('unit_id').unsigned().references('units.id').onDelete('SET NULL');
     t.string('name', 100).notNullable();
-    t.string('phone', 20).unique(); // SMS сануулга энэ дугаар руу явна
+    t.string('phone', 20).unique();
     t.string('email', 150).unique();
     t.string('password_hash', 255);
     t.enu('role', ['admin', 'user']).notNullable().defaultTo('user');

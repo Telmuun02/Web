@@ -1,12 +1,16 @@
-// Бүтцийн өөрчлөлт:
-//   1. Тоот орцонд холбогдоно: buildings ──< entrances ──< units (entrance_id).
-//      units.building_id, units.entrance хасагдана — байрыг орцоор нь дамжиж олно
-//   2. admins нь users-ээс тусдаа, өөрийн нэвтрэх мэдээлэлтэй болно.
-//      Ажилтан оршин суугчидтай орцоор дамжиж холбогдоно: admins ← entrances.manager_id
-//      Одоогийн ажилтнуудыг (users + admins) шинэ admins руу шилжүүлнэ.
-//      Тоотгүй ажилтныг users-ээс хасна, тоотой бол оршин суугчаар үлдэнэ
+/**
+ * Бүтцийн өөрчлөлт:
+ *   1. Тоот орцонд холбогдоно: buildings ──< entrances ──< units (entrance_id).
+ *      units.building_id, units.entrance хасагдана - байрыг орцоор нь дамжиж олно
+ *   2. admins нь users-ээс тусдаа, өөрийн нэвтрэх мэдээлэлтэй болно.
+ *      Ажилтан оршин суугчидтай орцоор дамжиж холбогдоно: admins ← entrances.manager_id
+ *      Одоогийн ажилтнуудыг (users + admins) шинэ admins руу шилжүүлнэ.
+ *      Тоотгүй ажилтныг users-ээс хасна, тоотой бол оршин суугчаар үлдэнэ
+ *
+ * up(knex) - дээрх 2 өөрчлөлтийг хийнэ
+ * down(knex) - эсрэг дарааллаар: admins-ийг users-тэй 1:1 болгож, дараа нь units-ийг буцаана
+ */
 
-// Ажилтан руу заах FK-ууд: [хүснэгт, багана]
 var staffColumns = [
   ['requests', 'assigned_to'],
   ['polls', 'created_by'],
@@ -16,7 +20,6 @@ var staffColumns = [
 ];
 
 async function up(knex) {
-  // ---------- 1. units → entrances ----------
   await knex.schema.alterTable('units', function (t) {
     t.integer('entrance_id').unsigned().references('entrances.id').onDelete('RESTRICT');
   });
@@ -27,7 +30,6 @@ async function up(knex) {
   var [orphan] = await knex('units').whereNull('entrance_id').count({ n: '*' });
   if (Number(orphan.n)) throw new Error(orphan.n + ' тоот орцгүй байна — entrances-д орцыг нь эхлээд нэмнэ үү');
 
-  // FK-уудыг эхлээд, дараа нь index, багануудыг хасна (FK-д хэрэгтэй index-ийг MySQL устгуулахгүй)
   await knex.schema.alterTable('units', function (t) {
     t.dropForeign(['building_id', 'entrance']);
     t.dropForeign('building_id');
@@ -41,10 +43,9 @@ async function up(knex) {
   });
   await knex.schema.alterTable('units', function (t) {
     t.integer('entrance_id').unsigned().notNullable().alter();
-    t.unique(['entrance_id', 'code']); // нэг орцонд тоот давтагдахгүй
+    t.unique(['entrance_id', 'code']);
   });
 
-  // ---------- 2. admins — users-ээс тусдаа ----------
   for (var [table, column] of staffColumns) {
     await knex.schema.alterTable(table, function (t) {
       t.dropForeign(column);
@@ -58,10 +59,9 @@ async function up(knex) {
     t.string('phone', 20).unique();
     t.string('email', 150).unique();
     t.string('password_hash', 255);
-    // дарга, нягтлан, засварчин, бусад ажилтан
     t.enu('position', ['chairman', 'accountant', 'technician', 'staff']).notNullable().defaultTo('staff');
-    t.date('hired_at'); // ажилд орсон огноо
-    t.integer('old_user_id').unsigned(); // шилжүүлэхэд л хэрэгтэй, доор хасна
+    t.date('hired_at');
+    t.integer('old_user_id').unsigned();
     t.timestamps(true, true);
   });
 
@@ -71,7 +71,6 @@ async function up(knex) {
       'FROM admins_old a JOIN users u ON u.id = a.user_id ORDER BY u.id'
   );
 
-  // Хуучин users.id → шинэ admins.id
   for (var [table2, column2] of staffColumns) {
     await knex.raw(
       'UPDATE ?? x LEFT JOIN admins a ON a.old_user_id = x.?? SET x.?? = a.id WHERE x.?? IS NOT NULL',
@@ -82,7 +81,6 @@ async function up(knex) {
     });
   }
 
-  // Тоотгүй ажилтан оршин суугч биш — users-ээс хасна (requests.created_by гэх мэт нь SET NULL болно)
   await knex('users').whereIn('id', knex('admins_old').select('user_id')).whereNull('unit_id').del();
 
   await knex.schema.alterTable('admins', function (t) {
@@ -91,9 +89,7 @@ async function up(knex) {
   await knex.schema.dropTable('admins_old');
 }
 
-// Эсрэг дарааллаар: эхлээд admins-ийг users-тэй 1:1 болгож, дараа нь units-ийг буцаана
 async function down(knex) {
-  // ---------- 2. admins → users-тэй 1:1 ----------
   for (var [table, column] of staffColumns) {
     await knex.schema.alterTable(table, function (t) {
       t.dropForeign(column);
@@ -104,7 +100,6 @@ async function down(knex) {
     t.integer('user_id').unsigned();
   });
 
-  // Ажилтан бүрд users-ийн мөр: ижил имэйл эсвэл утастай нь байвал түүнийг, үгүй бол шинээр
   var staff = await knex('admins_new').orderBy('id');
   for (var s of staff) {
     var user = null;
@@ -139,7 +134,6 @@ async function down(knex) {
   }
   await knex.schema.dropTable('admins_new');
 
-  // ---------- 1. units → building_id, entrance ----------
   await knex.schema.alterTable('units', function (t) {
     t.integer('building_id').unsigned();
     t.tinyint('entrance').unsigned();

@@ -1,12 +1,17 @@
-// ERD-ийн логик алдааг засна:
-//   1. poll_votes — сонголт нь заавал тухайн санал хураалтынх байна (нийлмэл FK)
-//   2. Санхүүгийн түүх, санал устахгүй — invoices, payments, poll_votes-ийн CASCADE → RESTRICT
-//   3. announcements.audience ('all' | '1' | '2' | '3' текст) → entrance_id (NULL = бүх орц)
-//   4. buildings.floors хасна — давхрын тоо орц бүрт entrances.floors-д
-//   5. admins.active — ажилтныг устгахгүй, идэвхгүй болгоно.
-//      Ажилтан руу заасан FK-ууд RESTRICT — "хэн хийсэн" түүх алдагдахгүй
+/**
+ * ERD-ийн логик алдааг засна:
+ *   1. poll_votes - сонголт нь заавал тухайн санал хураалтынх байна (нийлмэл FK)
+ *   2. Санхүүгийн түүх, санал устахгүй - invoices, payments, poll_votes-ийн CASCADE → RESTRICT
+ *   3. announcements.audience ('all' | '1' | '2' | '3' текст) → entrance_id (NULL = бүх орц)
+ *   4. buildings.floors хасна - давхрын тоо орц бүрт entrances.floors-д
+ *   5. admins.active - ажилтныг устгахгүй, идэвхгүй болгоно.
+ *      Ажилтан руу заасан FK-ууд RESTRICT - "хэн хийсэн" түүх алдагдахгүй
+ *
+ * setDeleteRule(knex, table, column, ref, rule) - (дотоод) FK-ийн onDelete бодлогыг солино
+ * up(knex) - дээрх 5 засварыг хийнэ
+ * down(knex) - бүгдийг өмнөх байдалд буцаана
+ */
 
-// Устгахад түүх алдагдах FK-ууд: [хүснэгт, багана, заах хүснэгт.багана, өмнөх бодлого]
 var restrictColumns = [
   ['invoices', 'unit_id', 'units.id', 'CASCADE'],
   ['payments', 'invoice_id', 'invoices.id', 'CASCADE'],
@@ -28,7 +33,6 @@ async function setDeleteRule(knex, table, column, ref, rule) {
 }
 
 async function up(knex) {
-  // ---------- 1. poll_votes: (option_id, poll_id) → poll_options(id, poll_id) ----------
   var [bad] = await knex('poll_votes as v')
     .join('poll_options as o', 'o.id', 'v.option_id')
     .whereRaw('o.poll_id <> v.poll_id')
@@ -36,7 +40,7 @@ async function up(knex) {
   if (Number(bad.n)) throw new Error(bad.n + ' санал өөр санал хураалтын сонголттой — эхлээд засна уу');
 
   await knex.schema.alterTable('poll_options', function (t) {
-    t.unique(['id', 'poll_id']); // нийлмэл FK-д хэрэгтэй
+    t.unique(['id', 'poll_id']);
   });
   await knex.schema.alterTable('poll_votes', function (t) {
     t.dropForeign('option_id');
@@ -45,16 +49,13 @@ async function up(knex) {
     t.foreign(['option_id', 'poll_id']).references(['id', 'poll_id']).inTable('poll_options').onDelete('CASCADE');
   });
 
-  // ---------- 2, 5. Түүх устахгүй — RESTRICT ----------
   for (var [table, column, ref] of restrictColumns) {
     await setDeleteRule(knex, table, column, ref, 'RESTRICT');
   }
 
-  // ---------- 3. announcements.audience → entrance_id ----------
   await knex.schema.alterTable('announcements', function (t) {
-    t.integer('entrance_id').unsigned().references('entrances.id').onDelete('RESTRICT'); // NULL — бүх орц
+    t.integer('entrance_id').unsigned().references('entrances.id').onDelete('RESTRICT');
   });
-  // Орцны дугаар → орц (одоо нэг байртай; олон байр бол хамгийн эхнийх)
   await knex.raw(
     'UPDATE announcements a SET a.entrance_id = ' +
       '(SELECT MIN(e.id) FROM entrances e WHERE e.number = a.audience) ' +
@@ -64,14 +65,12 @@ async function up(knex) {
     t.dropColumn('audience');
   });
 
-  // ---------- 4. buildings.floors ----------
   await knex.schema.alterTable('buildings', function (t) {
     t.dropColumn('floors');
   });
 
-  // ---------- 5. admins.active ----------
   await knex.schema.alterTable('admins', function (t) {
-    t.boolean('active').notNullable().defaultTo(true); // false — ажлаас гарсан, нэвтэрч чадахгүй
+    t.boolean('active').notNullable().defaultTo(true);
   });
 }
 
@@ -104,7 +103,7 @@ async function down(knex) {
     t.dropForeign(['option_id', 'poll_id']);
   });
   await knex.schema.alterTable('poll_votes', function (t) {
-    t.dropIndex(['option_id', 'poll_id'], 'poll_votes_option_id_poll_id_foreign'); // FK-д MySQL автоматаар үүсгэсэн
+    t.dropIndex(['option_id', 'poll_id'], 'poll_votes_option_id_poll_id_foreign');
   });
   await knex.schema.alterTable('poll_votes', function (t) {
     t.foreign('option_id').references('poll_options.id').onDelete('CASCADE');

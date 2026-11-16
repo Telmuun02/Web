@@ -1,9 +1,16 @@
+/**
+ * Buildings - СӨХ-ийн удирддаг байр (buildings хүснэгт)
+ * buildings ──< entrances ──< units
+ *
+ * base: all, find, where, create, update, remove
+ * list() - байр бүр орц, тоотын тоо, хамгийн өндөр давхартай (тоолж гаргана)
+ */
+
 var db = require('..');
 var createModel = require('./base');
 
 var base = createModel('buildings');
 
-// Байр бүр — орц, тоотын тоо, хамгийн өндөр орцны давхартай (тоолж гаргана, хадгалахгүй)
 async function list() {
   var rows = await db('buildings as b')
     .select('b.*')

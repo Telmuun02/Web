@@ -1,10 +1,15 @@
-// Самбарыг турших хуурамч засварын хүсэлтүүд: сүүлийн 3 сар
-//   npm run seed                                    — бүх seed (тоот, нэхэмжлэлийг ч шинээр үүсгэнэ)
-//   npx knex --knexfile db/knexfile.js seed:run --specific=04_demo_requests.js  — зөвхөн хүсэлт
-// 01_demo_invoices.js-ийн тоотууд, 02_demo_admins.js, 03_demo_users.js-ийн ажилтан, оршин суугчид байх ёстой.
-// requests-ийг устгаад шинээр үүсгэнэ.
+/**
+ * Самбарыг турших хуурамч засварын хүсэлтүүд: сүүлийн 3 сар
+ * Зөвхөн хүсэлтийг дахин үүсгэх:
+ *   npx knex --knexfile db/knexfile.js seed:run --specific=04_demo_requests.js
+ * 01_demo_invoices.js-ийн тоотууд, 02_demo_admins.js, 03_demo_users.js-ийн ажилтан, оршин суугчид байх ёстой.
+ * requests-ийг устгаад шинээр үүсгэнэ.
+ *
+ * random(seed) - тогтмол "санамсаргүй" тоо
+ * daysAgoAt(daysAgo, hour) - өнөөдрөөс daysAgo хоногийн өмнөх hour цаг
+ * seed(knex) - CATEGORIES-оор хүсэлтүүд үүсгэнэ
+ */
 
-// Ангилал бүрийн гарчиг, тайлбар, энэ сард ирэх тоо, хариуцах ажилтан — Dashboard-ийн "Хүсэлт ангиллаар"
 var CATEGORIES = {
   plumbing: {
     count: 14,
@@ -38,13 +43,11 @@ var CATEGORIES = {
   },
 };
 
-// Тогтмол "санамсаргүй" тоо — seed бүрд ижил өгөгдөл гарна
 function random(seed) {
   var x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 
-// Өнөөдрөөс daysAgo хоногийн өмнөх hour цаг
 function daysAgoAt(daysAgo, hour) {
   var d = new Date();
   d.setDate(d.getDate() - daysAgo);
@@ -59,14 +62,13 @@ async function seed(knex) {
   if (!units.length) throw new Error('Эхлээд 01_demo_invoices.js-ийг ажиллуулж тоот үүсгэнэ үү');
 
   var residents = await knex('users').select('id', 'unit_id').whereNotNull('unit_id').orderBy('id');
-  var staff = {}; // имэйл → id
+  var staff = {};
   (await knex('admins').select('id', 'email')).forEach(function (a) { staff[a.email] = a.id; });
 
   var today = new Date().getDate();
   var requests = [];
   var seq = 0;
 
-  // monthIndex 0 = энэ сар, 1 = өмнөх сар, 2 = түүний өмнөх
   for (var monthIndex = 0; monthIndex < 3; monthIndex++) {
     Object.keys(CATEGORIES).forEach(function (category) {
       var cat = CATEGORIES[category];
@@ -76,28 +78,23 @@ async function seed(knex) {
         seq++;
         var r = random(seq);
 
-        // Энэ сарынх бол сарын эхнээс өнөөдөр хүртэл, өмнөх сарынх бол тухайн сард
         var daysAgo = monthIndex === 0
           ? Math.floor(r * (today - 1))
           : today + (monthIndex - 1) * 30 + Math.floor(r * 29);
         var createdAt = daysAgoAt(daysAgo, 8 + Math.floor(random(seq + 1) * 12));
 
-        // Төлөв: энэ сарын сүүлийн хүсэлтүүд нээлттэй, бусад нь ихэвчлэн шийдэгдсэн.
-        // Огнооноос тусдаа тоо — эс бөгөөс сүүлийн өдрүүдийнх үргэлж ижил төлөвтэй болно
         var s = random(seq + 5);
         var status = 'resolved';
         if (monthIndex === 0 && daysAgo <= 3) status = s < 0.5 ? 'open' : 'in_progress';
         else if (monthIndex === 0 && s < 0.12) status = 'in_progress';
         else if (s > 0.95) status = 'rejected';
 
-        // Шийдсэн хугацаа 3–40 цаг (дунджаар ~20)
         var resolvedAt = null;
         if (status === 'resolved') {
           resolvedAt = new Date(createdAt.getTime() + (3 + Math.floor(random(seq + 2) * 38)) * 3600 * 1000);
           if (resolvedAt > new Date()) resolvedAt = new Date();
         }
 
-        // ~70% нь апп-аар оршин суугч илгээсэн, бусад нь утсаар — зөвхөн тоот бүртгэгдэнэ
         var resident = residents.length && random(seq + 4) < 0.7
           ? residents[Math.floor(random(seq + 3) * residents.length)]
           : null;
@@ -105,7 +102,7 @@ async function seed(knex) {
         requests.push({
           unit_id: resident ? resident.unit_id : units[Math.floor(random(seq + 3) * units.length)].id,
           created_by: resident ? resident.id : null,
-          assigned_to: status === 'open' ? null : staff[cat.tech] || null, // ангиллын засварчин
+          assigned_to: status === 'open' ? null : staff[cat.tech] || null,
           category: category,
           title: cat.titles[seq % cat.titles.length],
           description: cat.notes[seq % cat.notes.length],

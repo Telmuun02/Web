@@ -1,9 +1,12 @@
-// Зарлалууд: сүүлийн 3 сар — санал хураалт, орцны код, засвартай уялдсан
-//   npm run seed
-// 02_demo_admins.js-ийн ажилтнууд байх ёстой. announcements-ийг устгаад шинээр үүсгэнэ.
+/**
+ * Зарлалууд: сүүлийн 3 сар - санал хураалт, орцны код, засвартай уялдсан
+ * 02_demo_admins.js-ийн ажилтнууд байх ёстой. announcements-ийг устгаад шинээр үүсгэнэ.
+ *
+ * seed(knex) - ANNOUNCEMENTS-ийг оруулна
+ */
+
 var HOUR = 3600 * 1000;
 
-// entrance: байхгүй — бүх орц, эсвэл орцны дугаар
 var ANNOUNCEMENTS = [
   { daysAgo: 80, author: 'admin1@sokh.mn', title: 'Ухаалаг түгжээний санал хураалт эхэллээ', body: 'Орцны хаалгыг ухаалаг түгжээтэй болгох эсэх талаар 14 хоногийн турш санал өгнө үү. Тоот бүр нэг санал.', sms: true, important: true },
   { daysAgo: 74, author: 'admin2@sokh.mn', title: 'Шинэ сарын нэхэмжлэл илгээгдлээ', body: 'Сарын хураамж 85,000₮. Төлөх хугацаа — дараа сарын 10. Хаан банк 5012345678.', sms: true },
@@ -29,16 +32,16 @@ var ANNOUNCEMENTS = [
 async function seed(knex) {
   await knex('announcements').del();
 
-  var staff = {}; // имэйл → id
+  var staff = {};
   (await knex('admins').select('id', 'email')).forEach(function (a) { staff[a.email] = a.id; });
-  var entrances = {}; // орцны дугаар → id
+  var entrances = {};
   (await knex('entrances').select('id', 'number')).forEach(function (e) { entrances[e.number] = e.id; });
 
   var now = Date.now();
   var rows = ANNOUNCEMENTS.map(function (a) {
     var createdAt = new Date(now - a.daysAgo * 24 * HOUR);
     if (a.daysAgo > 0) createdAt.setHours(10, 0, 0, 0);
-    else createdAt = new Date(now - 2 * HOUR); // өнөөдрийнх — 2 цагийн өмнө
+    else createdAt = new Date(now - 2 * HOUR);
     return {
       created_by: staff[a.author] || null,
       title: a.title,

@@ -1,16 +1,25 @@
+/**
+ * Announcements - СӨХ-өөс оршин суугчдад зарлал (announcements хүснэгт)
+ * DB-д entrance_id (NULL = бүх орц), FE-д audience ('all' эсвэл орцны дугаар '2') болгож өгнө
+ *
+ * base: all, where, update, remove
+ * toAudience(row) - (дотоод) entrance_number → audience
+ * list(limit) - зарлалууд шинээс нь, ажилтны нэр, орцны дугаартай
+ * find(id) - нэг зарлал, list-тэй ижил хэлбэрээр
+ * create(data) - шинэ зарлал нэмээд audience-тэй нь буцаана
+ * forEntrance(entranceId, limit) - оршин суугчид харагдах: бүх орцынх + өөрийн орцных
+ */
+
 var db = require('..');
 var createModel = require('./base');
 
 var base = createModel('announcements');
 
-// audience — FE-д өмнөх шигээ: 'all' эсвэл орцны дугаар ('2').
-// DB-д entrance_id (NULL = бүх орц) хадгалагдана
 function toAudience(row) {
   var { entrance_number, ...rest } = row;
   return { ...rest, audience: entrance_number == null ? 'all' : String(entrance_number) };
 }
 
-// Зарлалууд, шинээс нь — нийтэлсэн ажилтны нэр, орцны дугаартай
 async function list(limit) {
   var rows = await db('announcements as a')
     .leftJoin('admins as s', 's.id', 'a.created_by')
@@ -22,7 +31,6 @@ async function list(limit) {
   return rows.map(toAudience);
 }
 
-// Нэг зарлал — list-тэй ижил хэлбэрээр
 async function find(id) {
   var row = await db('announcements as a')
     .leftJoin('entrances as e', 'e.id', 'a.entrance_id')
@@ -32,13 +40,11 @@ async function find(id) {
   return row && toAudience(row);
 }
 
-// Шинэ зарлал — entrance_id-аар хадгалаад audience-тэй нь буцаана
 async function create(data) {
   var created = await base.create(data);
   return find(created.id);
 }
 
-// Оршин суугчид харагдах зарлал — бүх орцынх (entrance_id NULL) + өөрийн орцных, шинээс нь
 async function forEntrance(entranceId, limit) {
   var rows = await db('announcements as a')
     .leftJoin('entrances as e', 'e.id', 'a.entrance_id')

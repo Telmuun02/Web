@@ -1,9 +1,14 @@
-// Туршилтын хэрэглэгчид: admin1, admin2 (ажилтан), user1, user2 (оршин суугч)
-// user1 нь admins-д ч бүртгэлтэй — ажилтан бас оршин суугч
-//   npm run seed
-// Дахин ажиллуулж болно — имэйлээр нь upsert хийнэ, бусад хэрэглэгчийг устгахгүй.
-// 01_demo_invoices.js нь user1, user2-ийг 1-01, 1-02 тоотод холбоно.
-// Бүгдийн нууц үг: password123
+/**
+ * Туршилтын хэрэглэгчид: admin1, admin2 (ажилтан), user1, user2 (оршин суугч)
+ * user1 нь admins-д ч бүртгэлтэй - ажилтан бас оршин суугч
+ * Дахин ажиллуулж болно - имэйлээр нь upsert хийнэ, бусад хэрэглэгчийг устгахгүй.
+ * 01_demo_invoices.js нь user1, user2-ийг 1-01, 1-02 тоотод холбоно.
+ * Бүгдийн нууц үг: password123
+ *
+ * upsert(knex, table, rows, passwordHash) - имэйлээр нь байвал шинэчилнэ, үгүй бол нэмнэ
+ * seed(knex) - ADMINS, USERS-ийг оруулна
+ */
+
 var bcrypt = require('bcryptjs');
 
 var BCRYPT_ROUNDS = 12;
@@ -12,7 +17,6 @@ var PASSWORD = 'password123';
 var ADMINS = [
   { name: 'Admin 1', email: 'admin1@sokh.mn', phone: '99110001', position: 'chairman' },
   { name: 'Admin 2', email: 'admin2@sokh.mn', phone: '99110002', position: 'accountant' },
-  // Байрандаа амьдардаг ажилтан — users-д ч бүртгэлтэй, нэвтрэхдээ аль нэгийг сонгоно
   { name: 'User 1', email: 'user1@sokh.mn', phone: '88110001', position: 'staff' },
 ];
 
@@ -21,7 +25,6 @@ var USERS = [
   { name: 'User 2', email: 'user2@sokh.mn', phone: '88110002' },
 ];
 
-// Имэйлээр нь байвал шинэчилнэ, үгүй бол нэмнэ
 async function upsert(knex, table, rows, passwordHash) {
   for (var item of rows) {
     var row = { ...item, password_hash: passwordHash };
@@ -35,7 +38,7 @@ async function upsert(knex, table, rows, passwordHash) {
 }
 
 async function seed(knex) {
-  var passwordHash = await bcrypt.hash(PASSWORD, BCRYPT_ROUNDS); // нэг удаа — бүгдэд ижил
+  var passwordHash = await bcrypt.hash(PASSWORD, BCRYPT_ROUNDS);
 
   await upsert(knex, 'admins', ADMINS, passwordHash);
   await upsert(knex, 'users', USERS, passwordHash);

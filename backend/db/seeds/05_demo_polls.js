@@ -1,11 +1,16 @@
-// Санал хураалт: 3 дууссан (нэг нь ирц хүрээгүй), 2 явагдаж буй, 1 удахгүй эхлэх
-//   npm run seed
-// 03_demo_users.js-ийн оршин суугчид байх ёстой. polls-ийг устгаад шинээр үүсгэнэ.
+/**
+ * Санал хураалт: 3 дууссан (нэг нь ирц хүрээгүй), 2 явагдаж буй, 1 удахгүй эхлэх
+ * 03_demo_users.js-ийн оршин суугчид байх ёстой. polls-ийг устгаад шинээр үүсгэнэ.
+ *
+ * random(seed) - тогтмол "санамсаргүй" тоо
+ * weighted(weights, r) - жингийн дагуу сонголтын индекс
+ * seed(knex) - POLLS-ийг сонголт, саналтай нь оруулна
+ */
+
 var DAY = 24 * 3600 * 1000;
 var YES_NO = ['Тийм', 'Үгүй'];
 var YES_NO_ABSTAIN = ['Тийм', 'Үгүй', 'Түдгэлзэнэ'];
 
-// startDaysAgo < 0 — ирээдүйд эхэлнэ. turnout — оршин суугчтай тоотын хэдэн хувь санал өгөх. weights — сонголт бүрийн хувь
 var POLLS = [
   {
     title: 'СӨХ-ийн сарын хураамжийг 85,000₮ болгох',
@@ -20,7 +25,7 @@ var POLLS = [
   {
     title: 'Хүүхдийн тоглоомын талбайг шинэчлэх',
     description: 'Хуучин тоглоомуудыг солиж, зөөлөн хучилт хийнэ.',
-    startDaysAgo: 40, days: 10, threshold: 60, turnout: 0.41, options: YES_NO, weights: [0.84, 0.16], // ирц хүрээгүй
+    startDaysAgo: 40, days: 10, threshold: 60, turnout: 0.41, options: YES_NO, weights: [0.84, 0.16],
   },
   {
     title: 'Зогсоолын автомат хаалт суурилуулах',
@@ -39,13 +44,11 @@ var POLLS = [
   },
 ];
 
-// Тогтмол "санамсаргүй" тоо — seed бүрд ижил өгөгдөл гарна
 function random(seed) {
   var x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 
-// Жингийн дагуу сонголтын индекс
 function weighted(weights, r) {
   var acc = 0;
   for (var k = 0; k < weights.length - 1; k++) {
@@ -61,7 +64,6 @@ async function seed(knex) {
   await knex('polls').del();
 
   var chairman = await knex('admins').where({ email: 'admin1@sokh.mn' }).first();
-  // Тоот бүрээс нэг санал — тоотын анхны бүртгэлтэй оршин суугч
   var voters = await knex('users')
     .whereNotNull('unit_id')
     .select('unit_id', knex.raw('MIN(id) AS user_id'))
@@ -94,7 +96,6 @@ async function seed(knex) {
       return o.id;
     });
 
-    // Санал эхэлснээс дуусах (эсвэл одоо) хүртэл тархана
     var span = Math.min(endsAt.getTime(), now) - startsAt.getTime();
     var votes = [];
     voters.forEach(function (v, i) {

@@ -1,12 +1,17 @@
-// Ажилтан — СӨХ-ийн дарга, нягтлан, засварчин. users-тэй 1:1 (нэвтрэлт users-ээр)
-// user_id нь PK — admins.user_id = users.id тул req.user.id-г шууд ашиглана.
-//
-// users.role-ыг хасна. Эрхийг хүснэгтээр нь тодорхойлно:
-//   оршин суугч — users.unit_id байгаа
-//   ажилтан     — admins-д мөртэй
-// Нэг хүн хоёулаа байж болно (байрандаа амьдардаг дарга) — нэвтрэхдээ аль нэгийг сонгоно
+/**
+ * admins хүснэгт - ажилтан (дарга, нягтлан, засварчин). users-тэй 1:1 (нэвтрэлт users-ээр)
+ * user_id нь PK - admins.user_id = users.id тул req.user.id-г шууд ашиглана.
+ * (05_restructure-д admins нь users-ээс бүрэн тусдаа болсон)
+ *
+ * users.role-ыг хасна. Эрхийг хүснэгтээр нь тодорхойлно:
+ *   оршин суугч - users.unit_id байгаа
+ *   ажилтан     - admins-д мөртэй
+ * Нэг хүн хоёулаа байж болно (байрандаа амьдардаг дарга) - нэвтрэхдээ аль нэгийг сонгоно
+ *
+ * up(knex) - admins үүсгэж, ажилтан руу заах FK-уудыг (staffColumns) admins руу шилжүүлнэ
+ * down(knex) - эсрэг дарааллаар: role-ыг буцааж, FK-уудыг users руу буцаагаад admins-ийг устгана
+ */
 
-// Ажилтан руу заах FK-ууд: [хүснэгт, багана]
 var staffColumns = [
   ['requests', 'assigned_to'],
   ['polls', 'created_by'],
@@ -16,20 +21,16 @@ var staffColumns = [
 async function up(knex) {
   await knex.schema.createTable('admins', function (t) {
     t.integer('user_id').unsigned().primary().references('users.id').onDelete('CASCADE');
-    // дарга, нягтлан, засварчин, бусад ажилтан
     t.enu('position', ['chairman', 'accountant', 'technician', 'staff']).notNullable().defaultTo('staff');
-    t.date('hired_at'); // ажилд орсон огноо
+    t.date('hired_at');
     t.timestamps(true, true);
   });
 
-  // Одоогийн admin хэрэглэгчдийг шилжүүлнэ
   await knex.raw("INSERT INTO admins (user_id, position) SELECT id, 'chairman' FROM users WHERE role = 'admin'");
 
   for (var [table, column] of staffColumns) {
-    // admin биш хүн рүү заасан утгыг цэвэрлэнэ — эс тэгвэл шинэ FK үүсэхгүй
     await knex(table).whereNotIn(column, knex('admins').select('user_id')).update({ [column]: null });
 
-    // FK-г users → admins руу шилжүүлнэ
     await knex.schema.alterTable(table, function (t) {
       t.dropForeign(column);
       t.foreign(column).references('admins.user_id').onDelete('SET NULL');
@@ -37,10 +38,10 @@ async function up(knex) {
   }
 
   await knex.schema.alterTable('entrances', function (t) {
-    t.integer('manager_id').unsigned().references('admins.user_id').onDelete('SET NULL'); // орцыг хариуцсан ажилтан
+    t.integer('manager_id').unsigned().references('admins.user_id').onDelete('SET NULL');
   });
   await knex.schema.alterTable('payments', function (t) {
-    t.integer('recorded_by').unsigned().references('admins.user_id').onDelete('SET NULL'); // төлбөр бүртгэсэн ажилтан
+    t.integer('recorded_by').unsigned().references('admins.user_id').onDelete('SET NULL');
   });
 
   await knex.schema.alterTable('users', function (t) {
@@ -48,7 +49,6 @@ async function up(knex) {
   });
 }
 
-// Эсрэг дарааллаар — role-ыг буцааж, FK-уудыг users руу буцаагаад admins-ийг устгана
 async function down(knex) {
   await knex.schema.alterTable('users', function (t) {
     t.enu('role', ['admin', 'user']).notNullable().defaultTo('user');

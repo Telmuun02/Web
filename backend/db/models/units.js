@@ -1,13 +1,25 @@
+/**
+ * Units - тоот (units хүснэгт)
+ * Тоот орцонд, орц байранд холбогдоно: buildings ──< entrances ──< units
+ *
+ * base: create, update, remove (all, find-ийг доор дахин тодорхойлсон)
+ * withEntrance() - (дотоод) тоот + орцны дугаар, байртай query
+ *
+ * inBuilding(q, buildingId, unitColumn) - бусад model-ийн query-г байраар шүүнэ
+ * residentName(unitColumn) - select дотор тоотын эхний оршин суугчийн нэр
+ * all(buildingId) - бүх тоот, орц, тоотоор эрэмбэлсэн
+ * byEntrance(entrance, buildingId) - нэг орцны тоотууд
+ * find(id) - нэг тоот, орцны дугаартай
+ * withResidents(id) - тоот + тэнд амьдардаг оршин суугчид
+ * occupancy(buildingId) - нийт тоот, оршин суугчтай тоот
+ * list(filters, buildingId) - тоотын жагсаалт, оршин суугч, өртэй { entrance, q }
+ */
+
 var db = require('..');
 var createModel = require('./base');
 
 var base = createModel('units');
 
-// Тоот орцонд (entrance_id), орц байранд холбогдоно: buildings ──< entrances ──< units
-
-// Байраар шүүх — buildingId өгөөгүй бол бүх байр.
-// unitColumn — тоотын id-тай багана: inBuilding(q, buildingId, 'i.unit_id')
-// units-тэй join хийсэн эсэхээс үл хамааран ажиллана
 function inBuilding(q, buildingId, unitColumn) {
   if (buildingId) {
     q.whereIn(unitColumn, db('units as bu')
@@ -18,33 +30,28 @@ function inBuilding(q, buildingId, unitColumn) {
   return q;
 }
 
-// Тоот + орцны дугаар, байр — FE өмнөх шигээ entrance (дугаар) авна
 function withEntrance() {
   return db('units as u')
     .join('entrances as e', 'e.id', 'u.entrance_id')
     .select('u.*', 'e.number as entrance', 'e.building_id');
 }
 
-// Бүх тоот — орц, тоотоор эрэмбэлсэн
 async function all(buildingId) {
   var q = withEntrance().orderBy(['e.number', 'u.code']);
   if (buildingId) q.where('e.building_id', buildingId);
   return q;
 }
 
-// Нэг орцны тоотууд — орцны дугаараар
 async function byEntrance(entrance, buildingId) {
   var q = withEntrance().where('e.number', entrance).orderBy('u.code');
   if (buildingId) q.where('e.building_id', buildingId);
   return q;
 }
 
-// Нэг тоот — орцны дугаартай
 async function find(id) {
   return withEntrance().where('u.id', id).first();
 }
 
-// Тоот + тэнд амьдардаг оршин суугчид
 async function withResidents(id) {
   var unit = await find(id);
   if (!unit) return null;
@@ -56,7 +63,6 @@ async function withResidents(id) {
   return unit;
 }
 
-// Нийт тоот, оршин суугчтай тоот
 async function occupancy(buildingId) {
   var [total, occupied] = await Promise.all([
     inBuilding(db('units').count({ n: '*' }).first(), buildingId, 'id'),
@@ -65,8 +71,6 @@ async function occupancy(buildingId) {
   return { total: Number(total.n), occupied: Number(occupied.n) };
 }
 
-// Тоотын эхний оршин суугчийн нэр — бусад query-ийн select дотор:
-//   .select('u.code', Units.residentName('u.id'))  → мөр бүрд name ирнэ (оршин суугчгүй бол null)
 function residentName(unitColumn) {
   return db.raw(
     "(SELECT s.name FROM users s WHERE s.unit_id = ?? ORDER BY s.id LIMIT 1) AS name",
@@ -74,8 +78,6 @@ function residentName(unitColumn) {
   );
 }
 
-// Тоотын жагсаалт — оршин суугчийн нэр, тоо, өртэй. { entrance, q }
-// q — тоот эсвэл оршин суугчийн нэрээр хайна
 async function list(filters, buildingId) {
   filters = filters || {};
   var residents = db('users')
@@ -85,7 +87,6 @@ async function list(filters, buildingId) {
     .groupBy('unit_id')
     .as('r');
 
-  // Төлөгдөөгүй нэхэмжлэлүүдийн үлдэгдэл (нэхэмжилсэн − төлсөн)
   var debt = db.raw(
     "(SELECT COALESCE(SUM(i.amount - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)), 0)" +
       " FROM invoices i WHERE i.unit_id = u.id AND i.status IN ('unpaid', 'partial')) AS debt"

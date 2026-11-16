@@ -1,11 +1,18 @@
-// Санал хураалт — нэг тоот нэг л санал өгнө
+/**
+ * polls, poll_options, poll_votes хүснэгтүүд - санал хураалт
+ * Нэг тоот нэг л санал өгнө: unique(poll_id, unit_id)
+ *
+ * up(knex) - гурван хүснэгт үүсгэнэ
+ * down(knex) - эсрэг дарааллаар устгана (FK-тай хүснэгтүүд эхэлж)
+ */
+
 async function up(knex) {
   await knex.schema.createTable('polls', function (t) {
     t.increments('id');
     t.integer('created_by').unsigned().references('users.id').onDelete('SET NULL');
     t.string('title', 150).notNullable();
     t.text('description');
-    t.tinyint('threshold_percent').unsigned().notNullable().defaultTo(50); // хүчинтэй болох ирцийн босго
+    t.tinyint('threshold_percent').unsigned().notNullable().defaultTo(50);
     t.datetime('starts_at').notNullable().defaultTo(knex.fn.now());
     t.datetime('ends_at').notNullable();
     t.timestamps(true, true);
@@ -30,7 +37,6 @@ async function up(knex) {
   });
 }
 
-// Үүсгэснээс эсрэг дарааллаар устгана — FK-тай хүснэгтүүд эхэлж
 async function down(knex) {
   await knex.schema.dropTable('poll_votes');
   await knex.schema.dropTable('poll_options');

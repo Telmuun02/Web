@@ -1,22 +1,27 @@
-// Оршин суугчид (users): user1@sokh.mn … userN@sokh.mn (~150), нууц үг бүгд 11111111
-// Орц бүрийн ахлагч
-//   npm run seed
-// 01_demo_invoices.js-ийн тоот, 02_demo_admins.js-ийн ажилтнууд байх ёстой.
-// Дахин ажиллуулж болно: @sokh.mn оршин суугчдыг устгаад шинээр үүсгэнэ
-// (requests, poll_votes, entrances дээрх холбоос нь SET NULL).
+/**
+ * Оршин суугчид (users): user1@sokh.mn … userN@sokh.mn (~150), нууц үг бүгд 11111111
+ * Орц бүрийн ахлагч
+ * 01_demo_invoices.js-ийн тоот, 02_demo_admins.js-ийн ажилтнууд байх ёстой.
+ * Дахин ажиллуулж болно: @sokh.mn оршин суугчдыг устгаад шинээр үүсгэнэ
+ * (requests, poll_votes, entrances дээрх холбоос нь SET NULL).
+ *
+ * random(seed) - тогтмол "санамсаргүй" тоо
+ * pick(list, seed) - жагсаалтаас нэгийг сонгоно
+ * residentsFor(units) - тоот бүрт 0–2 оршин суугч үүсгэнэ
+ * seed(knex) - оршин суугчид болон орцны ахлагчдыг оруулна
+ */
+
 var bcrypt = require('bcryptjs');
 
 var DOMAIN = '@sokh.mn';
 var PASSWORD = '11111111';
 
-// Байрандаа амьдардаг ажилтан — users-д ч бүртгэлтэй, нэвтрэхдээ аль нэгийг сонгоно. 1-01 тоотод
 var STAFF_RESIDENTS = ['admin8@sokh.mn'];
 
 var INITIALS = 'БДГОЦЭНСТЖМАЛХЧПРЯ'.split('');
 var MALE = ['Бат-Эрдэнэ', 'Ганбаатар', 'Тэмүүлэн', 'Мөнх-Очир', 'Билгүүн', 'Эрдэнэбат', 'Сүхбат', 'Төгөлдөр', 'Анхбаяр', 'Ганхуяг', 'Батжаргал', 'Пүрэвдорж', 'Энхбаяр', 'Цогтбаяр', 'Хүслэн'];
 var FEMALE = ['Анужин', 'Сарнай', 'Оюунаа', 'Мөнхзул', 'Нандин-Эрдэнэ', 'Энхжин', 'Цэцэгмаа', 'Болормаа', 'Хулан', 'Солонго', 'Уянга', 'Номуун', 'Гэрэлмаа', 'Наранцэцэг', 'Индра'];
 
-// Тогтмол "санамсаргүй" тоо — seed бүрд ижил өгөгдөл гарна
 function random(seed) {
   var x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
@@ -26,7 +31,6 @@ function pick(list, seed) {
   return list[Math.floor(random(seed) * list.length)];
 }
 
-// Тоот бүрт 0–2 оршин суугч: ~12% нь хоосон, ~45%-д нь гэр бүлийн 2 дахь гишүүн
 function residentsFor(units) {
   var rows = [];
   units.forEach(function (unit, u) {
@@ -50,23 +54,20 @@ async function seed(knex) {
   var units = await knex('units').select('id').orderBy('id');
   if (!units.length) throw new Error('Эхлээд 01_demo_invoices.js-ийг ажиллуулж тоот үүсгэнэ үү');
 
-  await knex('users').where('email', 'like', '%sokh.mn').del(); // хуучин @demo.sokh.mn-ийг ч хамарна
+  await knex('users').where('email', 'like', '%sokh.mn').del();
 
-  var passwordHash = await bcrypt.hash(PASSWORD, 10); // бүгдэд ижил
+  var passwordHash = await bcrypt.hash(PASSWORD, 10);
 
-  // 1. Оршин суугчид: user1, user2, …
   var residents = residentsFor(units).map(function (r) {
     return { ...r, password_hash: passwordHash };
   });
   await knex.batchInsert('users', residents, 200);
 
-  // 2. Байрандаа амьдардаг ажилтан — нэр, утас нь admins-аас
   var staff = await knex('admins').whereIn('email', STAFF_RESIDENTS).select('name', 'phone', 'email');
   for (var s of staff) {
     await knex('users').insert({ ...s, unit_id: units[0].id, password_hash: passwordHash });
   }
 
-  // 3. Орцны ахлагч — тухайн орцны анхны оршин суугч
   var entrances = await knex('entrances').select('id');
   for (var e of entrances) {
     var leader = await knex('users as us')

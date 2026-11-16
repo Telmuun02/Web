@@ -1,30 +1,36 @@
+/**
+ * Users - оршин суугч (users хүснэгт), тоотод (unit_id) холбогдоно
+ * password_hash-ийг энгийн query-д буцаахгүй (publicColumns)
+ *
+ * base: all, find, where, create, update, remove
+ * findForLogin(login) - имэйл эсвэл утсаар, password_hash-тай нь (нэвтрэхэд)
+ * findWithPassword(id) - id-аар, password_hash-тай нь (мэдээлэл солихын өмнө шалгахад)
+ * residentCount(buildingId) - тоотод холбогдсон оршин суугчийн тоо
+ * recentResidents(limit, buildingId) - сүүлд бүртгэгдсэн оршин суугчид
+ */
+
 var db = require('..');
 var createModel = require('./base');
 var Units = require('./units');
 
-// password_hash-ийг API руу хэзээ ч буцаахгүй
 var publicColumns = ['id', 'unit_id', 'name', 'phone', 'email', 'created_at', 'updated_at'];
 
 var base = createModel('users', { columns: publicColumns });
 
-// Нэвтрэх үед л password_hash хэрэгтэй — имэйл эсвэл утсаар хайна
 async function findForLogin(login) {
   return db('users').where({ email: login }).orWhere({ phone: login }).first();
 }
 
-// Мэдээлэл солихын өмнө нууц үг шалгахад — id-аар password_hash-тай нь авна
 async function findWithPassword(id) {
   return db('users').where({ id: id }).first();
 }
 
-// Бүртгэлтэй оршин суугчийн тоо — тоотод холбогдсон хэрэглэгч
 async function residentCount(buildingId) {
   var q = db('users').whereNotNull('unit_id').count({ n: '*' }).first();
   var row = await Units.inBuilding(q, buildingId, 'unit_id');
   return Number(row.n);
 }
 
-// Сүүлд бүртгэгдсэн оршин суугчид — тоотын кодтой
 async function recentResidents(limit, buildingId) {
   var q = db('users as s')
     .leftJoin('units as u', 'u.id', 's.unit_id')

@@ -11,6 +11,11 @@ var app = express();
 // Хүсэлт бүр терминалд товч харагдана (файлд бичихгүй).
 // Чатботын хүсэлтүүдийг алгасна — тэдгээрийн лог зөвхөн npm run logs-
 var quietPaths = ['/api/resident/chat', '/api/resident/transcribe'];
+
+/** 
+ * Доорх нь middleware уудыг хийсэн ба эдгээрээр дамжиж хүсэлт ирэх болно.
+ */
+
 app.use(morgan('dev', {
   skip: function (req) { return quietPaths.indexOf(req.originalUrl.split('?')[0]) !== -1; },
 }));
@@ -19,10 +24,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API замууд — routes/api.js
 app.use('/api', apiRouter);
 
-// Байхгүй API зам
 app.use('/api', function (req, res) {
   res.status(404).json({ error: 'Зам олдсонгүй' });
 });

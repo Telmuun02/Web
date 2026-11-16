@@ -1,9 +1,23 @@
+/**
+ * Polls - санал хураалт (polls, poll_options, poll_votes хүснэгтүүд)
+ * Нэг тоот нэг санал хураалтад нэг л санал өгнө
+ *
+ * base: all, find, where, create, update, remove
+ * active() - одоо явагдаж байгаа санал хураалтууд
+ * results(id) - сонголт бүрийн санал, ирц, босгод хүрсэн эсэх
+ * createWithOptions(data, labels) - санал хураалт сонголтуудтай нь хамт үүсгэнэ
+ * vote(pollId, optionId, userId) - санал өгөх, тоотыг оршин суугчаас авна
+ * voteStats(pollId) - нийт санал, сүүлийн 1 цагийнх
+ * recentVotes(pollId, limit) - сүүлд санал өгсөн тоотууд
+ * list() - бүх санал хураалт, status (upcoming/active/ended) болон yes_votes-той
+ * votesOfUnit(unitId) - тоотын өгсөн саналууд { [poll_id]: option_id }
+ */
+
 var db = require('..');
 var createModel = require('./base');
 
 var base = createModel('polls');
 
-// Одоо явагдаж байгаа санал хураалтууд
 async function active() {
   return db('polls')
     .where('starts_at', '<=', db.fn.now())
@@ -11,7 +25,6 @@ async function active() {
     .orderBy('ends_at');
 }
 
-// Санал хураалт + сонголт бүрийн санал, ирц, босгод хүрсэн эсэх
 async function results(id) {
   var poll = await base.find(id);
   if (!poll) return null;
@@ -39,7 +52,6 @@ async function results(id) {
   return poll;
 }
 
-// Санал хураалт сонголтуудтай нь хамт үүсгэнэ
 async function createWithOptions(data, labels) {
   var id = await db.transaction(async function (trx) {
     var [pollId] = await trx('polls').insert(data);
@@ -53,8 +65,6 @@ async function createWithOptions(data, labels) {
   return results(id);
 }
 
-// Нэг тоот нэг л удаа санал өгнө — давтвал DB-ийн unique алдаа (ER_DUP_ENTRY) гарна.
-// Тоотыг оршин суугчийн өөрийнхөөс авна — өөр тоотын нэрээр санал өгөх боломжгүй
 async function vote(pollId, optionId, userId) {
   var option = await db('poll_options').where({ id: optionId, poll_id: pollId }).first();
   var user = await db('users').where({ id: userId }).first();
@@ -64,7 +74,6 @@ async function vote(pollId, optionId, userId) {
   return results(pollId);
 }
 
-// Нэг санал хураалтын нийт санал, сүүлийн 1 цагийнх
 async function voteStats(pollId) {
   var row = await db('poll_votes')
     .where('poll_id', pollId)
@@ -73,7 +82,6 @@ async function voteStats(pollId) {
   return { votes: Number(row.votes), lastHour: Number(row.last_hour) };
 }
 
-// Сүүлд санал өгсөн тоотууд
 async function recentVotes(pollId, limit) {
   return db('poll_votes as v')
     .join('units as u', 'u.id', 'v.unit_id')
@@ -83,9 +91,6 @@ async function recentVotes(pollId, limit) {
     .limit(limit);
 }
 
-// Бүх санал хураалт, шинээс нь — саналын тоо, ирц, төлөвтэй.
-// status: 'upcoming' (эхлээгүй) | 'active' (явагдаж байна) | 'ended' (дууссан)
-// yes_votes — эхний сонголтын (position 0, ихэвчлэн «Тийм») санал
 async function list() {
   var votes = db('poll_votes').select('poll_id').count({ votes: '*' }).groupBy('poll_id').as('v');
   var yesVotes = db.raw(
@@ -117,7 +122,6 @@ async function list() {
   });
 }
 
-// Тоотын өгсөн саналууд — { [poll_id]: option_id }
 async function votesOfUnit(unitId) {
   var rows = await db('poll_votes').select('poll_id', 'option_id').where('unit_id', unitId);
   var map = {};

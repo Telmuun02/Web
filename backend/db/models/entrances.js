@@ -1,9 +1,16 @@
+/**
+ * Entrances - байрны орц (entrances хүснэгт)
+ * Орц бүр ахлагч (users) болон хариуцсан ажилтантай (admins)
+ *
+ * base: all, find, where, create, update, remove
+ * list(buildingId) - байрны орцууд, тоотын тоо, ахлагч, ажилтны нэртэй
+ */
+
 var db = require('..');
 var createModel = require('./base');
 
 var base = createModel('entrances');
 
-// Байрны орцууд — тоотын тоо, ахлагч, хариуцсан ажилтны нэртэй
 async function list(buildingId) {
   var q = db('entrances as e')
     .leftJoin('users as l', 'l.id', 'e.leader_id')

@@ -1,16 +1,25 @@
+/**
+ * Payments - төлбөр (payments хүснэгт). Нэг нэхэмжлэлийг хувааж төлж болно
+ *
+ * base: all, find, where, create, update, remove
+ * forInvoice(invoiceId) - нэг нэхэмжлэлийн төлбөрүүд
+ * record(invoiceId, data) - төлбөр бүртгээд нэхэмжлэлийн төлөвийг шинэчилнэ (transaction)
+ * todayTotal(buildingId) - өнөөдөр орсон нийт дүн, төлбөрийн тоо
+ * hourly(hours, buildingId) - сүүлийн n цагийн орлого, цаг тутам
+ * recent(limit, buildingId) - сүүлийн төлбөрүүд, тоот, оршин суугчийн нэртэй
+ * forUnit(unitId, limit) - нэг тоотын төлбөрийн түүх, шинээс нь
+ */
+
 var db = require('..');
 var createModel = require('./base');
 var Units = require('./units');
 
 var base = createModel('payments');
 
-// Нэг нэхэмжлэлийн төлбөрүүд
 async function forInvoice(invoiceId) {
   return db('payments').where({ invoice_id: invoiceId }).orderBy('paid_at');
 }
 
-// Төлбөр бүртгээд нэхэмжлэлийн төлөвийг (unpaid/partial/paid) шинэчилнэ.
-// Хоёулаа нэг transaction дотор — аль нэг нь алдвал юу ч хадгалагдахгүй.
 async function record(invoiceId, data) {
   return db.transaction(async function (trx) {
     var invoice = await trx('invoices').where({ id: invoiceId }).forUpdate().first();
@@ -27,7 +36,6 @@ async function record(invoiceId, data) {
   });
 }
 
-// Өнөөдөр орсон төлбөр — нийт дүн (₮), хэдэн төлбөр
 async function todayTotal(buildingId) {
   var q = db('payments as p')
     .join('invoices as i', 'i.id', 'p.invoice_id')
@@ -38,8 +46,6 @@ async function todayTotal(buildingId) {
   return { amount: Number(row.amount), count: Number(row.count) };
 }
 
-// Сүүлийн n цагийн орлого, цаг тутам — [{ hour: 9, amount: 340000 }].
-// Төлбөргүй цаг жагсаалтад орохгүй — controller 0-ээр нөхнө
 async function hourly(hours, buildingId) {
   var q = db('payments as p')
     .join('invoices as i', 'i.id', 'p.invoice_id')
@@ -52,7 +58,6 @@ async function hourly(hours, buildingId) {
   });
 }
 
-// Сүүлийн төлбөрүүд — тоот, оршин суугчийн нэртэй
 async function recent(limit, buildingId) {
   var q = db('payments as p')
     .join('invoices as i', 'i.id', 'p.invoice_id')
@@ -63,7 +68,6 @@ async function recent(limit, buildingId) {
   return Units.inBuilding(q, buildingId, 'i.unit_id');
 }
 
-// Нэг тоотын төлбөрийн түүх, шинээс нь — аль сарын нэхэмжлэлд орсон нь (period)-той
 async function forUnit(unitId, limit) {
   return db('payments as p')
     .join('invoices as i', 'i.id', 'p.invoice_id')

@@ -1,3 +1,25 @@
+/**
+ * Requests - засварын хүсэлт (requests хүснэгт)
+ * Таб (stage) DB-д байхгүй, status болон assigned_to-оос гаргана:
+ *   open (шийдээгүй бүгд), new, assigned, progress, done
+ *
+ * base: all, find, where, create, update, remove
+ * categories - ангиллууд (DB-ийн enum-тэй ижил)
+ * stages - табуудын жагсаалт
+ * whereStage(q, stage) - (дотоод) query-д табын нөхцөл нэмнэ
+ *
+ * stageOf(r) - мөр аль табынх вэ
+ * list(filters, buildingId) - хүсэлтүүд { stage, limit, offset }, шинэ нь эхэндээ
+ * stageCounts(buildingId) - таб бүрийн тоо
+ * openCount(buildingId) - шийдвэрлэгдээгүй хүсэлтийн тоо
+ * countByCategory(from, buildingId) - ангилал бүрээр хэдэн хүсэлт (Dashboard)
+ * avgResolveHours(from, buildingId) - дунджаар хэдэн цагт шийддэг
+ * setStatus(id, status) - төлөв солих, шийдсэн бол resolved_at тэмдэглэнэ
+ * resolvedToday(buildingId) - өнөөдөр шийдсэн тоо
+ * recent(limit, buildingId) - сүүлд өөрчлөгдсөн хүсэлтүүд
+ * forUser(userId, limit) - оршин суугчийн өөрийн хүсэлтүүд
+ */
+
 var db = require('..');
 var createModel = require('./base');
 var Units = require('./units');
@@ -6,15 +28,8 @@ var base = createModel('requests');
 
 var openStatuses = ['open', 'in_progress'];
 
-// Хүсэлтийн ангилал — DB-ийн enum-тэй ижил
 var categories = ['plumbing', 'electrical', 'cleaning', 'elevator', 'other'];
 
-// Табууд (stage) DB-д шууд байхгүй — status, assigned_to-оос гаргана:
-//   open     — шийдээгүй бүгд (open, in_progress)
-//   new      — open, засварчин томилоогүй
-//   assigned — open, засварчин томилсон
-//   progress — in_progress
-//   done     — resolved эсвэл rejected
 var stages = ['open', 'new', 'assigned', 'progress', 'done'];
 
 function whereStage(q, stage) {
@@ -25,14 +40,12 @@ function whereStage(q, stage) {
   if (stage === 'done') q.whereIn('r.status', ['resolved', 'rejected']);
 }
 
-// Мөр бүрийн таб — frontend өнгө, алхмаа үүгээр сонгоно
 function stageOf(r) {
   if (r.status === 'open') return r.assigned_to ? 'assigned' : 'new';
   if (r.status === 'in_progress') return 'progress';
   return 'done';
 }
 
-// Хүсэлтүүд — { stage, limit, offset }. Шинэ нь эхэндээ
 async function list(filters, buildingId) {
   filters = filters || {};
   var q = db('requests as r')
@@ -40,7 +53,7 @@ async function list(filters, buildingId) {
     .leftJoin('users as c', 'c.id', 'r.created_by')
     .leftJoin('admins as a', 'a.id', 'r.assigned_to')
     .select('r.*', 'u.code as unit_code', 'c.name as created_by_name', 'a.name as assigned_name')
-    .orderBy([{ column: 'r.created_at', order: 'desc' }, { column: 'r.id', order: 'desc' }]); // id — ижил цагтай мөрүүд хуудас хооронд үсрэхгүй
+    .orderBy([{ column: 'r.created_at', order: 'desc' }, { column: 'r.id', order: 'desc' }]);
 
   if (filters.stage) whereStage(q, filters.stage);
   Units.inBuilding(q, buildingId, 'r.unit_id');
@@ -52,8 +65,6 @@ async function list(filters, buildingId) {
   });
 }
 
-// Табуудын тоо нэг query-гээр — { open, new, assigned, progress, done }
-// MySQL-д (нөхцөл) нь 1/0 тул SUM нь таарсан мөрийн тоо болно
 async function stageCounts(buildingId) {
   var q = db('requests')
     .select(
@@ -68,19 +79,17 @@ async function stageCounts(buildingId) {
 
   var counts = {};
   stages.forEach(function (s) {
-    counts[s] = Number(row[s] || 0); // хоосон хүснэгтэд SUM нь null
+    counts[s] = Number(row[s] || 0);
   });
   return counts;
 }
 
-// Шийдвэрлэгдээгүй хүсэлтийн тоо
 async function openCount(buildingId) {
   var q = db('requests').whereIn('status', openStatuses).count({ c: '*' }).first();
   var row = await Units.inBuilding(q, buildingId, 'unit_id');
   return Number(row.c);
 }
 
-// Ангилал бүрээр хэдэн хүсэлт ирсэн — Dashboard-ийн "Хүсэлт ангиллаар"
 async function countByCategory(from, buildingId) {
   var q = db('requests')
     .select('category')
@@ -95,7 +104,6 @@ async function countByCategory(from, buildingId) {
   });
 }
 
-// Шийдвэрлэсэн хүсэлтийг дунджаар хэдэн цагт шийддэг
 async function avgResolveHours(from, buildingId) {
   var q = db('requests')
     .select(db.raw('AVG(TIMESTAMPDIFF(HOUR, created_at, resolved_at)) AS hours'))
@@ -107,7 +115,6 @@ async function avgResolveHours(from, buildingId) {
   return row.hours == null ? null : Math.round(Number(row.hours));
 }
 
-// Төлөв солих — шийдвэрлэсэн бол resolved_at-ийг тэмдэглэнэ
 async function setStatus(id, status) {
   return base.update(id, {
     status: status,
@@ -115,7 +122,6 @@ async function setStatus(id, status) {
   });
 }
 
-// Өнөөдөр шийдсэн хүсэлтийн тоо
 async function resolvedToday(buildingId) {
   var q = db('requests')
     .where('status', 'resolved')
@@ -126,7 +132,6 @@ async function resolvedToday(buildingId) {
   return Number(row.n);
 }
 
-// Сүүлд өөрчлөгдсөн хүсэлтүүд — тоотын кодтой
 async function recent(limit, buildingId) {
   var q = db('requests as r')
     .leftJoin('units as u', 'u.id', 'r.unit_id')
@@ -136,7 +141,6 @@ async function recent(limit, buildingId) {
   return Units.inBuilding(q, buildingId, 'r.unit_id');
 }
 
-// Оршин суугчийн өөрийн илгээсэн хүсэлтүүд, шинээс нь — засварчны нэр, stage-тэй
 async function forUser(userId, limit) {
   var rows = await db('requests as r')
     .leftJoin('admins as a', 'a.id', 'r.assigned_to')

@@ -1,48 +1,25 @@
 # СӨХ Hub
 
-Орон сууцны өмчлөгчдийн холбоо (СӨХ)-ны удирдлагын систем. Нэг хотхоны (жишээ: "Нарны хотхон") тоот, оршин суугч, сарын хураамжийн нэхэмжлэл ба төлбөр, засварын хүсэлт, санал хураалтыг нэг дор удирдана.
+Орон сууцны өмчлөгчдийн холбоо (СӨХ)-ны удирдлагын систем. Тоот, оршин суугч, сарын нэхэмжлэл ба төлбөр, засварын хүсэлт, зарлал, санал хураалтыг нэг дор удирдана.
 
 Төсөл гурван хэсэгтэй:
 
-- **frontend**: СӨХ-ийн ажилтан (admin) болон оршин суугч (user) ашиглах вэб апп
-- **backend**: REST API, MySQL өгөгдлийн сан
+- **backend**: REST API (Express + MySQL)
+- **frontend**: вэб апп. Ажилтан `/admin/...`, оршин суугч `/...`
 - **mobile**: оршин суугчдад зориулсан утасны апп (Expo)
 
 ---
 
 ## Агуулга
 
-- [Боломжууд](#боломжууд)
 - [Ашигласан технологиуд](#ашигласан-технологиуд)
 - [Архитектур](#архитектур)
-- [Хавтасны бүтэц](#хавтасны-бүтэц)
-- [Шаардлага](#шаардлага)
-- [Суулгах](#суулгах)
-- [Ажиллуулах](#ажиллуулах)
-- [Командууд](#командууд)
+- [Хүсэлт хэрхэн дамждаг вэ](#хүсэлт-хэрхэн-дамждаг-вэ)
+- [Middleware (app.use)](#middleware-appuse)
+- [Нэвтрэлт ба эрх](#нэвтрэлт-ба-эрх)
+- [Хавтасны бүтэц (backend)](#хавтасны-бүтэц-backend)
 - [Өгөгдлийн сан](#өгөгдлийн-сан)
-- [API](#api)
-- [Frontend хуудсууд](#frontend-хуудсууд)
-- [Код бичих дүрэм](#код-бичих-дүрэм)
-- [Одоогийн төлөв](#одоогийн-төлөв)
-- [Түгээмэл алдаа](#түгээмэл-алдаа)
-
----
-
-## Боломжууд
-
-| Боломж | Admin | User |
-| --- | :---: | :---: |
-| Самбар: цуглуулалт, өр, хүсэлт, санал хураалтын тойм | ✅ | ✅ |
-| Нэхэмжлэл ба төлбөр | ✅ | |
-| Засварын хүсэлт илгээх, хянах | ✅ | ✅ |
-| Зарлал | ✅ | ✅ |
-| Санал хураалт (нэг тоот нэг санал, ирцийн босго) | ✅ | ✅ |
-| Тоот ба оршин суугч | ✅ | |
-| Тайлан | ✅ | |
-| Тохиргоо | ✅ | |
-
-Цэсний аль хэсэг хэнд харагдахыг `frontend/src/components/App/Navbar.jsx` доторх `roles` тодорхойлдог.
+- [Лог](#лог)
 
 ---
 
@@ -50,399 +27,196 @@
 
 | Хэсэг | Технологи |
 | --- | --- |
-| Frontend | React 19, Vite 8, React Router 7, MUI Icons, ESLint |
-| Backend | Node.js, Express 4, Knex (query builder, migration), mysql2, bcryptjs, dotenv, Morgan |
+| Backend | Node.js, Express 4, Knex, mysql2, bcryptjs, jsonwebtoken, pino (лог), dotenv |
+| Чатбот | Anthropic SDK (Claude), Chimege (яриа → текст) |
 | Өгөгдлийн сан | MySQL 8.0 (`utf8mb4`) |
+| Frontend | React 19, Vite, React Router 7 |
 | Mobile | React Native, Expo |
-| Фонт | Onest (үндсэн текст), Unbounded (гарчиг) |
 
 ---
 
 ## Архитектур
 
 ```
-Browser (React, :5173)
-   │  fetch('/api/...')
+Browser / Mobile
+   │  fetch('/api/...')   (token: cookie эсвэл Authorization: Bearer)
    ▼
-Express (:3000)
-   app.js ──► routes/api.js ──► controllers/ ──► db/models/ ──► db/index.js (Knex)
-                                                                     │
-                                                                     ▼
-                                                              MySQL (:3306, sukh_hub)
+bin/www ──► app.js ──► routes/api.js ─┬─► /auth, /profile           (бүгд)
+                                      ├─► /admin    ──► routes/admin.js    ──► controllers/admin/*
+                                      └─► /resident ──► routes/resident.js ──► controllers/user/*
+                                                                                 │
+                                                       services/ (чатбот) ◄──────┤
+                                                                                 ▼
+                                                                           db/models/*
+                                                                                 │
+                                                                           db/index.js (Knex)
+                                                                                 ▼
+                                                                         MySQL (sukh_hub)
 ```
 
 | Давхарга | Хавтас | Үүрэг | Laravel-тай харьцуулбал |
 | --- | --- | --- | --- |
-| Route | `backend/routes/api.js` | Аль URL ямар controller функцийг дуудахыг заана | `routes/api.php` |
-| Controller | `backend/controllers/` | Хүсэлтийг уншиж, model дуудаж, JSON хариу буцаана | `app/Http/Controllers` |
-| Model | `backend/db/models/` | Өгөгдлийн сангийн query-нууд | `app/Models` |
-| Migration | `backend/db/migrations/` | Хүснэгтийн бүтэц | `database/migrations` |
-| Тохиргоо | `backend/db/knexfile.js` + `.env` | Холболтын мэдээлэл | `config/database.php` + `.env` |
+| Эхлэл | `bin/www` | HTTP серверийг порт дээр асаана | `public/index.php` |
+| Тохиргоо | `app.js` | Middleware, `/api` холболт, алдаа барих | `bootstrap/app.php` + `Handler.php` |
+| Route | `routes/` | URL → controller функц | `routes/api.php` |
+| Middleware | `middleware/` | Нэвтрэлт, эрх шалгах | `app/Http/Middleware` |
+| Controller | `controllers/` | Хүсэлтийг уншиж, model дуудаж, JSON буцаана | `app/Http/Controllers` |
+| Service | `services/` | Гадны API (Claude, Chimege)-тай ажиллах логик | `app/Services` |
+| Model | `db/models/` | Өгөгдлийн сангийн query-нууд | `app/Models` |
+| Migration | `db/migrations/` | Хүснэгтийн бүтэц | `database/migrations` |
+| Seed | `db/seeds/` | Туршилтын өгөгдөл | `database/seeders` |
+| Лог | `lib/logger.js` | Терминал болон `logs/app.log` | `Log::` facade |
 
 Browser өгөгдлийн сан руу хэзээ ч шууд хандахгүй. Бүх хүсэлт backend API-аар дамжина.
 
 ---
 
-## Хавтасны бүтэц
+## Хүсэлт хэрхэн дамждаг вэ
+
+Жишээ: оршин суугч өөрийн төлбөрийг харах `GET /api/resident/pay`
+
+1. **`bin/www`**: сервер request-ийг хүлээн авч `app.js` руу өгнө.
+2. **`app.js`**: morgan терминалд хэвлэж, JSON body болон cookie-г уншаад `/api`-г `routes/api.js` руу дамжуулна.
+3. **`routes/api.js`**: `/resident` бүлэгт `auth` болон `requireRole('user')` хамгаалалт тавьсан.
+   - `middleware/auth.js`: token-ийг шалгаад `req.user = { id, role }` болгоно. Token байхгүй бол **401**.
+   - `middleware/requireRole.js`: role таарахгүй бол **403**.
+4. **`routes/resident.js`**: `/pay` замыг `payController.show` руу илгээнэ.
+5. **`controllers/user/payController.js`**: `helpers.currentResident(req)`-ээр хэрэглэгч болон тоотыг олоод model-ууд руу хандана.
+6. **`db/models/*`**: Knex-ээр MySQL-ээс өгөгдөл авна.
+7. Controller JSON хариу буцаана. Алдаа гарвал `next(err)` дуудаж, хариуг `app.js`-ийн алдааны handler өгнө.
+
+---
+
+## Middleware (app.use)
+
+`app.use(...)` нь **middleware бүртгэнэ**. Request ирэх бүрт controller-т хүрэхээс өмнө эдгээр функц бичигдсэн дарааллаараа ажиллана. Laravel-ийн `Kernel.php` дахь global middleware-тэй адил санаа.
+
+Middleware нь `(req, res, next)` гэсэн 3 параметр авдаг энгийн функц бөгөөд дараах хоёрын аль нэгийг хийнэ:
+- `req`-д ямар нэг зүйл нэмээд `next()` дуудаж дараагийнх руу шилжүүлнэ,
+- эсвэл `res.json(...)`-оор шууд хариу өгч урсгалыг зогсооно.
+
+```js
+app.use(function (req, res, next) {
+  console.log('хүсэлт ирлээ');
+  next(); // дараагийн middleware руу
+});
+```
+
+### app.js дахь middleware-үүд
+
+| Middleware | Юу хийдэг | Үгүй бол юу болох вэ |
+| --- | --- | --- |
+| `morgan('dev')` | Request бүрийг терминалд хэвлэнэ: `GET /api/admin/units 200 15ms`. Чатботын замуудыг алгасна | Ямар request ирснийг харахгүй |
+| `express.json()` | Body-д ирсэн JSON текстийг объект болгоод `req.body`-д хийнэ | `req.body` нь `undefined` болно |
+| `express.urlencoded()` | HTML form-оор ирсэн `name=Bat&age=20` өгөгдлийг `req.body` болгоно | Form-ийн өгөгдөл уншигдахгүй |
+| `cookieParser()` | `Cookie: token=...` header-ийг задлаад `req.cookies.token` болгоно | `auth.js` cookie-ээс token олохгүй тул вэб дээр нэвтрэлт ажиллахгүй |
+| `express.static('public')` | `public/` доторх файлуудыг шууд илгээнэ | Статик файлууд нээгдэхгүй |
+
+### Жишээ: cookieParser → auth
+
+1. `authController.login` нь `res.cookie('token', token)` гэж browser-т cookie хадгална.
+2. Дараагийн request бүрт browser тэр cookie-г автоматаар илгээнэ.
+3. `cookieParser()` түүнийг задлаад `req.cookies.token` болгоно.
+4. `middleware/auth.js` тэр token-ийг уншиж JWT шалгана.
+
+Mobile cookie биш, `Authorization: Bearer` header ашигладаг.
+
+### Дараалал чухал
+
+`express.json()` болон `cookieParser()` нь `app.use('/api', apiRouter)`-ээс **өмнө** байх ёстой. Үгүй бол controller ажиллах үед `req.body`, `req.cookies` бэлэн болоогүй байна. Хамгийн сүүлд 404 handler болон 4 параметртэй `(err, req, res, next)` алдааны handler ирнэ.
+
+---
+
+## Нэвтрэлт ба эрх
+
+- Ажилтан (`admins` хүснэгт) болон оршин суугч (`users` хүснэгт) **тусдаа хүснэгтэд** хадгалагдана.
+- `POST /api/auth/login` нь `{ login, password, as }` хүлээж авна. `as` нь `'admin'` эсвэл `'user'`, `login` нь имэйл эсвэл утас.
+- Амжилттай нэвтэрвэл JWT (`{ id, role }`) үүсгэнэ. Вэб дээр `httpOnly` cookie-д хадгална, mobile Bearer header-ээр илгээнэ.
+- Ажлаас гарсан ажилтан (`active = false`) болон тоотгүй оршин суугч нэвтэрч чадахгүй.
+- Хамгаалалтыг `routes/api.js`-д бүлэг бүрд **нэг удаа** тавьсан тул `/admin` эсвэл `/resident` дотор шинээр нэмсэн route бүр автоматаар хамгаалагдана.
+- Оршин суугчийн controller-ууд хэрэглэгчийг **үргэлж** `req.user`-аас авна. Frontend-ээс ирсэн `user_id`, `unit_id`-д итгэхгүй.
+
+---
+
+## Хавтасны бүтэц (backend)
 
 ```
-Web/
-├── backend/
-│   ├── bin/www                  # Серверийг асаах файл (порт: 3000)
-│   ├── app.js                   # Express тохиргоо, /api холболт, алдаа барих
-│   ├── routes/
-│   │   └── api.js               # Бүх API зам нэг дор
-│   ├── controllers/
-│   │   ├── dashboardController.js
-│   │   └── unitsController.js
-│   ├── db/
-│   │   ├── index.js             # Knex холболт — require('../db')
-│   │   ├── knexfile.js          # Холболтын тохиргоо (.env-ээс уншина)
-│   │   ├── check.js             # Холболт шалгах скрипт
-│   │   ├── create-user.js       # Хэрэглэгч нэмэх / нууц үг шинэчлэх скрипт
-│   │   ├── migrations/          # Хүснэгтийн бүтэц
-│   │   └── models/              # Query-нууд (base.js + хүснэгт бүрт нэг файл)
-│   ├── public/                  # Статик файлууд
-│   ├── .env.example             # Орчны хувьсагчийн загвар
-│   └── package.json
+backend/
+├── bin/www                  # Серверийг асаана, барьж аваагүй алдааг логлоно
+├── app.js                   # Express тохиргоо, /api холболт, 404, алдаа барих
 │
-├── frontend/
-│   ├── index.html
-│   ├── vite.config.js
-│   └── src/
-│       ├── main.jsx             # Эхлэл — BrowserRouter
-│       ├── App.jsx              # Route-ууд, хэрэглэгчийн state
-│       ├── App.css              # Дизайны өнгөнүүд (--navy, --yellow, ...)
-│       ├── index.css
-│       ├── api/
-│       │   └── auth.js          # Нэвтрэлтийн API дуудлагууд
-│       ├── components/
-│       │   ├── Page.jsx         # Түр хоосон хуудас
-│       │   ├── App/             # Нэвтэрсний дараах хүрээ
-│       │   │   ├── Layout.jsx + .css     # Navbar + <Outlet />, нэвтрэлт шалгана
-│       │   │   ├── Navbar.jsx + .css     # Хажуугийн цэс (role-оор шүүнэ)
-│       │   │   └── Brand.jsx + .css      # СӨХ Hub лого
-│       │   └── Auth/            # Нэвтрэх, сэргээх хуудсуудын компонентууд
-│       │       ├── AuthLayout.jsx + .css
-│       │       └── PasswordInput.jsx + .css
-│       └── pages/
-│           ├── Dashboard.jsx
-│           ├── Login.jsx
-│           ├── ForgotPassword.jsx
-│           └── styles/          # Хуудсуудын CSS
-│               ├── Dashboard.css
-│               └── Auth.css
+├── routes/
+│   ├── api.js               # Эх route: /auth, /profile, /admin, /resident
+│   ├── admin.js             # /api/admin/...    (ажилтан)
+│   └── resident.js          # /api/resident/... (оршин суугч)
 │
-├── mobile/                      # Expo апп
-│   ├── App.js
-│   ├── app.json
-│   └── package.json
+├── middleware/
+│   ├── auth.js              # JWT шалгаж req.user тавина
+│   └── requireRole.js       # Role шалгана (auth-ийн дараа)
 │
-└── README.md
+├── controllers/
+│   ├── authController.js    # login, logout, me
+│   ├── profileController.js # Профайл засах (хоёр role)
+│   ├── admin/               # dashboard, invoices, requests, units, polls,
+│   │                        # announcements, reports, staff, live
+│   └── user/                # home, pay, requests, news, profile, chat, voice
+│       └── helpers.js       # currentResident(req) гэх мэт нийтлэг функц
+│
+├── services/
+│   ├── chatService.js       # Claude-тай ярилцах (чатбот)
+│   ├── chatTools.js         # Чатботын дууддаг функцүүд (нэхэмжлэл, хүсэлт...)
+│   └── chimegeService.js    # Яриа → текст (Chimege STT)
+│
+├── db/
+│   ├── index.js             # Knex холболт
+│   ├── knexfile.js          # Холболтын тохиргоо (.env-ээс)
+│   ├── check.js             # Холболт шалгах скрипт
+│   ├── create-user.js       # Хэрэглэгч үүсгэх скрипт
+│   ├── migrations/          # Хүснэгтийн бүтэц
+│   ├── models/              # base.js (нийтлэг CRUD) + хүснэгт бүрт нэг файл
+│   └── seeds/               # Demo өгөгдөл
+│
+├── lib/logger.js            # pino logger (терминал + logs/app.log)
+├── scripts/                 # logs.js, clear-logs.js
+├── logs/                    # Лог файлууд
+└── public/                  # Статик файлууд
 ```
-
----
-
-## Шаардлага
-
-- [Node.js](https://nodejs.org/) 20 буюу түүнээс дээш хувилбар, npm
-- [MySQL Community Server](https://dev.mysql.com/downloads/installer/) 8.0, порт **3306** дээр ажиллаж байх
-- (Заавал биш) MySQL Workbench: хүснэгтээ харахад
-- (Mobile) утсандаа [Expo Go](https://expo.dev/go) апп
-
----
-
-## Суулгах
-
-### 1. Хамаарлуудыг суулгах
-
-```bash
-cd backend
-npm install
-
-cd ../frontend
-npm install
-
-cd ../mobile
-npm install
-```
-
-### 2. Өгөгдлийн сан үүсгэх
-
-MySQL Workbench эсвэл MySQL Command Line Client дээр:
-
-```sql
-CREATE DATABASE sukh_hub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-`utf8mb4` нь кирилл үсгийг зөв хадгалахад заавал хэрэгтэй.
-
-### 3. `.env` файл үүсгэх
-
-```bash
-cd backend
-cp .env.example .env
-```
-
-`backend/.env` доторх утгуудыг өөрийн MySQL-ийн мэдээллээр бөглөнө:
-
-```
-PORT=3000
-
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=таны_нууц_үг
-DB_NAME=sukh_hub
-```
-
-> ⚠️ `.env` нь `.gitignore`-д орсон тул git-д орохгүй. Нууц үгээ хэзээ ч commit хийж болохгүй. Багийнхандаа хуваалцах бол зөвхөн `.env.example`-ийг шинэчилнэ.
-
-### 4. Холболтыг шалгах
-
-```bash
-npm run db:check
-# MySQL холбогдлоо — хувилбар 8.0.x, database: sukh_hub
-```
-
-### 5. Хүснэгтүүдийг үүсгэх
-
-```bash
-npm run migrate
-```
-
-### 6. Admin хэрэглэгч үүсгэх
-
-```bash
-npm run user:create -- --email admin@example.com --name "Нэр" --role admin
-```
-
-`--password` өгөхгүй бол санамсаргүй нууц үг үүсгээд терминалд нэг удаа хэвлэнэ. Ижил имэйлтэй хэрэглэгч байвал шинээр нэмэхгүй, нэр, role, нууц үгийг нь шинэчилнэ.
-
----
-
-## Ажиллуулах
-
-Тусдаа терминалуудад:
-
-**Backend** (http://localhost:3000):
-
-```bash
-cd backend
-npm start
-```
-
-Портыг өөрчлөх бол PowerShell дээр: `$env:PORT=4000; npm start`
-
-**Frontend** (http://localhost:5173):
-
-```bash
-cd frontend
-npm run dev
-```
-
-**Mobile:**
-
-```bash
-cd mobile
-npm start
-```
-
-Терминалд гарах QR кодыг утасныхаа Expo Go аппаар уншуулна.
-
----
-
-## Командууд
-
-### Backend
-
-| Команд | Тайлбар |
-| --- | --- |
-| `npm start` | Серверийг асаана |
-| `npm run db:check` | MySQL холболтыг шалгана |
-| `npm run migrate` | Хийгдээгүй migration-уудыг ажиллуулна |
-| `npm run migrate:rollback` | Сүүлийн migration багцыг буцаана |
-| `npm run migrate:status` | Аль migration хийгдсэнийг харуулна |
-| `npm run migrate:make -- нэр` | Шинэ migration файл үүсгэнэ |
-| `npm run seed` | Seed өгөгдөл оруулна |
-| `npm run seed:make -- нэр` | Шинэ seed файл үүсгэнэ |
-| `npm run user:create -- --email ... --name ... [--role admin] [--phone ...] [--password ...]` | Хэрэглэгч нэмнэ эсвэл шинэчилнэ |
-
-> `npx knex ...` командыг шууд ашиглах бол knexfile `db/` дотор байгаа тул `npx knex --knexfile db/knexfile.js ...` гэж бичнэ.
-
-### Frontend
-
-| Команд | Тайлбар |
-| --- | --- |
-| `npm run dev` | Хөгжүүлэлтийн серверийг асаана |
-| `npm run build` | Production хувилбарыг `dist/` руу бэлдэнэ |
-| `npm run preview` | Build хийсэн хувилбарыг шалгаж үзнэ |
-| `npm run lint` | ESLint-ээр кодыг шалгана |
-
-### Mobile
-
-| Команд | Тайлбар |
-| --- | --- |
-| `npm start` | Expo хөгжүүлэлтийн сервер |
-| `npm run android` / `ios` / `web` | Тухайн платформ дээр нээнэ |
 
 ---
 
 ## Өгөгдлийн сан
 
-Өгөгдлийн сан: `sukh_hub` (MySQL 8.0, `utf8mb4`). Одоогоор Dashboard-д шаардлагатай хүснэгтүүд л үүссэн.
-
-| Хүснэгт | Агуулга | Гол баганууд |
-| --- | --- | --- |
-| `units` | Тоот | `code` ('1-12'), `entrance` (орц), `floor`, `area_m2` |
-| `users` | Хэрэглэгч | `name`, `email`, `phone`, `password_hash`, `role` (admin/user), `unit_id` |
-| `invoices` | Сарын нэхэмжлэл | `unit_id`, `period` (сарын 1-ний өдөр), `amount`, `due_date`, `status` (unpaid/partial/paid) |
-| `payments` | Төлбөр | `invoice_id`, `amount`, `method` (cash/bank/qpay/card), `paid_at` |
-| `requests` | Засварын хүсэлт | `category`, `title`, `status` (open/in_progress/resolved/rejected), `resolved_at` |
-| `polls` | Санал хураалт | `title`, `threshold_percent`, `starts_at`, `ends_at` |
-| `poll_options` | Сонголтууд | `poll_id`, `label`, `position` |
-| `poll_votes` | Өгсөн саналууд | `poll_id`, `option_id`, `unit_id` |
+| Хүснэгт | Агуулга |
+| --- | --- |
+| `buildings` | Байр |
+| `entrances` | Орц (байранд харьяалагдана, давхрын тоо, хариуцсан ажилтан) |
+| `units` | Тоот (орцонд харьяалагдана) |
+| `users` | Оршин суугч (тоотод холбогдоно) |
+| `admins` | СӨХ-ийн ажилтан (`active`: устгахгүй, идэвхгүй болгоно) |
+| `invoices` | Сарын нэхэмжлэл, `unique(unit_id, period)` |
+| `payments` | Төлбөр (нэхэмжлэлд холбогдоно) |
+| `requests` | Засварын хүсэлт (засварчин томилж болно) |
+| `announcements` | Зарлал (`entrance_id = NULL` бол бүх орцод) |
+| `polls`, `poll_options`, `poll_votes` | Санал хураалт, нэг тоот нэг санал |
 
 Дүрмүүд:
 
 - Мөнгөн дүнг бүхэл тоогоор (₮) хадгална.
-- Нэг тоотод нэг сард нэг нэхэмжлэл байна: `unique(unit_id, period)`.
-- Нэг тоот нэг санал хураалтад нэг л санал өгнө: `unique(poll_id, unit_id)`.
-- Нууц үгийг зөвхөн bcrypt hash хэлбэрээр хадгална. `Users` model энгийн query-нуудад `password_hash`-ийг буцаадаггүй.
-- Ангилал, төлөвүүдийг англи түлхүүрээр (`plumbing`, `open`, ...) хадгалж, Монгол нэрийг frontend дээр харуулна.
+- Санхүүгийн түүх болон саналыг устгахгүй: FK-ууд `RESTRICT`.
+- Нууц үгийг зөвхөн bcrypt hash хэлбэрээр хадгална.
 
-Дараа нэмэх хүснэгтүүд: `fees` (хураамжийн тохиргоо), `announcements` (зарлал), `password_resets`, `sessions`.
+### Model-ууд
 
-### Model-ууд (`backend/db/models/`)
-
-Model бүр `base.js`-ийн нийтлэг CRUD функцуудыг (`all`, `find`, `where`, `create`, `update`, `remove`) авч, өөрт хэрэгтэй query-нуудыг нэмдэг.
-
-| Model | Нэмэлт функцууд |
-| --- | --- |
-| `Units` | `byEntrance(n)`, `withResidents(id)` |
-| `Users` | `findForLogin(email эсвэл утас)`, `admins()` |
-| `Invoices` | `forUnit(id)`, `monthlySummary(from)`, `debtors(limit)`, `overdueTotal()` |
-| `Payments` | `forInvoice(id)`, `record(invoiceId, data)`: төлбөр бүртгээд нэхэмжлэлийн төлөвийг transaction дотор шинэчилнэ |
-| `Requests` | `list(filters)`, `openCount()`, `countByCategory(from)`, `avgResolveHours(from)`, `setStatus(id, status)` |
-| `Polls` | `active()`, `results(id)`, `createWithOptions(data, labels)`, `vote(pollId, optionId, unitId, userId)` |
+Model бүр `base.js`-ийн нийтлэг CRUD функцүүдийг (`all`, `find`, `where`, `create`, `update`, `remove`) авч, өөрт хэрэгтэй query-нуудыг нэмдэг.
 
 ```js
 var { Units, Invoices } = require('../db/models');
-var debtors = await Invoices.debtors(6);
 ```
 
 ---
 
-## API
+## Лог
 
-Бүх зам `/api` угтвартай бөгөөд `backend/routes/api.js` дотор тодорхойлогдсон. Хариу нь JSON хэлбэртэй.
-
-| Method | Зам | Controller | Тайлбар |
-| --- | --- | --- | --- |
-| GET | `/api/dashboard` | `dashboardController.show` | Самбарын бүх өгөгдөл нэг дор |
-| GET | `/api/units` | `unitsController.index` | Тоотууд (`?entrance=1`) |
-| GET | `/api/units/:id` | `unitsController.show` | Тоот + оршин суугчид |
-| POST | `/api/units` | `unitsController.store` | Шинэ тоот |
-| PUT | `/api/units/:id` | `unitsController.update` | Тоот засах |
-| DELETE | `/api/units/:id` | `unitsController.destroy` | Тоот устгах |
-
-> ⚠️ Controller функцууд одоогоор хоосон байгаа (бичигдэж байна). Хоосон функц хариу буцаадаггүй тул тэр замыг дуудвал хүсэлт хариугүй өлгөгдөнө.
-
-Алдааны хариу:
-
-| Код | Хэзээ |
-| --- | --- |
-| 400 | Шаардлагатай талбар дутуу |
-| 404 | Мөр эсвэл зам олдсонгүй: `{ "error": "..." }` |
-| 409 | Давхардсан утга (MySQL `ER_DUP_ENTRY`) |
-| 500 | Серверийн алдаа. `next(err)` дуудахад `app.js`-ийн алдааны middleware хариулна |
-
-Төлөвлөсөн замууд: `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/invoices`, `/api/requests`, `/api/polls`.
-
----
-
-## Frontend хуудсууд
-
-| Зам | Хуудас | Хэнд |
-| --- | --- | --- |
-| `/login` | Нэвтрэх | Бүгд |
-| `/forgot-password` | Нууц үг сэргээх (код → шинэ нууц үг) | Бүгд |
-| `/` | Самбар | admin, user |
-| `/invoices` | Нэхэмжлэл ба төлбөр | admin |
-| `/invoices/settings` | Хураамжийн тохиргоо | admin |
-| `/requests` | Засварын хүсэлт | admin, user |
-| `/announcements` | Зарлал | admin, user |
-| `/polls` | Санал хураалт | admin, user |
-| `/units` | Тоот ба оршин суугч | admin |
-| `/reports` | Тайлан | admin |
-| `/settings` | Тохиргоо | admin |
-
-- `/login` болон `/forgot-password` хуудсууд `AuthLayout` (зүүн талд navy хэсэг) ашигладаг.
-- Бусад хуудсууд `Layout`-ын `<Outlet />` дотор гарна. Нэвтрээгүй хэрэглэгчийг `Layout` автоматаар `/login` руу шилжүүлнэ.
-- Хуудсууд нэвтэрсэн хэрэглэгчийг `useOutletContext()`-оор авна.
-
----
-
-## Код бичих дүрэм
-
-### Backend
-
-- Model, controller, migration-ий функцуудыг `async function нэр() {}` хэлбэрээр бичиж, файлын төгсгөлд `module.exports`-оор экспортлоно.
-- Controller бүр алдааг `try { ... } catch (err) { next(err) }` хэлбэрээр барина. Express 4 нь `async` функцийн алдааг өөрөө барьдаггүй.
-- Хэрэглэгчийн оруулсан утгыг SQL string-д шууд залгаж болохгүй. Knex-ийн `.where({...})` эсвэл `db.raw('... ?', [утга])` ашиглана.
-- Шинэ зам нэмэхдээ `routes/api.js`-д нэг мөр нэмээд, логикийг controller-т бичнэ.
-
-### Migration
-
-- Нэгэнт push хийсэн migration файлыг **засахгүй**. Өөрчлөлт хэрэгтэй бол шинэ migration үүсгэнэ, жишээ нь `npm run migrate:make -- add_email_to_residents`.
-- `up` болон `down` хоёуланг бичнэ. `down` нь `up`-ийн хийснийг яг буцаах ёстой.
-
-### Frontend
-
-- Компонентын CSS-ийг компонентын хажууд байрлуулна: `Navbar.jsx` + `Navbar.css`.
-- Хуудсуудын CSS `pages/styles/` дотор байна.
-- Өнгөнүүдийг `App.css`-ийн хувьсагчдаас (`var(--navy)`, `var(--yellow)`, ...) авна.
-- Vite дээр CSS глобал үйлчилдэг тул шинэ классуудад угтвар өгнө (`auth-`, `sidebar-`, ...).
-- API дуудлагуудыг `src/api/` дотор бичиж, хуудсууд зөвхөн тэдгээр функцийг дуудна.
-
----
-
-## Одоогийн төлөв
-
-**Хийгдсэн:**
-
-- [x] Frontend route-ууд, role-оор шүүгддэг Navbar
-- [x] Dashboard хуудасны дизайн (түр өгөгдөлтэй)
-- [x] Login, нууц үг сэргээх хуудсууд
-- [x] MySQL холболт, Knex migration (8 хүснэгт)
-- [x] Model-ууд (`db/models/`)
-- [x] Нэг route файл (`routes/api.js`), controller-уудын бүтэц
-- [x] Хэрэглэгч үүсгэх скрипт (bcrypt)
-
-**Хийгдэж байгаа / дараагийн алхам:**
-
-- [ ] Controller-уудын код (`dashboardController`, `unitsController`)
-- [ ] Нэвтрэлтийн backend: `express-session`, `/api/auth/*`, `requireAuth`, `requireRole` middleware
-- [ ] Frontend-ийг API-тай холбох: `vite.config.js`-д `/api` → `localhost:3000` proxy нэмэх
-- [ ] `App.jsx`-ийн түр `handleLogin`, `src/api/auth.js`-ийн түр функцуудыг жинхэнэ `fetch`-ээр солих
-- [ ] Dashboard-ийг `/api/dashboard`-аас өгөгдөл авдаг болгох
-- [ ] Seed өгөгдөл
-- [ ] Нэхэмжлэл, хүсэлт, санал хураалт, зарлалын хуудсууд
-- [ ] Mobile апп
-
-> Одоогоор login түр зуурынх: ямар ч нэр, нууц үгээр нэвтэрдэг. Нууц үг сэргээх код нь `123456`.
-
----
-
-## Түгээмэл алдаа
-
-| Алдаа | Шалтгаан, шийдэл |
-| --- | --- |
-| `ER_ACCESS_DENIED_ERROR ... (using password: NO)` | `backend/.env`-д `DB_PASSWORD` бичигдээгүй байна |
-| `ER_ACCESS_DENIED_ERROR ... (using password: YES)` | Нууц үг эсвэл хэрэглэгчийн нэр буруу. `DB_USER` нь database-ийн нэр биш, MySQL-ийн хэрэглэгч (`root`) байх ёстой. Keyboard кирилл layout дээр байсан эсэхийг шалгаарай |
-| `ER_BAD_DB_ERROR: Unknown database 'sukh_hub'` | Өгөгдлийн сан үүсээгүй байна. [Суулгах](#2-өгөгдлийн-сан-үүсгэх)-ын 2-р алхмыг үзнэ үү |
-| `ECONNREFUSED 127.0.0.1:3306` | MySQL асаагүй байна. PowerShell: `Get-Service MySQL*`, `Start-Service MySQL80` |
-| Browser дээр `localhost:3306` нээгдэхгүй | Хэвийн үзэгдэл. MySQL HTTP биш тул Workbench эсвэл backend-ээр хандана |
-| Migration файл устгасны дараа `corrupt` гэх алдаа | Файлыг устгахаас өмнө `npm run migrate:rollback` хийх ёстой |
-| Dump файлын кирилл үсэг эвдэрсэн | PowerShell-ийн `>` нь UTF-16 бичдэг. `mysqldump --default-character-set=utf8mb4 --result-file=dump.sql ...` ашиглана |
-| `git push origin -b master` алдаа өгнө | `git push`-д `-b` гэсэн тохиргоо байхгүй. `git push origin master` эсвэл `git push` |
+- `lib/logger.js`: терминалд өнгөтэйгөөр, `logs/app.log`-д JSON хэлбэрээр бичнэ.
+- Нууц үг болон token логт хэзээ ч бичигдэхгүй (`redact`).
+- Чатботын лог зөвхөн файлд бичигдэнэ (`logger.fileOnly`), учир нь олон давтагдаж терминалыг дүүргэдэг.

@@ -9,10 +9,9 @@ var apiRouter = require('./routes/api');
 var app = express();
 
 // Хүсэлт бүр терминалд товч харагдана (файлд бичихгүй).
-// Чатботын хүсэлтүүдийг алгасна — тэдгээрийн лог зөвхөн npm run logs-д (logger.fileOnly)
+// Чатботын хүсэлтүүдийг алгасна — тэдгээрийн лог зөвхөн npm run logs-
 var quietPaths = ['/api/resident/chat', '/api/resident/transcribe'];
 app.use(morgan('dev', {
-  // originalUrl — router дотор req.url өөрчлөгддөг тул анхны замыг (query-гүй) шалгана
   skip: function (req) { return quietPaths.indexOf(req.originalUrl.split('?')[0]) !== -1; },
 }));
 app.use(express.json());
@@ -28,14 +27,11 @@ app.use('/api', function (req, res) {
   res.status(404).json({ error: 'Зам олдсонгүй' });
 });
 
-// Бүх controller-ийн next(err) энд ирнэ
 app.use(function (err, req, res, next) {
-  // Хариу аль хэдийн явчихсан бол Express-ийн анхдагч handler-т өгнө
   if (res.headersSent) return next(err);
 
   var status = err.status || 500;
 
-  // 4xx — хэрэглэгчийн буруу хүсэлт (эвдэрхий JSON гэх мэт), серверийн алдаа биш
   if (status < 500) {
     log.warn({ method: req.method, url: req.originalUrl, reason: err.message }, 'Буруу хүсэлт');
     return res.status(status).json({ error: 'Хүсэлт буруу байна' });

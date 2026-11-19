@@ -1,10 +1,18 @@
+/**
+ * Дуу → текст - /api/resident/transcribe
+ * Хуудас: чатбот цонхны микрофон (ChatWidget)
+ *
+ * transcribe - WAV дууг Chimege-ээр текст болгоно (services/chimegeService)
+ *   POST /api/resident/transcribe - WAV body → { text }
+ *
+ * readBody(req) - (дотоод) body-г Buffer болгож уншина, 5MB хүртэл
+ */
+
 var chimegeService = require('../../services/chimegeService');
 var log = require('../../lib/logger').fileOnly.child({ module: 'user/voice' });
 
-var MAX_BYTES = 5 * 1024 * 1024; // 5MB — 16kHz WAV-д ~2.5 минут
+var MAX_BYTES = 5 * 1024 * 1024;
 
-// Хүсэлтийн body-г Buffer болгож уншина (Express 4.16-д express.raw байхгүй).
-// MAX_BYTES-ээс том бол null
 function readBody(req) {
   return new Promise(function (resolve, reject) {
     var chunks = [];
@@ -13,7 +21,7 @@ function readBody(req) {
       size += chunk.length;
       if (size > MAX_BYTES) {
         req.removeAllListeners('data');
-        req.resume(); // үлдсэнийг хаяж уншина — холболт гацахгүй
+        req.resume();
         return resolve(null);
       }
       chunks.push(chunk);
@@ -25,12 +33,6 @@ function readBody(req) {
   });
 }
 
-/**
- * transcribe -- Дууг текст болгох (чатботын микрофон)
- *   POST /api/resident/transcribe
- *   body: WAV файл (Content-Type: audio/wav), 5MB хүртэл
- *   → { text }
- */
 async function transcribe(req, res, next) {
   try {
     if (!(req.headers['content-type'] || '').startsWith('audio/wav')) {
@@ -39,7 +41,6 @@ async function transcribe(req, res, next) {
 
     var wav = await readBody(req);
     if (!wav) return res.status(413).json({ error: 'Бичлэг хэт урт байна' });
-    // WAV толгой (44 байт)-оос богино бол дуу байхгүй
     if (wav.length <= 44) return res.status(400).json({ error: 'Дуу ирсэнгүй' });
 
     var text;

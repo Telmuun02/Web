@@ -1,18 +1,16 @@
+/**
+ * Профайл - /api/resident/profile
+ * Хуудас: resident Profile (/profile)
+ *
+ * show - өөрийн мэдээлэл, тоот, гэр бүл, хугацаандаа төлсөн сарын тоо
+ *   GET /api/resident/profile
+ * (засах нь PUT /api/profile - controllers/profileController.js)
+ */
+
 var { Users, Invoices } = require('../../db/models');
 var { currentResident } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/profile' });
 
-/**
- * show -- Профайл хуудас
- *   GET /api/resident/profile →
- *   {
- *     user:           { id, unit_id, name, phone, email, ... },
- *     unit:           { id, code, entrance, floor } | null,
- *     family:         [{ id, name, me }] — нэг тоотод бүртгэлтэй хүмүүс,
- *     on_time_months: сүүлийн 12 сард хугацаандаа төлсөн сарын тоо
- *   }
- * Мэдээлэл засах нь PUT /api/profile (controllers/profileController.js) хэвээр
- */
 async function show(req, res, next) {
   try {
     var me = await currentResident(req);
@@ -32,7 +30,6 @@ async function show(req, res, next) {
     res.json({
       user: me.user,
       unit: me.unit ? { id: me.unit.id, code: me.unit.code, entrance: me.unit.entrance, floor: me.unit.floor } : null,
-      // Гэр бүлийн гишүүдийн утас, имэйлийг ил гаргахгүй — зөвхөн нэр
       family: family.map(function (f) {
         return { id: f.id, name: f.name, me: f.id === me.user.id };
       }),

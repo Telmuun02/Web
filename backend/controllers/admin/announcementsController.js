@@ -1,10 +1,18 @@
+/**
+ * Зарлал - /api/admin/announcements
+ * Хуудас: admin Announcements (/admin/announcements)
+ *
+ * index - нийтэлсэн зарлалууд, шинээс нь
+ *   GET /api/admin/announcements
+ * store - шинэ зарлал (бүх орц эсвэл нэг орцонд)
+ *   POST /api/admin/announcements
+ * destroy - зарлал устгах
+ *   DELETE /api/admin/announcements/:id
+ */
+
 var { Announcements, Entrances } = require('../../db/models');
 var log = require('../../lib/logger').child({ module: 'admin/announcements' });
 
-/**
- * index -- нийтэлсэн зарлалууд, шинээс нь
- *   GET /api/admin/announcements → [{ id, title, body, audience, sms, important, created_by_name, created_at }]
- */
 async function index(req, res, next) {
   try {
     res.json(await Announcements.list(50));
@@ -13,11 +21,6 @@ async function index(req, res, next) {
   }
 }
 
-/**
- * store -- шинэ зарлал нийтлэх
- *   POST /api/admin/announcements — { title, body, audience: 'all' | орцны дугаар ('2'), sms, important }
- * SMS-ийг одоохондоо илгээхгүй — зөвхөн тэмдэглэнэ (SMS үйлчилгээ холбогдох хүртэл)
- */
 async function store(req, res, next) {
   try {
     var title = String(req.body.title || '').trim();
@@ -28,7 +31,6 @@ async function store(req, res, next) {
     if (!body) return res.status(400).json({ error: 'Агуулгаа оруулна уу' });
     if (title.length > 150) return res.status(400).json({ error: 'Гарчиг 150 тэмдэгтээс ихгүй' });
 
-    // 'all' — бүх орц (entrance_id = NULL), эс бөгөөс тухайн дугаартай орц байх ёстой
     var entrance = null;
     if (audience !== 'all') {
       entrance = (await Entrances.list()).find(function (e) { return String(e.number) === audience; });
@@ -58,10 +60,6 @@ async function store(req, res, next) {
   }
 }
 
-/**
- * destroy -- зарлал устгах
- *   DELETE /api/admin/announcements/5 → 204
- */
 async function destroy(req, res, next) {
   try {
     var removed = await Announcements.remove(req.params.id);

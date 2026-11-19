@@ -1,6 +1,15 @@
+/**
+ * Тайлан - /api/admin/reports
+ * Хуудас: admin Reports (/admin/reports)
+ *
+ * show - сар бүрийн орлого, хэтэрсэн өр, хүсэлт ангиллаар, шийдэх дундаж хугацаа
+ *   GET /api/admin/reports?months=6
+ *
+ * monthStart(monthsAgo) - (дотоод) n сарын өмнөх сарын 1-ний өдөр
+ */
+
 var { Invoices, Requests } = require('../../db/models');
 
-// '2026-11-01' — n сарын өмнөх сарын 1-ний өдөр
 function monthStart(monthsAgo) {
   var d = new Date();
   d.setDate(1);
@@ -8,17 +17,6 @@ function monthStart(monthsAgo) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
 }
 
-/**
- * show -- тайлан: санхүү ба хүсэлтийн тойм
- *   GET /api/admin/reports?months=6   (анхдагч 6, дээд тал нь 24)
- * Хариу: {
- *   months:     [{ period, billed, collected, units, paid_units }],  — сар бүрээр
- *   totals:     { billed, collected, percent },                       — тэр хугацааны нийт
- *   overdue:    { debt, units },                                      — одоогийн хугацаа хэтэрсэн өр
- *   categories: [{ category, count }],                                — хүсэлт ангиллаар
- *   avg_resolve_hours                                                 — хүсэлт шийдэх дундаж
- * }
- */
 async function show(req, res, next) {
   try {
     var count = Math.min(Math.max(parseInt(req.query.months, 10) || 6, 1), 24);

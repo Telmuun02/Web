@@ -1,6 +1,7 @@
 // Role шалгана — auth-ын ДАРАА ажиллана (req.user-ийг auth тавьдаг)
 // Жишээ: router.use('/admin', auth, requireRole('admin'), adminRoutes)
 // Laravel-ийн ->middleware('role:admin')-тай адил санаа
+
 var log = require('../lib/logger').child({ module: 'requireRole' });
 
 function requireRole(role) {

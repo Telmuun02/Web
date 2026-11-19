@@ -1,17 +1,17 @@
+/**
+ * Зарлал ба санал хураалт - /api/resident/news
+ * Хуудас: resident News (/news)
+ *
+ * index - өөрийн орцонд харагдах зарлал + санал хураалтууд
+ *   GET /api/resident/news
+ * vote - санал өгөх (тоотыг token-оос)
+ *   POST /api/resident/polls/:id/vote
+ */
+
 var { Announcements, Polls } = require('../../db/models');
 var { currentResident, noUnit } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/news' });
 
-/**
- * index -- Зарлал ба санал хураалт хуудас
- *   GET /api/resident/news →
- *   {
- *     posts:        [ бүх орцны + өөрийн орцны зарлал ],
- *     active_polls: [{ id, title, options: [{ id, label, votes }], turnout_percent, ..., my_option_id }],
- *     past_polls:   [{ id, title, ends_at, yes_percent, turnout_percent, passed }] — сүүлийн 5
- *   }
- * my_option_id — танай тоот аль сонголтыг сонгосон (өгөөгүй бол null)
- */
 async function index(req, res, next) {
   try {
     var me = await currentResident(req);
@@ -23,14 +23,12 @@ async function index(req, res, next) {
       Polls.votesOfUnit(me.unit.id),
     ]);
 
-    // Явагдаж буй санал хураалтад сонголтууд хэрэгтэй тул дэлгэрэнгүйг нь авна
     var active = await Promise.all(
       polls
         .filter(function (p) { return p.status === 'active'; })
         .map(function (p) { return Polls.results(p.id); })
     );
 
-    // Батлагдсан = ирц босгод хүрсэн + «Тийм» (эхний сонголт) нь олонх
     var past = polls
       .filter(function (p) { return p.status === 'ended'; })
       .slice(0, 5)
@@ -59,11 +57,6 @@ async function index(req, res, next) {
   }
 }
 
-/**
- * vote -- санал өгөх. Нэг тоот нэг л удаа (гэр бүлийн аль нэг гишүүн)
- *   POST /api/resident/polls/3/vote — { option_id } → 201 + шинэчлэгдсэн дүн, my_option_id
- * Тоотыг token-оос авна — өөр тоотын нэрээр санал өгөх боломжгүй
- */
 async function vote(req, res, next) {
   try {
     var poll = await Polls.find(req.params.id);
@@ -78,7 +71,6 @@ async function vote(req, res, next) {
     var optionId = Number(req.body.option_id);
     var result = await Polls.vote(poll.id, optionId, req.user.id);
     if (!result) {
-      // Өөр санал хураалтын сонголт, эсвэл тоотгүй хэрэглэгч
       log.warn({ by: req.user.id, pollId: poll.id, optionId: req.body.option_id }, 'Буруу сонголтоор санал өгөх оролдлого');
       return res.status(400).json({ error: 'Сонголт буруу байна' });
     }
@@ -86,7 +78,6 @@ async function vote(req, res, next) {
     log.info({ by: req.user.id, pollId: poll.id, optionId: optionId }, 'Санал өглөө');
     res.status(201).json({ ...result, my_option_id: optionId });
   } catch (err) {
-    // poll_votes (poll_id, unit_id) unique — тоот аль хэдийн санал өгсөн
     if (err.code === 'ER_DUP_ENTRY') {
       log.warn({ by: req.user.id, pollId: Number(req.params.id) }, 'Давхар санал өгөх оролдлого');
       return res.status(409).json({ error: 'Танай тоот аль хэдийн санал өгсөн байна' });

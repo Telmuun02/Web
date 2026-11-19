@@ -1,13 +1,17 @@
+/**
+ * Санал хүсэлт - /api/resident/requests
+ * Хуудас: resident Requests (/requests)
+ *
+ * index - өөрийн илгээсэн хүсэлтүүд
+ *   GET /api/resident/requests
+ * store - шинэ хүсэлт илгээх (тоот, хэрэглэгчийг token-оос)
+ *   POST /api/resident/requests
+ */
+
 var { Requests } = require('../../db/models');
 var { currentResident, noUnit } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/requests' });
 
-/**
- * index -- миний илгээсэн хүсэлтүүд, шинээс нь
- *   GET /api/resident/requests →
- *   [{ id, category, title, description, status, stage, assigned_name, created_at, resolved_at }]
- * stage: new | assigned | progress | done — FE-ийн алхам (step) үүгээр сонгогдоно
- */
 async function index(req, res, next) {
   try {
     var rows = await Requests.forUser(req.user.id, 50);
@@ -18,13 +22,6 @@ async function index(req, res, next) {
   }
 }
 
-/**
- * store -- шинэ хүсэлт илгээх
- *   POST /api/resident/requests — { category, title, description }
- *   category: plumbing | electrical | cleaning | elevator | other
- * unit_id, created_by-г token-оос авна — body-д ирсэн байсан ч үл тооно
- * Хариу: 201 + үүссэн хүсэлт (stage-тэй)
- */
 async function store(req, res, next) {
   try {
     var me = await currentResident(req);

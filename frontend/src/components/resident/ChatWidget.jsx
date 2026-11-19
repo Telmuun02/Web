@@ -103,6 +103,7 @@ export default function ChatWidget({ userId }) {
       // Шууд илгээхгүй — хэрэглэгч шалгаж, засаад өөрөө илгээнэ
       if (text && inputRef.current) {
         inputRef.current.value = text
+        autoGrow()
         inputRef.current.focus()
       }
     } catch (err) {
@@ -121,6 +122,22 @@ export default function ChatWidget({ userId }) {
     return text
   }
 
+  // Textarea-г агуулгынх нь өндөрт тааруулна — CSS-ийн max-height-аас хэтэрвэл доторх scroll гарна
+  function autoGrow() {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+
+  // Enter — илгээнэ, Shift+Enter — шинэ мөр
+  function onKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault()
+      e.currentTarget.form.requestSubmit()
+    }
+  }
+
   // Input-ийн утгыг state-д хадгалахгүй — илгээх мөчид FormData-аас уншина (PayDrawer шиг)
   async function send(e) {
     e.preventDefault()
@@ -128,6 +145,7 @@ export default function ChatWidget({ userId }) {
     const text = new FormData(form).get('text').trim()
     if (!text || waiting) return
     form.reset()
+    autoGrow()
 
     setMessages((m) => [...m, { from: 'user', text }])
 
@@ -165,9 +183,12 @@ export default function ChatWidget({ userId }) {
           </div>
 
           <form className="chat-form" onSubmit={send}>
-            <input
+            <textarea
               ref={inputRef}
               name="text"
+              rows={1}
+              onInput={autoGrow}
+              onKeyDown={onKeyDown}
               placeholder={
                 recorder.recording ? 'Сонсож байна... дуусаад дахин дарна уу'
                   : transcribing ? 'Текст болгож байна...'

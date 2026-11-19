@@ -9,6 +9,10 @@ var reportsController = require('../controllers/admin/reportsController');
 var staffController = require('../controllers/admin/staffController');
 var liveController = require('../controllers/admin/liveController');
 
+/**
+ * admin хуудастай холбоотой api ууд ба доор байдлаар харагдана.
+ */
+
 var router = express.Router();
 
 router.get('/dashboard', dashboardController.show);

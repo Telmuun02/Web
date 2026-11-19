@@ -1,11 +1,19 @@
+/**
+ * Чатбот - /api/resident/chat
+ * Хуудас: оршин суугчийн бүх хуудсан дээрх чатбот цонх (ChatWidget)
+ *
+ * send - мессеж илгээж ботын хариу авна (services/chatService)
+ *   POST /api/resident/chat - { text } → { reply }
+ *
+ * residentContext(me) - (дотоод) ботод өгөх оршин суугчийн үндсэн мэдээлэл
+ */
+
 var { currentResident, noUnit } = require('./helpers');
 var chatService = require('../../services/chatService');
 var log = require('../../lib/logger').fileOnly.child({ module: 'user/chat' });
 
-var MAX_LEN = 1000; // нэг мессежийн дээд урт (тэмдэгт)
+var MAX_LEN = 1000;
 
-// Ботод өгөх оршин суугчийн үндсэн мэдээлэл — зөвхөн ӨӨРИЙНХ (token-оос олсон хэрэглэгч).
-// Төлбөр, хүсэлт гэх мэтийг бот хэрэгтэй үедээ функцээр (chatTools) авна
 function residentContext(me) {
   return [
     'Нэр: ' + me.user.name,
@@ -14,12 +22,6 @@ function residentContext(me) {
   ].join('\n');
 }
 
-/**
- * send -- Чатбот руу мессеж илгээх
- *   POST /api/resident/chat
- *   body: { text } — зөвхөн одоогийн мессеж (түүх илгээхгүй — зардал хэмнэнэ)
- *   → { reply }
- */
 async function send(req, res, next) {
   try {
     var text = typeof req.body.text === 'string' ? req.body.text.trim().slice(0, MAX_LEN) : '';
@@ -30,7 +32,6 @@ async function send(req, res, next) {
 
     var context = residentContext(me);
 
-    // Claude API унасан бол бусад алдаанаас ялгаж, ойлгомжтой хариу өгнө
     var reply;
     try {
       reply = await chatService.reply(text, context, me);

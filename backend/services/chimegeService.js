@@ -1,13 +1,15 @@
+/**
+ * Chimege STT - ярианаас монгол текст. Токен .env-ийн CHIMEGE_TOKEN-оос
+ * Хэн дууддаг: controllers/user/voiceController.js (POST /api/resident/transcribe)
+ * Хуудас: чатбот цонхны микрофон (ChatWidget)
+ *
+ * transcribe(wav) - WAV (16kHz, mono, 16-bit) Buffer-ийг текст болгоно → string
+ */
+
 var log = require('../lib/logger').fileOnly.child({ module: 'chimege' });
 
-// Chimege STT — ярианаас текст. Токен .env-ийн CHIMEGE_TOKEN-оос
 var URL = 'https://api.chimege.com/v1.2/transcribe';
 
-/**
- * transcribe -- WAV дууг Chimege-ээр монгол текст болгоно
- *   wav: Buffer — 16kHz, mono, 16-bit WAV
- *   → string (текст)
- */
 async function transcribe(wav) {
   var res = await fetch(URL, {
     method: 'POST',
@@ -21,7 +23,6 @@ async function transcribe(wav) {
   var text = await res.text();
 
   if (!res.ok) {
-    // Chimege алдааны кодоо header-т буцаадаг — log-д хамт бичнэ
     log.error({ status: res.status, code: res.headers.get('error-code'), body: text.slice(0, 200) }, 'Chimege алдаа');
     throw new Error('Chimege: ' + res.status);
   }

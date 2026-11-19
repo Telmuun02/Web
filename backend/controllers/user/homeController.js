@@ -1,18 +1,15 @@
+/**
+ * Нүүр - /api/resident/home
+ * Хуудас: resident Home (/)
+ *
+ * show - нүүр хуудасны бүх өгөгдөл нэг дор (төлбөр, орц, зарлал, хүсэлт)
+ *   GET /api/resident/home
+ */
+
 var { Invoices, Announcements, Requests } = require('../../db/models');
 var { currentResident, noUnit } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/home' });
 
-/**
- * show -- Нүүр хуудасны бүх өгөгдөл нэг дор
- *   GET /api/resident/home →
- *   {
- *     unit:     { id, code, entrance, floor },
- *     entrance: { units: [{ id, code, floor, paid }] },   — орцны цонхнууд, энэ сард төлсөн эсэх
- *     bill:     { amount, paid, due_date, status } | null — энэ сарын нэхэмжлэл
- *     news:     [ сүүлийн 2 зарлал ],
- *     request:  { latest, done_count }                    — миний хүсэлт
- *   }
- */
 async function show(req, res, next) {
   try {
     var me = await currentResident(req);
@@ -25,10 +22,8 @@ async function show(req, res, next) {
       Requests.forUser(me.user.id, 20),
     ]);
 
-    // Шийдээгүй хамгийн сүүлийн хүсэлт, бүгд шийдэгдсэн бол хамгийн сүүлийнх
     var latest = requests.find(function (r) { return r.stage !== 'done'; }) || requests[0] || null;
 
-    // Нэхэмжлэл үүсээгүй бол СӨХ-ийн тал дээр алдаа байж магадгүй
     if (!bill) log.warn({ id: me.user.id, unit: me.unit.code }, 'Энэ сарын нэхэмжлэл үүсээгүй байна');
     log.debug({ id: me.user.id, unit: me.unit.code }, 'Нүүр хуудас');
 

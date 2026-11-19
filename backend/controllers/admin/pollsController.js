@@ -1,11 +1,18 @@
+/**
+ * Санал хураалт - /api/admin/polls
+ * Хуудас: admin Polls (/admin/polls)
+ *
+ * index - бүх санал хураалт, status-тай
+ *   GET /api/admin/polls
+ * show - нэг санал хураалтын үр дүн, ирц
+ *   GET /api/admin/polls/:id
+ * store - шинэ санал хураалт сонголтуудтай нь
+ *   POST /api/admin/polls
+ */
+
 var { Polls } = require('../../db/models');
 var log = require('../../lib/logger').child({ module: 'admin/polls' });
 
-/**
- * index -- бүх санал хураалт, шинээс нь
- *   GET /api/admin/polls → [{ id, title, starts_at, ends_at, threshold_percent, votes, status }]
- *   status: 'upcoming' | 'active' | 'ended'
- */
 async function index(req, res, next) {
   try {
     res.json(await Polls.list());
@@ -14,10 +21,6 @@ async function index(req, res, next) {
   }
 }
 
-/**
- * show -- нэг санал хураалтын үр дүн
- *   GET /api/admin/polls/3 → { ...poll, options: [{ id, label, votes }], turnout_percent, quorum_reached }
- */
 async function show(req, res, next) {
   try {
     var poll = await Polls.results(req.params.id);
@@ -28,16 +31,10 @@ async function show(req, res, next) {
   }
 }
 
-/**
- * store -- шинэ санал хураалт
- *   POST /api/admin/polls — { title, description, ends_at, threshold_percent, options: ['Тийм', 'Үгүй'] }
- * Хариу: үүссэн санал хураалт (show-ийн хэлбэрээр)
- */
 async function store(req, res, next) {
   try {
     var title = String(req.body.title || '').trim();
     var endsAt = new Date(req.body.ends_at);
-    // 0 — босгогүй. Өгөөгүй бол 50%
     var threshold = req.body.threshold_percent === undefined ? 50 : Number(req.body.threshold_percent);
     var options = (Array.isArray(req.body.options) ? req.body.options : [])
       .map(function (o) { return String(o).trim(); })

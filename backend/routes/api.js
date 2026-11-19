@@ -8,23 +8,18 @@ var residentRoutes = require('./resident');
 
 var router = express.Router();
 
-// ---------- Хоёулаа ----------
+/** 
+ * resident болон admin хуудастай холбоотой api ууд энд байна.
+ */
 
-// Нэвтрэлт
 router.post('/auth/login', authController.login);
 router.post('/auth/logout', authController.logout);
-router.get('/auth/me', auth, authController.me); // auth — эхлээд token шалгана
+router.get('/auth/me', auth, authController.me); 
 
-// Профайл — өөрийн мэдээллээ солих (нууц үгээр дахин баталгаажуулна)
 router.put('/profile', auth, profileController.update);
 
-// ---------- Role-оор ----------
-// Хамгаалалтыг бүлэг бүрд НЭГ удаа тавина — доторх шинэ route бүр автоматаар хамгаалагдана
-
-// Ажилтан — /api/admin/... Оршин суугч дуудвал 403
 router.use('/admin', auth, requireRole('admin'), adminRoutes);
 
-// Оршин суугч — /api/resident/... Ажилтан дуудвал 403
 router.use('/resident', auth, requireRole('user'), residentRoutes);
 
 module.exports = router;

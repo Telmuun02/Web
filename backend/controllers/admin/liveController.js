@@ -1,13 +1,22 @@
+/**
+ * "ШУУД" мөр - /api/admin/live/:page
+ * Хуудас: admin Invoices, Requests, Polls, Units (дээд талын статистик, үйл явдал)
+ *
+ * show - тухайн хуудасны { stats, events }
+ *   GET /api/admin/live/invoices | requests | polls | units
+ *
+ * Дотоод туслах:
+ *   money(n) - 1275000 → '1,275,000₮'
+ *   invoices, requests, polls, units - хуудас бүрийн өгөгдөл
+ */
+
 var { Invoices, Payments, Requests, Polls, Units, Users } = require('../../db/models');
 
 var methodLabel = { qpay: 'QPay', bank: 'Банк', cash: 'Бэлэн', card: 'Карт' };
 
-// 1275000 → '1,275,000₮'
 function money(n) {
   return Number(n || 0).toLocaleString('en-US') + '₮';
 }
-
-// ---------- Хуудас бүрийн "ШУУД" мөр — { stats: [3], events: [...] } ----------
 
 async function invoices() {
   var [today, month, overdue, recent] = await Promise.all([
@@ -63,7 +72,7 @@ async function requests() {
 
 async function polls() {
   var [active, units] = await Promise.all([Polls.active(), Units.occupancy()]);
-  var poll = active[0]; // хамгийн түрүүнд дуусах нь
+  var poll = active[0];
 
   if (!poll) {
     return { stats: [{ label: 'Санал хураалт', value: 'Идэвхтэй алга' }], events: [] };
@@ -105,15 +114,9 @@ async function units() {
   };
 }
 
-// Хуудасны нэр → функц. Шинэ хуудас нэмэхэд энд нэг мөр нэмнэ
 var pages = { invoices, requests, polls, units };
 
-/**
- * show -- "ШУУД" мөр
- *   GET /api/admin/live/invoices → { stats: [{ label, value, tone }], events: ['...'] }
- */
 async function show(req, res, next) {
-  // hasOwn — '/live/constructor' гэх мэтээр Object-ийн өөрийн функцийг дуудуулахгүй
   if (!Object.hasOwn(pages, req.params.page)) {
     return res.status(404).json({ error: 'Ийм хуудас алга' });
   }

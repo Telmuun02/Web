@@ -1,3 +1,17 @@
+/**
+ * Нэхэмжлэл ба төлбөр - /api/admin/invoices
+ * Хуудас: admin Invoices (/admin/invoices)
+ *
+ * index - нэхэмжлэлийн жагсаалт (таб, хайлт, сар)
+ *   GET /api/admin/invoices?period=&status=&q=&limit=&offset=
+ * counts - табуудын дээрх тоо
+ *   GET /api/admin/invoices/counts
+ * pay - төлбөр бүртгэх, нэхэмжлэлийн төлөв автоматаар шинэчлэгдэнэ
+ *   POST /api/admin/invoices/:id/payments
+ *
+ * periodFrom(req) - (дотоод) ?period-ээс сар, үгүй бол энэ сар
+ */
+
 var { Invoices, Payments } = require('../../db/models');
 var log = require('../../lib/logger').child({ module: 'admin/invoices' });
 
@@ -13,7 +27,6 @@ var log = require('../../lib/logger').child({ module: 'admin/invoices' });
 
 var statuses = ['unpaid', 'partial', 'paid', 'overdue'];
 
-// ?period=2026-10-01 өгвөл тэр сар, үгүй бол энэ сар
 function periodFrom(req) {
   var p = String(req.query.period || '');
   if (/^\d{4}-\d{2}-01$/.test(p)) return p;
@@ -43,11 +56,6 @@ async function index(req, res, next) {
   }
 }
 
-/**
- * counts -- табуудын дээрх тоо, бүгдийг нэг дор:
- *   GET /api/invoices/counts      → { all, unpaid, partial, paid, overdue }
- *   GET /api/invoices/counts?q=1-1 → хайлтад таарсан нэхэмжлэлүүдийн тоо
- */
 async function counts(req, res, next) {
   try {
     var q = String(req.query.q || '').trim();
@@ -60,12 +68,6 @@ async function counts(req, res, next) {
 
 var methods = ['cash', 'bank', 'qpay', 'card'];
 
-/**
- * pay -- нэхэмжлэлд төлбөр бүртгэх (жижүүрийн өрөөнд бэлнээр, дансаар орсон төлбөр)
- *   POST /api/admin/invoices/12/payments — { amount: 85000, method: 'cash', note }
- * Нэхэмжлэлийн төлөв (unpaid/partial/paid) автоматаар шинэчлэгдэнэ.
- * Хариу: бүртгэгдсэн төлбөр
- */
 async function pay(req, res, next) {
   try {
     var amount = Number(req.body.amount);
@@ -79,7 +81,6 @@ async function pay(req, res, next) {
     var invoice = await Invoices.find(req.params.id);
     if (!invoice) return res.status(404).json({ error: 'Нэхэмжлэл олдсонгүй' });
 
-    // Үлдэгдлээс их дүн бүртгэхгүй
     var paid = (await Payments.forInvoice(invoice.id)).reduce(function (sum, p) { return sum + p.amount; }, 0);
     if (amount > invoice.amount - paid) {
       log.warn({ by: req.user.id, invoiceId: invoice.id, amount: amount, remaining: invoice.amount - paid }, 'Үлдэгдлээс их төлбөр бүртгэх оролдлого');
@@ -87,7 +88,7 @@ async function pay(req, res, next) {
     }
 
     var payment = await Payments.record(invoice.id, {
-      recorded_by: req.user.id, // бүртгэсэн ажилтан
+      recorded_by: req.user.id,
       amount: amount,
       method: method,
       note: String(req.body.note || '').trim().slice(0, 255) || null,

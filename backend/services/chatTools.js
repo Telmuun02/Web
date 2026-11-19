@@ -1,26 +1,39 @@
-var { Invoices, Payments, Requests, Announcements, Polls } = require('../db/models');
+/**
+ * Чатботын функцүүд - Claude function calling-оор дуудна
+ * Хэн дууддаг: services/chatService.js
+ *
+ * Функц бүр: (me, input) → энгийн JSON объект
+ *   me    - currentResident(req)-ийн үр дүн { user, unit }. ҮРГЭЛЖ token-оос олсон хэрэглэгч,
+ *           Claude-аас ирсэн id-д итгэхгүй, тиймээс input-д user_id, unit_id байхгүй
+ *   input - Claude-ийн өгсөн параметрүүд (limit гэх мэт)
+ * Токен хэмнэхийн тулд зөвхөн хэрэгтэй талбаруудыг буцааж, урт текстийг таслана
+ *
+    * getMyBill(me) - энэ сарын нэхэмжлэл + өмнөх саруудын өр
+    * getPaymentHistory(me, input) - сүүлийн төлбөрүүд { limit? }
+    * getMyRequests(me, input) - миний илгээсэн хүсэлтүүд { limit? }
+    * getAnnouncements(me, input) - миний орцонд харагдах зарлалууд { limit? }
+    * getPolls(me) - явагдаж буй санал хураалтууд (миний саналтай) + сүүлд дууссан 3
+    * run(name, me, input) - Claude-ийн хүссэн функцийг нэрээр нь ажиллуулна
+    * TOOLS - Claude-д өгөх функцүүдийн тайлбар (name, description, input_schema)
+ *
+ * day(d) - (дотоод) Date → '2026-11-15'
+ * limitOf(input, fallback) - (дотоод) limit-ийг 1..MAX_LIMIT хооронд барина
+ * cut(text, max) - (дотоод) урт текстийг таслана
+ */
 
-// Чатботын туслах функцүүд — Claude function calling-оор дуудна.
-// Функц бүр: (me, input) → энгийн JSON объект.
-//   me    — currentResident(req)-ийн үр дүн { user, unit }. ҮРГЭЛЖ token-оос олсон хэрэглэгч —
-//           Claude-аас ирсэн id-д итгэхгүй, тиймээс input-д user_id, unit_id байхгүй
-//   input — Claude-ийн өгсөн параметрүүд (limit гэх мэт)
-// Токен хэмнэхийн тулд зөвхөн хэрэгтэй талбаруудыг буцааж, урт текстийг таслана
+var { Invoices, Payments, Requests, Announcements, Polls } = require('../db/models');
 
 var MAX_LIMIT = 10;
 
-// Date | string → '2026-11-15'
 function day(d) {
   return d ? new Date(d).toISOString().slice(0, 10) : null;
 }
 
-// Claude-ийн өгсөн limit-ийг 1..MAX_LIMIT хооронд барина
 function limitOf(input, fallback) {
   var n = Number(input && input.limit);
   return n >= 1 ? Math.min(Math.floor(n), MAX_LIMIT) : fallback;
 }
 
-// Урт текстийг таслана
 function cut(text, max) {
   if (!text) return '';
   return text.length > max ? text.slice(0, max) + '…' : text;
@@ -30,10 +43,6 @@ var BILL_STATUS = { unpaid: 'төлөөгүй', partial: 'хэсэгчлэн т�
 var REQUEST_STAGE = { new: 'шинэ', assigned: 'засварчин томилсон', progress: 'хийгдэж байна', done: 'шийдэгдсэн' };
 var PAY_METHOD = { cash: 'бэлэн', bank: 'дансаар', card: 'карт' };
 
-/**
- * getMyBill -- Энэ сарын нэхэмжлэл + өмнөх саруудын өр
- *   → { current: { period, amount, paid, left, due_date, status } | null, debt }
- */
 async function getMyBill(me) {
   var [current, invoices] = await Promise.all([
     Invoices.currentForUnit(me.unit.id),
@@ -57,11 +66,6 @@ async function getMyBill(me) {
   };
 }
 
-/**
- * getPaymentHistory -- Сүүлийн төлбөрүүд, шинээс нь
- *   input: { limit? } (анхдагч 5, дээд 10)
- *   → { payments: [{ period, amount, method, paid_at }] }
- */
 async function getPaymentHistory(me, input) {
   var rows = await Payments.forUnit(me.unit.id, limitOf(input, 5));
   return {
@@ -71,11 +75,6 @@ async function getPaymentHistory(me, input) {
   };
 }
 
-/**
- * getMyRequests -- Миний илгээсэн санал хүсэлтүүд, шинээс нь
- *   input: { limit? } (анхдагч 5, дээд 10)
- *   → { requests: [{ id, title, category, stage, assigned_to, created_at, resolved_at }] }
- */
 async function getMyRequests(me, input) {
   var rows = await Requests.forUser(me.user.id, limitOf(input, 5));
   return {
@@ -94,11 +93,6 @@ async function getMyRequests(me, input) {
   };
 }
 
-/**
- * getAnnouncements -- Миний орцонд харагдах зарлалууд (бүх орцных + өөрийн орцных), шинээс нь
- *   input: { limit? } (анхдагч 5, дээд 10)
- *   → { announcements: [{ title, body, important, audience, created_at }] }
- */
 async function getAnnouncements(me, input) {
   var rows = await Announcements.forEntrance(me.unit.entrance_id, limitOf(input, 5));
   return {
@@ -114,11 +108,6 @@ async function getAnnouncements(me, input) {
   };
 }
 
-/**
- * getPolls -- Явагдаж буй санал хураалтууд (миний өгсөн саналтай) + сүүлд дууссан 3
- *   → { active: [{ title, ends_at, options: [{ label, votes }], turnout_percent, my_vote }],
- *       ended:  [{ title, ended_at, turnout_percent, passed }] }
- */
 async function getPolls(me) {
   var [polls, myVotes] = await Promise.all([Polls.list(), Polls.votesOfUnit(me.unit.id)]);
 
@@ -139,7 +128,6 @@ async function getPolls(me) {
         my_vote: mine ? mine.label : null,
       };
     }),
-    // Батлагдсан = ирц босгод хүрсэн + «Тийм» (эхний сонголт) нь олонх — newsController-тэй ижил
     ended: polls
       .filter(function (p) { return p.status === 'ended'; })
       .slice(0, 3)
@@ -153,9 +141,6 @@ async function getPolls(me) {
       }),
   };
 }
-
-// ---------- Claude-д өгөх тайлбар ----------
-// Claude кодыг харахгүй — зөвхөн name, description, input_schema-г уншиж аль функцийг дуудахаа шийднэ
 
 var LIMIT_INPUT = {
   type: 'object',
@@ -197,10 +182,6 @@ var TOOLS = [
 
 var HANDLERS = { getMyBill, getPaymentHistory, getMyRequests, getAnnouncements, getPolls };
 
-/**
- * run -- Claude-ийн хүссэн функцийг нэрээр нь ажиллуулна
- *   → JSON объект. Мэдэгдэхгүй нэр ирвэл алдаа шиднэ
- */
 async function run(name, me, input) {
   var handler = HANDLERS[name];
   if (!handler) throw new Error('Мэдэгдэхгүй функц: ' + name);

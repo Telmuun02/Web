@@ -7,33 +7,26 @@ var profileController = require('../controllers/user/profileController');
 var chatController = require('../controllers/user/chatController');
 var voiceController = require('../controllers/user/voiceController');
 
-// Оршин суугчийн API — /api/resident/...
-// auth болон requireRole('user')-ийг api.js-д нэг удаа тавьсан.
-// Controller-ууд controllers/user/ дотор, хуудас бүрт нэг. Хэрэглэгчийг ҮРГЭЛЖ req.user-аас авна —
-// frontend-ээс ирсэн unit_id, user_id-д итгэхгүй (өөр айлын мэдээллийг авах гэж оролдож болно)
+/**
+ * resident хуудастай холбоотой api ууд ба доор байдлаар харагдана.
+ */
+
 var router = express.Router();
 
-// Нүүр — бүх өгөгдөл нэг дор
 router.get('/home', homeController.show);
 
-// Төлбөр
 router.get('/pay', payController.show);
 
-// Санал хүсэлт
 router.get('/requests', requestsController.index);
 router.post('/requests', requestsController.store);
 
-// Зарлал ба санал хураалт
 router.get('/news', newsController.index);
 router.post('/polls/:id(\\d+)/vote', newsController.vote);
 
-// Профайл (засах нь PUT /api/profile)
 router.get('/profile', profileController.show);
 
-// Чатбот
 router.post('/chat', chatController.send);
 
-// Дуу → текст (чатботын микрофон). Body нь JSON биш WAV — controller өөрөө уншина
 router.post('/transcribe', voiceController.transcribe);
 
 module.exports = router;

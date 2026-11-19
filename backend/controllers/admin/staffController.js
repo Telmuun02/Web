@@ -1,10 +1,13 @@
+/**
+ * Ажилтнууд - /api/admin/staff
+ * Хуудас: admin Requests (засварчин сонгох жагсаалт)
+ *
+ * index - идэвхтэй ажилтнууд
+ *   GET /api/admin/staff
+ */
+
 var { Admins } = require('../../db/models');
 
-/**
- * index -- ажилтнууд (admin) — засварын хүсэлтэд хариуцагч сонгоход
- *   GET /api/admin/staff → [{ id, name, phone, email, position }]
- *   position: chairman (дарга), accountant (нягтлан), technician (засварчин), staff
- */
 async function index(req, res, next) {
   try {
     var staff = await Admins.list();

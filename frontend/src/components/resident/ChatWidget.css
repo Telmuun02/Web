@@ -152,9 +152,11 @@
   gap: 8px;
   padding: 10px;
   border-top: 1px solid var(--line);
+  align-items: flex-end; /* textarea өндөрсөхөд товчнууд доороо үлдэнэ */
 }
 
-.chat-form input {
+/* Бичих талбар — урт текст дараагийн мөр рүү шилжиж, 4 мөр хүртэл ургана */
+.chat-form textarea {
   flex: 1;
   min-width: 0;
   padding: 10px 12px;
@@ -164,15 +166,20 @@
   color: var(--text);
   font: inherit;
   font-size: 14px;
+  line-height: 1.4;
   outline: none;
+  resize: none;
+  max-height: calc(4 * 1.4em + 20px);
+  overflow-y: auto;
 }
 
-.chat-form input:focus {
+.chat-form textarea:focus {
   border-color: var(--accent);
 }
 
 .chat-send {
   width: 40px;
+  height: 40px;
   border: 0;
   border-radius: 10px;
   background: var(--accent);
@@ -185,6 +192,7 @@
 /* Микрофон товч — илгээх товчны хажууд, хүрээтэй */
 .chat-mic {
   width: 40px;
+  height: 40px;
   border: 1px solid var(--field-border);
   border-radius: 10px;
   background: var(--surface);

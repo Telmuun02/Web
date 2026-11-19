@@ -1,12 +1,15 @@
+/**
+ * Тоот ба оршин суугч - /api/admin/units
+ * Хуудас: admin Units (/admin/units)
+ *
+ * index - тоотын жагсаалт, орц болон хайлтаар шүүнэ
+ *   GET /api/admin/units?entrance=&q=
+ * show - нэг тоот, тэнд амьдардаг хүмүүстэй
+ *   GET /api/admin/units/:id
+ */
+
 var { Units } = require('../../db/models');
 
-/**
- * index -- тоотын жагсаалт
- *   GET /api/admin/units                 — бүх тоот
- *   GET /api/admin/units?entrance=2      — нэг орцных
- *   GET /api/admin/units?q=1-12          — тоот эсвэл оршин суугчийн нэрээр хайх
- * Мөр бүрд: тоотын мэдээлэл + name (эхний оршин суугч), residents (хэдэн хүн)
- */
 async function index(req, res, next) {
   try {
     res.json(await Units.list({
@@ -18,10 +21,6 @@ async function index(req, res, next) {
   }
 }
 
-/**
- * show -- нэг тоот, тэнд амьдардаг хүмүүстэй
- *   GET /api/admin/units/12 → { ...unit, residents: [{ id, name, phone, email }] }
- */
 async function show(req, res, next) {
   try {
     var unit = await Units.withResidents(req.params.id);

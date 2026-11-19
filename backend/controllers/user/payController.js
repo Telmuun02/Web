@@ -1,19 +1,15 @@
+/**
+ * Төлбөр - /api/resident/pay
+ * Хуудас: resident Pay (/pay)
+ *
+ * show - энэ сарын нэхэмжлэл, өр, орцны гэрэл, сүүлийн 12 төлбөр
+ *   GET /api/resident/pay
+ */
+
 var { Invoices, Payments } = require('../../db/models');
 var { currentResident, noUnit } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/pay' });
 
-/**
- * show -- Төлбөр хуудас
- *   GET /api/resident/pay →
- *   {
- *     unit_code:      '1-01',
- *     invoice:        энэ сарын нэхэмжлэл { id, period, amount, paid, due_date, status } | null,
- *     debt:           өмнөх саруудаас төлөгдөөгүй үлдсэн дүн (₮),
- *     entrance_light: { units, paid } — орцны хэдэн айл энэ сард төлсөн,
- *     history:        [{ id, period, amount, method, paid_at }] — сүүлийн 12 төлбөр
- *   }
- * Оршин суугч өөрөө төлөх (POST) хэсэг QPay холбогдох үед нэмэгдэнэ
- */
 async function show(req, res, next) {
   try {
     var me = await currentResident(req);
@@ -26,7 +22,6 @@ async function show(req, res, next) {
       Payments.forUnit(me.unit.id, 12),
     ]);
 
-    // Энэ сарынхаас бусад төлөгдөөгүй нэхэмжлэлийн үлдэгдэл
     var debt = invoices
       .filter(function (i) { return i.status !== 'paid' && (!invoice || i.id !== invoice.id); })
       .reduce(function (sum, i) { return sum + i.amount - Number(i.paid); }, 0);

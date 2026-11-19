@@ -1,14 +1,15 @@
+/**
+ * Профайл засах - ажилтан, оршин суугч хоёулаа
+ * Хуудас: admin Profile (/admin/profile), resident Profile (/profile)
+ *
+ * update - нэр, утас, имэйл, нууц үг солих. Одоогийн нууц үгээр баталгаажуулна
+ *   PUT /api/profile
+ */
+
 var bcrypt = require('bcryptjs');
 var { Users, Admins } = require('../db/models');
 var log = require('../lib/logger').child({ module: 'profile' });
 
-/**
- * update -- нэвтэрсэн хэрэглэгч өөрийн хувийн мэдээллийг солино
- *   PUT /api/profile — { name, phone, email, password }
- * Нэвтэрсэн ч гэсэн одоогийн нууц үгээ дахин оруулж баталгаажуулна
- * (компьютерээ нээлттэй орхисон үед өөр хүн мэдээллийг нь солихоос хамгаална)
- * Хариу: шинэчлэгдсэн хэрэглэгч (password_hash-гүй)
- */
 async function update(req, res, next) {
   try {
     var name = String(req.body.name || '').trim();
@@ -29,7 +30,6 @@ async function update(req, res, next) {
       return res.status(400).json({ error: 'Имэйл буруу байна' });
     }
 
-    // Ажилтан бол admins, оршин суугч бол users хүснэгтэд хадгална
     var Model = req.user.role === 'admin' ? Admins : Users;
     var user = await Model.findWithPassword(req.user.id);
 
@@ -43,7 +43,6 @@ async function update(req, res, next) {
       return res.status(401).json({ error: 'Нууц үг буруу байна' });
     }
 
-    // Зөвхөн эдгээр талбарыг солино — unit_id-г хэрэглэгч өөрөө өөрчилж болохгүй
     var updated = await Model.update(user.id, { name: name, phone: phone, email: email });
 
     log.info({
@@ -54,7 +53,6 @@ async function update(req, res, next) {
 
     res.json({ ...updated, role: req.user.role });
   } catch (err) {
-    // phone, email нь unique — өөр хэрэглэгч ашиглаж байвал MySQL энэ алдааг өгнө
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Энэ утас эсвэл имэйлийг өөр хэрэглэгч ашиглаж байна' });
     }

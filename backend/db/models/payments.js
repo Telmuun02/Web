@@ -8,6 +8,7 @@
  * hourly(hours, buildingId) - сүүлийн n цагийн орлого, цаг тутам
  * recent(limit, buildingId) - сүүлийн төлбөрүүд, тоот, оршин суугчийн нэртэй
  * forUnit(unitId, limit) - нэг тоотын төлбөрийн түүх, шинээс нь
+ * recordedBy(adminId, limit) - ажилтны гараар бүртгэсэн сүүлийн төлбөрүүд, өнөөдрийн тоотой { today, recent }
  */
 
 var db = require('..');
@@ -77,4 +78,18 @@ async function forUnit(unitId, limit) {
     .limit(limit || 12);
 }
 
-module.exports = { ...base, forInvoice, record, todayTotal, hourly, recent, forUnit };
+async function recordedBy(adminId, limit) {
+  var [today, recent] = await Promise.all([
+    db('payments').where('recorded_by', adminId).where('paid_at', '>=', db.raw('CURDATE()')).count({ n: '*' }).first(),
+    db('payments as p')
+      .join('invoices as i', 'i.id', 'p.invoice_id')
+      .join('units as u', 'u.id', 'i.unit_id')
+      .select('p.id', 'u.code', 'p.amount', 'p.method', 'p.paid_at')
+      .where('p.recorded_by', adminId)
+      .orderBy('p.paid_at', 'desc')
+      .limit(limit || 5),
+  ]);
+  return { today: Number(today.n), recent: recent };
+}
+
+module.exports = { ...base, forInvoice, record, todayTotal, hourly, recent, forUnit, recordedBy };

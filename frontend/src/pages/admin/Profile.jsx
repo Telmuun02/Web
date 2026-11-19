@@ -14,27 +14,22 @@ import ListItem from '../../components/UI/ListItem'
 import Switch from '../../components/UI/Switch'
 import Toast from '../../components/UI/Toast'
 import LiveBar from '../../components/admin/LiveBar'
-import { liveProfile } from '../../samples/admin/live'
+import useApi from '../../hooks/useApi'
+import useLive from '../../hooks/useLive'
 import './styles/Profile.css'
 
-// Түр жишээ өгөгдөл — backend бэлэн болоход солигдоно
-const sampleStats = [
-  { value: 186, label: 'Энэ сард бүртгэсэн төлбөр' },
-  { value: 120, label: 'Гаргасан нэхэмжлэл' },
-  { value: 14, label: 'Илгээсэн сануулга' },
+// Дээд талын 3 тоо — GET /api/admin/activity-ийн counts-ын түлхүүр ба нэр
+const statItems = [
+  { key: 'payments', label: 'Энэ сард бүртгэсэн төлбөр' },
+  { key: 'announcements', label: 'Энэ сард нийтэлсэн зарлал' },
+  { key: 'polls', label: 'Энэ сард үүсгэсэн санал хураалт' },
 ]
 
+// Нэвтэрсэн төхөөрөмжүүд — DB-д session хадгалагддаггүй тул түр жишээ
 const sampleSessions = [
   { id: 1, name: 'Chrome · Windows', where: 'Улаанбаатар · одоо идэвхтэй', current: true, phone: false },
   { id: 2, name: 'СӨХ Hub апп · iPhone', where: 'Улаанбаатар · 2 цагийн өмнө', current: false, phone: true },
   { id: 3, name: 'Edge · Windows', where: 'СӨХ-ийн оффис · 3 хоногийн өмнө', current: false, phone: false },
-]
-
-const sampleActivity = [
-  { text: '3-24 тоотод 40,000₮ бэлэн төлбөр бүртгэсэн', time: 'Өнөөдөр 10:42' },
-  { text: '13 өртэй тоотод SMS сануулга илгээсэн', time: 'Өчигдөр 17:05' },
-  { text: '«10-р сарын нэхэмжлэл гарлаа» зарлал нийтэлсэн', time: '10/01 09:12' },
-  { text: '9-р сарын санхүүгийн тайлан татсан', time: '10/01 08:40' },
 ]
 
 const notificationItems = [
@@ -55,6 +50,9 @@ const permissions = [
 ]
 
 export default function Profile() {
+  const live = useLive('profile') // "ШУУД" мөр — /api/admin/live/profile
+  // GET /api/admin/activity — энэ сарын тоо, сүүлийн үйлдлүүд
+  const { data: activity } = useApi('/admin/activity', null, { fallback: { counts: {}, recent: [] } })
   const { user, onLogout } = useOutletContext()
   // Хувийн мэдээллийн form — 4 талбар хамт хадгалагдана. password — өөрчлөлтөө баталгаажуулах нууц үг.
   // Нэрийг дээд хэсэгт бичих зуур харуулдаг тул FormData биш state
@@ -97,7 +95,7 @@ export default function Profile() {
   return (
     <div className="profile">
       {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...liveProfile} />
+      <LiveBar stats={live.stats} events={live.events} />
 
       <section className="profile-hero" aria-label="Профайлын тойм">
         <span className="profile-avatar">
@@ -118,9 +116,9 @@ export default function Profile() {
         </div>
 
         <div className="profile-stats">
-          {sampleStats.map((s) => (
-            <div key={s.label} className="profile-stat">
-              <span className="profile-stat-value">{s.value}</span>
+          {statItems.map((s) => (
+            <div key={s.key} className="profile-stat">
+              <span className="profile-stat-value">{activity.counts[s.key] ?? '—'}</span>
               <span className="profile-stat-label">{s.label}</span>
             </div>
           ))}
@@ -229,12 +227,13 @@ export default function Profile() {
 
           <Card title="Сүүлийн үйлдэл" action={<Link to="/admin/reports" className="profile-link">Аудит лог →</Link>}>
             <div>
-              {sampleActivity.map((a) => (
-                <div key={a.text} className="profile-activity">
+              {activity.recent.length === 0 && <span className="profile-muted small">Бүртгэсэн үйлдэл алга</span>}
+              {activity.recent.map((a) => (
+                <div key={a.id} className="profile-activity">
                   <span className="profile-dot" aria-hidden="true" />
                   <span className="profile-activity-text">
-                    <span>{a.text}</span>
-                    <span className="profile-muted small">{a.time}</span>
+                    <span>{a.what}</span>
+                    <span className="profile-muted small">{new Date(a.at).toLocaleString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
                   </span>
                 </div>
               ))}

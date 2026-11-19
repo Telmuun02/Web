@@ -1,17 +1,33 @@
 /**
- * Самбарыг турших хуурамч өгөгдөл: 120 тоот, сүүлийн 12 сарын нэхэмжлэл, төлбөр
+ * Самбарыг турших хуурамч өгөгдөл: 120 тоот, сүүлийн 12 сарын нэхэмжлэл, задаргаа, төлбөр
  * Дахин ажиллуулж болно - тоот, нэхэмжлэл, төлбөрийг устгаад шинээр үүсгэнэ. users-ийг устгахгүй.
  *
  * random(seed) - тогтмол "санамсаргүй" тоо, seed бүрд ижил өгөгдөл гарна
  * toDate(date) - Date → 'YYYY-MM-DD'
  * monthDay(monthsAgo, day) - энэ сараас monthsAgo сарын өмнөх сарын day-ний өдөр
  * paidShare(unitIndex, monthsAgo) - тоот тухайн сард хэр төлсөн: 1, 0.5, 0
- * seed(knex) - байр, орц, тоот, нэхэмжлэл, төлбөрийг үүсгэнэ
+ * LINES - нэхэмжлэлийн дүн бүрийн задаргаа (мөрүүдийн нийлбэр = дүн)
+ * seed(knex) - байр, орц, тоот, нэхэмжлэл, задаргаа, төлбөрийг үүсгэнэ
  */
 
 var ENTRANCES = 3;
 var UNITS_PER_ENTRANCE = 40;
 var MONTHS = 12;
+
+var LINES = {
+  85000: [
+    { name: 'СӨХ-ийн хураамж', amount: 44800 },
+    { name: 'Лифт', amount: 12000 },
+    { name: 'Хамгаалалт, камер', amount: 18000 },
+    { name: 'Хог хаягдал', amount: 10200 },
+  ],
+  81700: [
+    { name: 'СӨХ-ийн хураамж', amount: 41500 },
+    { name: 'Лифт', amount: 12000 },
+    { name: 'Хамгаалалт, камер', amount: 18000 },
+    { name: 'Хог хаягдал', amount: 10200 },
+  ],
+};
 
 function random(seed) {
   var x = Math.sin(seed) * 10000;
@@ -43,6 +59,8 @@ function paidShare(unitIndex, monthsAgo) {
 }
 
 async function seed(knex) {
+  await knex('meetings').del();
+  await knex('invoice_lines').del();
   await knex('poll_votes').del();
   await knex('announcements').del();
   await knex('payments').del();
@@ -107,6 +125,14 @@ async function seed(knex) {
   await knex.batchInsert('invoices', invoices, 500);
 
   var invoiceRows = await knex('invoices').select('id', 'unit_id', 'period', 'amount').orderBy('id');
+  var lines = [];
+  invoiceRows.forEach(function (inv) {
+    LINES[inv.amount].forEach(function (line, position) {
+      lines.push({ invoice_id: inv.id, position: position, name: line.name, amount: line.amount });
+    });
+  });
+  await knex.batchInsert('invoice_lines', lines, 500);
+
   var unitIndex = {};
   unitRows.forEach(function (unit, u) { unitIndex[unit.id] = u; });
 

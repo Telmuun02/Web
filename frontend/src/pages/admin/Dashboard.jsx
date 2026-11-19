@@ -12,10 +12,9 @@ import StatCard from '../../components/UI/StatCard'
 import Table from '../../components/UI/Table'
 import useApi from '../../hooks/useApi'
 import useNow from '../../hooks/useNow'
-// sampleDashboard — API хариулахаас өмнө харуулах fallback.
-// Бусад sample (лифт, дулаан, камер, онлайн, ажилтны үйлдэл) — DB-д өгөгдөл нь байхгүй тул түр
+// Лифт, дулаан, ус/цахилгаан, камер, онлайн — DB-д эх сурвалж нь байхгүй тул түр жишээ
 import {
-  liftFloors, sampleCameras, sampleDashboard, sampleLifts, sampleLog, sampleOnline, sampleStats,
+  liftFloors, sampleCameras, sampleLifts, sampleOnline, sampleStats,
   sampleSupplyTemp, sampleTemps, sampleUtilities,
 } from '../../samples/admin/dashboard'
 import './styles/Dashboard.css'
@@ -80,14 +79,20 @@ export default function Dashboard() {
 
   // ---------- Server state ----------
   // GET /api/admin/dashboard — 30 сек тутам шинэчилнэ (WebSocket нэмэгдэхэд түлхэлтээр солигдоно)
-  const { data } = useApi('/admin/dashboard', null, { fallback: sampleDashboard, refreshEvery: 30 })
-  const { today, month, openRequests, hours, payments, poll, months, debtors } = data
+  const { data, error } = useApi('/admin/dashboard', null, { fallback: null, refreshEvery: 30 })
   const { online } = sampleStats // апп-д онлайн — DB-д өгөгдөл алга
 
   // Товч дарахад өөрчлөгдөх хэсгүүд — одоохондоо зөвхөн дэлгэц дээр (backend-д хадгалахгүй)
   const [seenIds, setSeenIds] = useState({}) // "Хүлээж авах" дарсан хүсэлтүүд: { 1042: true }
-  const [log, setLog] = useState(sampleLog)
+  const [myLog, setMyLog] = useState([]) // энэ дэлгэц дээр хийсэн үйлдлүүд — серверийн log-ийн дээр нэмэгдэнэ
   const [reminded, setReminded] = useState({}) // SMS илгээсэн тоотууд: { '1-12': true }
+
+  if (error && !data) return <div className="dashboard"><p role="alert">{error}</p></div>
+  if (!data) return <div className="dashboard"><p>Ачааллаж байна…</p></div>
+
+  const { today, month, openRequests, hours, payments, poll, months, debtors } = data
+  // Ажилтны үйлдэл — GET /api/admin/dashboard-ийн log + энэ дэлгэц дээр хийсэн нь, хамгийн сүүлийн 4
+  const log = [...myLog, ...data.log].slice(0, 4)
 
   // Derived — серверийн жагсаалтыг state-д хуулахгүй, дарсан id-гаар seen-ийг тооцоолно
   const requests = data.requests.map((r) => ({ ...r, seen: r.seen || Boolean(seenIds[r.id]) }))
@@ -95,7 +100,7 @@ export default function Dashboard() {
   // "Хүлээж авах" — хүсэлтийг харсан болгоод, ажилтны үйлдэлд нэмнэ
   function acknowledge(request) {
     setSeenIds((map) => ({ ...map, [request.id]: true }))
-    setLog((list) => [
+    setMyLog((list) => [
       { id: Date.now(), who: user.name, what: `R-${request.id} хүсэлтийг хүлээж авав`, at: new Date() },
       ...list,
     ].slice(0, 4))

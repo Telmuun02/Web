@@ -2,10 +2,10 @@ import { Link, useOutletContext } from 'react-router-dom'
 import LightbulbOutlined from '@mui/icons-material/LightbulbOutlined'
 import CameraThumb from '../../components/resident/CameraThumb'
 import ProgressBar from '../../components/UI/ProgressBar'
-// Backend-тэй түр холбоогүй — бүх өгөгдөл жишээ файлаас
-import {
-  sampleBill, sampleCameras, sampleEntrance, sampleMeeting, sampleMyRequest, sampleNews, totalCameras,
-} from '../../samples/resident/home'
+import useApi from '../../hooks/useApi'
+import { money, monthDay, monthOf, relativeDay } from '../../utils/format'
+// Камерын систем холбогдоогүй тул түр жишээ файлаас (бусад нь GET /api/resident/home)
+import { sampleCameras, totalCameras } from '../../samples/resident/home'
 import './styles/Home.css'
 
 const weekdays = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба']
@@ -16,29 +16,44 @@ const stars = [
   [300, 20], [480, 200], [560, 260], [640, 300], [400, 160], [350, 280], [700, 230], [20, 220],
 ]
 
-const requestSteps = 4 // ирсэн → томилсон → хийгдэж буй → шийдсэн
+// Хүсэлтийн явц — backend-ийн stage → хэд дэх алхам (ирсэн → томилсон → хийгдэж буй → шийдсэн)
+const stageStep = { new: 0, assigned: 1, progress: 2, done: 3 }
+const requestSteps = 4
 
-// 85000 → '85,000₮'
-function money(n) {
-  return `${n.toLocaleString('en-US')}₮`
+// Хүсэлтийн доорх тайлбар мөр
+function requestNote(r) {
+  if (r.stage === 'new') return 'СӨХ хүлээн авахыг хүлээж байна'
+  if (r.stage === 'assigned') return `${r.assigned_name ?? 'Ажилтан'} хариуцлаа`
+  if (r.stage === 'progress') return `Хийгдэж байна${r.assigned_name ? ` · ${r.assigned_name}` : ''}`
+  return r.status === 'rejected' ? 'Татгалзсан' : 'Шийдэгдсэн'
 }
 
 export default function Home() {
   const { user } = useOutletContext()
+  const { data, error } = useApi('/resident/home', null, { fallback: null })
 
   const today = new Date()
   const dateText = `${weekdays[today.getDay()]}, ${today.getMonth() + 1}-р сарын ${today.getDate()}`
 
-  // Орцны цонхнууд — төлбөрөө төлсөн айл гэрэлтэй, төлөөгүй нь харанхуй
-  const { units, unpaidWindows, myWindow } = sampleEntrance
-  const paidCount = units - unpaidWindows.length
-  const paidPercent = Math.round((paidCount / units) * 100)
-  const myDark = unpaidWindows.includes(myWindow)
-  const windows = Array.from({ length: units }, (_, i) => ({
-    id: i,
-    lit: !unpaidWindows.includes(i),
-    mine: i === myWindow,
-  }))
+  if (error) return <div className="res-home"><p role="alert">{error}</p></div>
+  if (!data) return <div className="res-home"><p>Ачааллаж байна…</p></div>
+
+  const { unit, entrance, bill, news, request, meeting } = data
+  const meetingAt = meeting ? new Date(meeting.starts_at) : null
+
+  // Орцны цонхнууд — энэ сарын төлбөрөө бүрэн төлсөн айл гэрэлтэй, төлөөгүй нь харанхуй
+  const windows = entrance.units
+  const units = windows.length
+  const paidCount = windows.filter((w) => w.paid).length
+  const paidPercent = units ? Math.round((paidCount / units) * 100) : 0
+  const myDark = !windows.find((w) => w.id === unit.id)?.paid
+  // Нэг давхарт хэдэн айл байгаагаар баганын тоог тааруулна
+  const perFloor = Math.max(1, ...Object.values(Object.groupBy(windows, (w) => w.floor ?? 0)).map((f) => f.length))
+  const entranceName = `${unit.entrance}-р орц`
+
+  const latest = request.latest
+  const otherDone = request.done_count - (latest?.stage === 'done' ? 1 : 0)
+  const left = bill ? bill.amount - bill.paid : 0
 
   return (
     <div className="res-home">
@@ -59,7 +74,7 @@ export default function Home() {
             <span className="home-date">{dateText}</span>
             <h1>Сайн байна уу, {user.name}</h1>
             <span className="home-greet-text">
-              {sampleEntrance.name}ны {units} айлын {paidCount} нь төлбөрөө төлж гэрлээ асаасан.
+              {entranceName}ны {units} айлын {paidCount} нь төлбөрөө төлж гэрлээ асаасан.
               {myDark ? ' Таны цонх л харанхуй байна.' : ' Таны цонх ч гэрэлтэй байна!'}
             </span>
           </div>
@@ -67,13 +82,13 @@ export default function Home() {
           <div
             className="home-building"
             role="img"
-            aria-label={`${sampleEntrance.name}ны зураг: ${units} айлын ${paidCount} нь төлбөрөө төлж гэрэлтэй, таны цонх ${myDark ? 'харанхуй' : 'гэрэлтэй'}`}
+            aria-label={`${entranceName}ны зураг: ${units} айлын ${paidCount} нь төлбөрөө төлж гэрэлтэй, таны цонх ${myDark ? 'харанхуй' : 'гэрэлтэй'}`}
           >
             <div className="home-roof" />
-            <div className="home-windows">
+            <div className="home-windows" style={{ gridTemplateColumns: `repeat(${perFloor}, minmax(0, 1fr))` }}>
               {windows.map((w) => (
-                <span key={w.id} className={`home-window${w.lit ? ' lit' : ''}${w.mine ? ' mine' : ''}`}>
-                  {w.mine && <span className="home-window-tag">Таны цонх</span>}
+                <span key={w.id} className={`home-window${w.paid ? ' lit' : ''}${w.id === unit.id ? ' mine' : ''}`}>
+                  {w.id === unit.id && <span className="home-window-tag">Таны цонх</span>}
                 </span>
               ))}
             </div>
@@ -83,38 +98,55 @@ export default function Home() {
 
         {/* Энэ сарын төлбөр */}
         <section className="home-bill" aria-labelledby="bill-title">
-          <div className="home-bill-head">
-            <h2 id="bill-title">{sampleBill.month}-р сарын төлбөр</h2>
-            <span className="home-due">{sampleBill.due} хүртэл</span>
-          </div>
-          <span className="home-amount">{money(sampleBill.amount)}</span>
+          {bill ? (
+            <>
+              <div className="home-bill-head">
+                <h2 id="bill-title">{monthOf(bill.period)}-р сарын төлбөр</h2>
+                <span className="home-due">{monthDay(bill.due_date)} хүртэл</span>
+              </div>
+              <span className="home-amount">{money(left > 0 ? left : bill.amount)}</span>
+              {left <= 0 && <span className="home-muted">Бүрэн төлөгдсөн</span>}
+            </>
+          ) : (
+            <h2 id="bill-title">Энэ сарын нэхэмжлэл хараахан гараагүй байна</h2>
+          )}
           <div className="home-bill-progress">
             <ProgressBar value={paidPercent} color="var(--yellow)" />
             <span className="home-muted">Орцны {paidPercent}% нь төлж гэрлээ асаасан</span>
           </div>
           <div className="home-spacer" />
-          <Link to="/pay" className="home-pay">
-            <LightbulbOutlined sx={{ fontSize: 22 }} /> Төлбөр төлж гэрлээ асаах
-          </Link>
+          {left > 0 && (
+            <Link to="/pay" className="home-pay">
+              <LightbulbOutlined sx={{ fontSize: 22 }} /> Төлбөр төлж гэрлээ асаах
+            </Link>
+          )}
           <Link to="/pay" className="home-history">Төлбөрийн түүх харах</Link>
         </section>
       </div>
 
       <div className="home-cards">
-        {/* Хурал */}
+        {/* Удахгүй болох хурал — meetings хүснэгтээс */}
         <Link to="/meeting" className="home-meeting">
-          <span className="home-meeting-head">
-            <span className="home-meeting-date">
-              <span className="home-meeting-month">{sampleMeeting.month}-р сар</span>
-              <span className="home-meeting-day">{sampleMeeting.day}</span>
-            </span>
-            <span className="home-meeting-info">
-              <span className="home-meeting-when">{sampleMeeting.when}</span>
-              <span className="home-meeting-title">{sampleMeeting.title}</span>
-            </span>
-          </span>
-          <span className="home-meeting-text">{sampleMeeting.text}</span>
-          <span className="home-meeting-go">Хуралд бэлдэх →</span>
+          {meeting ? (
+            <>
+              <span className="home-meeting-head">
+                <span className="home-meeting-date">
+                  <span className="home-meeting-month">{meetingAt.getMonth() + 1}-р сар</span>
+                  <span className="home-meeting-day">{meetingAt.getDate()}</span>
+                </span>
+                <span className="home-meeting-info">
+                  <span className="home-meeting-when">
+                    {meeting.location} · {weekdays[meetingAt.getDay()]} {meetingAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="home-meeting-title">{meeting.title}</span>
+                </span>
+              </span>
+              {meeting.description && <span className="home-meeting-text">{meeting.description}</span>}
+              <span className="home-meeting-go">Хуралд бэлдэх →</span>
+            </>
+          ) : (
+            <span className="home-meeting-text">Удахгүй болох хурал алга</span>
+          )}
         </Link>
 
         {/* Сүүлийн зарлал */}
@@ -123,9 +155,12 @@ export default function Home() {
             <h2 id="news-title">Сүүлийн зарлал</h2>
             <Link to="/news" className="home-card-link">Бүгд</Link>
           </div>
-          {sampleNews.map((n) => (
+          {news.length === 0 && <span className="home-muted small">Зарлал алга</span>}
+          {news.map((n) => (
             <Link key={n.id} to="/news" className="home-news">
-              <span className={n.important ? 'home-news-tag important' : 'home-news-tag'}>{n.tag}</span>
+              <span className={n.important ? 'home-news-tag important' : 'home-news-tag'}>
+                {n.important ? 'Чухал' : 'Мэдээлэл'} · {relativeDay(n.created_at)}
+              </span>
               <span className="home-news-title">{n.title}</span>
             </Link>
           ))}
@@ -137,21 +172,25 @@ export default function Home() {
             <h2 id="req-title">Миний хүсэлт</h2>
             <Link to="/requests" className="home-card-link">+ Шинэ</Link>
           </div>
-          <div className="home-request">
-            <span className="home-request-title">{sampleMyRequest.title}</span>
-            {/* Явц — 4 алхам, хийгдсэн нь тод */}
-            <span className="home-steps" aria-hidden="true">
-              {Array.from({ length: requestSteps }, (_, i) => (
-                <span key={i} className={i <= sampleMyRequest.step ? 'home-step done' : 'home-step'} />
-              ))}
-            </span>
-            <span className="home-muted small">{sampleMyRequest.status}</span>
-          </div>
-          <span className="home-muted small">Өөр {sampleMyRequest.doneCount} хүсэлт шийдэгдсэн</span>
+          {latest ? (
+            <div className="home-request">
+              <span className="home-request-title">{latest.title}</span>
+              {/* Явц — 4 алхам, хийгдсэн нь тод */}
+              <span className="home-steps" aria-hidden="true">
+                {Array.from({ length: requestSteps }, (_, i) => (
+                  <span key={i} className={i <= stageStep[latest.stage] ? 'home-step done' : 'home-step'} />
+                ))}
+              </span>
+              <span className="home-muted small">{requestNote(latest)}</span>
+            </div>
+          ) : (
+            <span className="home-muted small">Та одоогоор хүсэлт илгээгээгүй байна</span>
+          )}
+          {otherDone > 0 && <span className="home-muted small">Өөр {otherDone} хүсэлт шийдэгдсэн</span>}
         </section>
       </div>
 
-      {/* Камер */}
+      {/* Камер — камерын систем холбогдоогүй, түр жишээ */}
       <section className="home-cams" aria-labelledby="cam-title">
         <div className="home-card-head">
           <h2 id="cam-title">Камер</h2>

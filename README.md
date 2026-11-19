@@ -13,6 +13,7 @@
 ## Агуулга
 
 - [Ашигласан технологиуд](#ашигласан-технологиуд)
+  - [Ашигласан сангууд](#ашигласан-сангууд)
 - [Архитектур](#архитектур)
 - [Хүсэлт хэрхэн дамждаг вэ](#хүсэлт-хэрхэн-дамждаг-вэ)
 - [Middleware (app.use)](#middleware-appuse)
@@ -30,8 +31,62 @@
 | Backend | Node.js, Express 4, Knex, mysql2, bcryptjs, jsonwebtoken, pino (лог), dotenv |
 | Чатбот | Anthropic SDK (Claude), Chimege (яриа → текст) |
 | Өгөгдлийн сан | MySQL 8.0 (`utf8mb4`) |
-| Frontend | React 19, Vite, React Router 7 |
+| Frontend | React 19, Vite, React Router 7, MUI, axios |
 | Mobile | React Native, Expo |
+
+### Ашигласан сангууд
+
+#### Backend (`backend/package.json`)
+
+| Сан | Хувилбар | Юунд ашигладаг вэ |
+| --- | --- | --- |
+| `express` | ~4.16.1 | HTTP сервер, route, middleware |
+| `knex` | ^3.3.0 | SQL query builder, migration, seed |
+| `mysql2` | ^3.24.6 | MySQL-тэй холбогдох драйвер (Knex доор ажилладаг) |
+| `bcryptjs` | ^3.0.3 | Нууц үгийг hash хийх, шалгах |
+| `jsonwebtoken` | ^9.0.3 | Нэвтрэлтийн JWT token үүсгэх, шалгах |
+| `cookie-parser` | ~1.4.4 | `Cookie` header-ийг `req.cookies` болгох (вэбийн token) |
+| `dotenv` | ^18.0.9 | `.env` файлаас тохиргоо (DB, нууц түлхүүр) унших |
+| `morgan` | ~1.9.1 | Ирсэн request бүрийг терминалд хэвлэх |
+| `pino` | ^10.4.0 | Бүтэцтэй лог (`logs/app.log`) |
+| `pino-pretty` | ^13.2.0 | Терминал дахь логийг өнгөтэй, уншихад хялбар болгох |
+| `debug` | ~2.6.9 | `bin/www`-ийн debug мэдээлэл (Express generator-оос) |
+| `@anthropic-ai/sdk` | ^1.8.0 | Чатбот: Claude API-тай харилцах |
+| `ws` | ^8.23.0 | WebSocket (realtime). **Хийгдэж байгаа** |
+
+Chimege (яриа → текст) нь тусдаа сан биш, түүний HTTP API-г `services/chimegeService.js` шууд дууддаг.
+
+#### Frontend (`frontend/package.json`)
+
+| Сан | Хувилбар | Юунд ашигладаг вэ |
+| --- | --- | --- |
+| `react`, `react-dom` | ^19.2.8 | UI бүтээх |
+| `react-router-dom` | ^7.18.4 | Хуудас хоорондын шилжилт (`/admin/...`, `/...`) |
+| `axios` | ^1.21.0 | Backend API руу хүсэлт илгээх (`src/api/client.js`) |
+| `@mui/material` | ^9.5.0 | Material UI компонентууд |
+| `@mui/icons-material` | ^9.5.0 | Дүрс тэмдэгтүүд (icon) |
+| `@emotion/react`, `@emotion/styled` | ^11.14 | MUI-ийн шаарддаг CSS-in-JS сан |
+
+Хөгжүүлэлтийн хэрэгслүүд (`devDependencies`):
+
+| Сан | Хувилбар | Юунд ашигладаг вэ |
+| --- | --- | --- |
+| `vite` | ^8.3.0 | Dev сервер, build хийх, `/api` proxy |
+| `@vitejs/plugin-react` | ^6.1.1 | Vite дээр React (JSX, fast refresh) ажиллуулах |
+| `eslint`, `@eslint/js` | ^10 | Кодын алдаа, хэв маягийг шалгах |
+| `globals` | ^17.12.0 | ESLint-д browser-ийн глобал хувьсагчдыг (`window` гэх мэт) таниулах |
+| `eslint-plugin-react-hooks` | ^7.1.1 | React hook-ийн дүрмийг шалгах |
+| `eslint-plugin-react-refresh` | ^0.5.6 | Fast refresh-д тохирох export-ийг шалгах |
+| `@types/react`, `@types/react-dom` | ^19.2 | Editor дээрх автомат гүйцээлт (IntelliSense) |
+
+#### Mobile (`mobile/package.json`)
+
+| Сан | Хувилбар | Юунд ашигладаг вэ |
+| --- | --- | --- |
+| `expo` | ~58.0.12 | React Native апп хөгжүүлэх, ажиллуулах платформ |
+| `react-native` | 0.88.0 | Утасны native UI |
+| `react` | 19.3.0 | UI логик |
+| `expo-status-bar` | ~58.0.3 | Утасны дээд статус мөрийг удирдах |
 
 ---
 
@@ -198,6 +253,9 @@ backend/
 | `requests` | Засварын хүсэлт (засварчин томилж болно) |
 | `announcements` | Зарлал (`entrance_id = NULL` бол бүх орцод) |
 | `polls`, `poll_options`, `poll_votes` | Санал хураалт, нэг тоот нэг санал |
+| `invoice_lines` | Нэхэмжлэлийн задаргаа (хураамж, лифт, хамгаалалт, хог), нийлбэр = `invoices.amount` |
+| `meetings`, `meeting_agenda` | Хурал ба хэлэлцэх асуудал. Хурал дээр санал хураах асуудал `poll_id`-аар санал хураалттай холбогдоно |
+| `expenses` | СӨХ-ийн зарлага ангиллаар. Нөөц сан = нийт төлбөр − нийт зарлага (тооцоолно) |
 
 Дүрмүүд:
 

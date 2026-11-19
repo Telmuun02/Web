@@ -15,9 +15,11 @@
  *   requests - шийдээгүй сүүлийн 5 хүсэлт
  *   poll - идэвхтэй санал хураалт
  *   months - сүүлийн 12 сарын орлого
+ *   staffLog - ажилтнуудын сүүлийн 4 үйлдэл ("Ажилтны үйлдэл" карт)
  */
 
-var { Invoices, Payments, Requests, Polls, Units } = require('../../db/models');
+var { Invoices, Payments, Requests, Polls, Units, Admins } = require('../../db/models');
+var activity = require('./activityController');
 
 var methodLabel = { qpay: 'QPay', bank: 'Дансаар', cash: 'Бэлэн', card: 'Карт' };
 
@@ -103,9 +105,14 @@ async function months() {
   return list;
 }
 
+async function staffLog() {
+  var rows = await Admins.recentActions(4);
+  return rows.map(activity.describe);
+}
+
 async function show(req, res, next) {
   try {
-    var [today, monthStats, openRequests, hourList, paymentList, requestList, pollStats, monthList, debtors] =
+    var [today, monthStats, openRequests, hourList, paymentList, requestList, pollStats, monthList, debtors, log] =
       await Promise.all([
         Payments.todayTotal(),
         month(),
@@ -116,6 +123,7 @@ async function show(req, res, next) {
         poll(),
         months(),
         Invoices.debtors(6),
+        staffLog(),
       ]);
 
     res.json({
@@ -128,6 +136,7 @@ async function show(req, res, next) {
       poll: pollStats,
       months: monthList,
       debtors: debtors,
+      log: log,
     });
   } catch (err) {
     next(err);

@@ -12,7 +12,8 @@ import Segmented from '../../components/UI/Segmented'
 import Switch from '../../components/UI/Switch'
 import Toast from '../../components/UI/Toast'
 import LiveBar from '../../components/admin/LiveBar'
-import { liveSettings } from '../../samples/admin/live'
+import useLive from '../../hooks/useLive'
+import useApi from '../../hooks/useApi'
 import './styles/Settings.css'
 
 const feeModes = [
@@ -20,20 +21,13 @@ const feeModes = [
   { value: 'area', label: 'Талбайгаар (м²)' },
 ]
 
-// Эрхийн нэр ба шошгоны өнгө
-const accessInfo = {
-  admin: { label: 'Бүх эрх', tone: 'yellow' },
-  finance: { label: 'Санхүү', tone: 'green' },
-  requests: { label: 'Хүсэлт', tone: 'gray' },
+// admins.position → албан тушаалын нэр, эрхийн шошго ба өнгө
+const positionInfo = {
+  chairman: { role: 'СӨХ-ийн дарга', label: 'Бүх эрх', tone: 'yellow' },
+  accountant: { role: 'Нягтлан', label: 'Санхүү', tone: 'green' },
+  technician: { role: 'Засварчин', label: 'Хүсэлт', tone: 'gray' },
+  staff: { role: 'Ажилтан', label: 'Хүсэлт', tone: 'gray' },
 }
-
-// Түр жишээ өгөгдөл — ажилтны API нэмэгдэх хүртэл
-const sampleStaff = [
-  { id: 1, name: 'Дорж Б.', role: 'СӨХ-ийн дарга', access: 'admin' },
-  { id: 2, name: 'Ариунаа С.', role: 'Нягтлан', access: 'finance' },
-  { id: 3, name: 'Бат-Эрдэнэ Г.', role: 'Сантехникч', access: 'requests' },
-  { id: 4, name: 'Ганзориг Д.', role: 'Цахилгаанчин', access: 'requests' },
-]
 
 const automationItems = [
   { key: 'autoInvoice', label: 'Нэхэмжлэл автоматаар үүсгэх', hint: 'Сар бүрийн 1-нд бүх тоотод' },
@@ -53,6 +47,9 @@ function example(area, rate) {
 }
 
 export default function Settings() {
+  const live = useLive('settings') // "ШУУД" мөр — /api/admin/live/settings
+  // GET /api/admin/staff — идэвхтэй ажилтнууд
+  const { data: staff, error: staffError } = useApi('/admin/staff', null, { fallback: [] })
   const [form, setForm] = useState({
     mode: 'fixed',
     fixedRate: '85,000', // тоот бүрийн сарын хураамж
@@ -89,7 +86,7 @@ export default function Settings() {
   return (
     <div className="settings">
       {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...liveSettings} />
+      <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub="Зөвхөн СӨХ-ийн дарга ба нягтлан өөрчилнө" title="Тохиргоо">
         <Button variant="primary" onClick={save}>Хадгалах</Button>
@@ -148,11 +145,15 @@ export default function Settings() {
           {/* Түр — ажилтан нэмэх API нэмэгдэх хүртэл ажиллахгүй */}
           <Card title="Ажилтан ба эрх" action={<Button size="small">+ Ажилтан нэмэх</Button>}>
             <div>
-              {sampleStaff.map((s) => (
-                <ListItem key={s.id} icon={<Avatar name={s.name} dark />} title={s.name} hint={s.role}>
-                  <Badge tone={accessInfo[s.access].tone}>{accessInfo[s.access].label}</Badge>
-                </ListItem>
-              ))}
+              {staffError && <p role="alert">{staffError}</p>}
+              {staff.map((s) => {
+                const info = positionInfo[s.position] ?? positionInfo.staff
+                return (
+                  <ListItem key={s.id} icon={<Avatar name={s.name} dark />} title={s.name} hint={info.role}>
+                    <Badge tone={info.tone}>{info.label}</Badge>
+                  </ListItem>
+                )
+              })}
             </div>
           </Card>
 

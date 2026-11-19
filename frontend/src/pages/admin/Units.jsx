@@ -15,7 +15,6 @@ import LiveBar from '../../components/admin/LiveBar'
 import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import useTabParam from '../../hooks/useTabParam'
-import { liveUnits } from '../../samples/admin/live'
 import './styles/Units.css'
 
 const tabs = [
@@ -55,7 +54,7 @@ function debtTone(debt) {
 }
 
 export default function Units() {
-  const live = useLive('units', liveUnits) // "ШУУД" мөр — /api/admin/live/units
+  const live = useLive('units') // "ШУУД" мөр — /api/admin/live/units
   const [tab, setTab] = useTabParam('all') // /admin/units?tab=2
   const [query, setQuery] = useState('')
   const [selId, setSelId] = useState(null) // баруун талд дэлгэрэнгүйг нь харуулах тоот

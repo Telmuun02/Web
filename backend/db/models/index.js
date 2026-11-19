@@ -3,7 +3,7 @@
  *   var { Units, Invoices } = require('../db/models');
  *
  * Units, Users, Invoices, Payments, Requests, Polls,
- * Announcements, Buildings, Entrances, Admins
+ * Announcements, Buildings, Entrances, Admins, Meetings, Expenses
  */
 
 module.exports = {
@@ -17,4 +17,6 @@ module.exports = {
   Buildings: require('./buildings'),
   Entrances: require('./entrances'),
   Admins: require('./admins'),
+  Meetings: require('./meetings'),
+  Expenses: require('./expenses'),
 };

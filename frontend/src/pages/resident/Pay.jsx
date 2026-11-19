@@ -4,8 +4,10 @@ import LightbulbOutlined from '@mui/icons-material/LightbulbOutlined'
 import Button from '../../components/UI/Button'
 import PageHeader from '../../components/UI/PageHeader'
 import Table from '../../components/UI/Table'
-// Backend-тэй түр холбоогүй — бүх өгөгдөл жишээ файлаас
-import { sampleBanks, sampleEntranceLight, sampleInvoice, samplePayHistory } from '../../samples/resident/pay'
+import Toast from '../../components/UI/Toast'
+import api from '../../api/client'
+import useApi from '../../hooks/useApi'
+import { money, monthDay, monthOf } from '../../utils/format'
 import './styles/Pay.css'
 
 const historyColumns = [
@@ -13,15 +15,15 @@ const historyColumns = [
   { label: 'Төлсөн огноо' },
   { label: 'Хэлбэр' },
   { label: 'Дүн', align: 'right' },
-  { label: 'Баримт', align: 'right' },
 ]
 
-const qrSize = 21 // QR код 21 × 21 нүдтэй
+// payments.method → дэлгэцийн нэр
+const methodNames = { qpay: 'QPay', bank: 'Дансаар', cash: 'Бэлнээр', card: 'Картаар' }
 
-// 85000 → '85,000₮'
-function money(n) {
-  return `${n.toLocaleString('en-US')}₮`
-}
+// QPay-ийн банкны товчнууд — QPay холбогдох хүртэл юу ч хийхгүй
+const banks = ['Хаан', 'Голомт', 'ХХБ', 'Бусад']
+
+const qrSize = 21 // QR код 21 × 21 нүдтэй
 
 // Жишээ QR кодын нүднүүд — гурван буланд "харах дөрвөлжин", бусад нь хээ.
 // Жинхэнэ QR биш, QPay-ийн API холбогдоход серверээс ирсэн зургаар солигдоно
@@ -52,34 +54,74 @@ const qrCells = buildQr()
 
 export default function Pay() {
   const { user } = useOutletContext()
-  const [paid, setPaid] = useState(false) // Түр — QPay холбогдох хүртэл "Төлсөн гэж дуурайх" товчоор
+  // GET /api/resident/pay — төлсний дараа POST-ын хариугаар шууд солигдоно
+  const { data: loaded, error } = useApi('/resident/pay', null, { fallback: null })
+  const [fresh, setFresh] = useState(null) // демо төлбөрийн дараах шинэ өгөгдөл
+  const [state, setState] = useState({ sending: false, message: '' })
+  const data = fresh ?? loaded
 
-  const total = sampleInvoice.lines.reduce((sum, l) => sum + l.amount, 0)
-  const { units } = sampleEntranceLight
-  const litNow = sampleEntranceLight.paid + (paid ? 1 : 0)
-  const litPercent = Math.round((litNow / units) * 100)
+  if (error) return <div className="res-pay"><p role="alert">{error}</p></div>
+  if (!data) return <div className="res-pay"><p>Ачааллаж байна…</p></div>
+
+  const { unit, invoice, debt, entrance_light: light, history } = data
+  const left = invoice ? invoice.amount - invoice.paid : 0
+  const paid = Boolean(invoice) && left <= 0
+  const litPercent = light.units ? Math.round((light.paid / light.units) * 100) : 0
+  const month = invoice ? monthOf(invoice.period) : new Date().getMonth() + 1
+
+  // Демо — QPay-ийн оронд үлдэгдлийг "qpay" хэлбэрээр DB-д бичнэ
+  async function payDemo() {
+    setState({ sending: true, message: '' })
+    try {
+      setFresh(await api.post('/resident/pay'))
+      setState({ sending: false, message: '' })
+    } catch (err) {
+      setState({ sending: false, message: err.message })
+    }
+  }
 
   return (
     <div className="res-pay">
-      <PageHeader sub={`${sampleInvoice.month}-р сар · ${sampleInvoice.unit} · төлөх хугацаа ${sampleInvoice.due}`} title="Төлбөр төлөх" />
+      <PageHeader
+        sub={invoice ? `${month}-р сар · ${unit.code} тоот · төлөх хугацаа ${monthDay(invoice.due_date)}` : `${unit.code} тоот`}
+        title="Төлбөр төлөх"
+      />
 
       <div className="pay-top">
-        {/* Задаргаа */}
+        {/* Задаргаа — invoice_lines хүснэгтээс */}
         <section className="pay-breakdown" aria-labelledby="bd-title">
           <h2 id="bd-title">Задаргаа</h2>
-          {sampleInvoice.lines.map((l) => (
-            <div key={l.name} className="pay-line">
-              <span>{l.name}</span>
-              <span className="pay-line-amount">{money(l.amount)}</span>
-            </div>
-          ))}
-          <div className="pay-total">
-            <span>Нийт</span>
-            <span className="pay-total-amount">{money(total)}</span>
-          </div>
+          {invoice ? (
+            <>
+              {invoice.lines.map((l) => (
+                <div key={l.name} className="pay-line">
+                  <span>{l.name}</span>
+                  <span className="pay-line-amount">{money(l.amount)}</span>
+                </div>
+              ))}
+              {invoice.paid > 0 && (
+                <div className="pay-line">
+                  <span>Төлсөн</span>
+                  <span className="pay-line-amount">−{money(invoice.paid)}</span>
+                </div>
+              )}
+              {debt > 0 && (
+                <div className="pay-line">
+                  <span>Өмнөх саруудын өр (тусад нь)</span>
+                  <span className="pay-line-amount">{money(debt)}</span>
+                </div>
+              )}
+              <div className="pay-total">
+                <span>Энэ сард төлөх</span>
+                <span className="pay-total-amount">{money(Math.max(left, 0))}</span>
+              </div>
+            </>
+          ) : (
+            <p>Энэ сарын нэхэмжлэл хараахан гараагүй байна.</p>
+          )}
           <div className="pay-note">
             <LightbulbOutlined sx={{ fontSize: 20 }} />
-            <span>Төлмөгц орцны зураг дээр таны цонх гэрэлтэнэ. Одоогоор {units} айлын {litNow} нь гэрэлтэй.</span>
+            <span>Төлмөгц орцны зураг дээр таны цонх гэрэлтэнэ. Одоогоор {light.units} айлын {light.paid} нь гэрэлтэй.</span>
           </div>
         </section>
 
@@ -93,16 +135,15 @@ export default function Pay() {
               <div className="pay-done-text">
                 <h2 id="qr-title">Таны гэрэл асаалаа</h2>
                 <span className="pay-done-thanks">
-                  Баярлалаа, {user.name}. {sampleInvoice.month}-р сарын төлбөр {money(total)} бүрэн төлөгдлөө.
+                  Баярлалаа, {user.name}. {month}-р сарын төлбөр {money(invoice.amount)} бүрэн төлөгдлөө.
                 </span>
-                <span className="pay-done-light">Орц {litPercent}% гэрэлтэй боллоо · {units} айлын {litNow} дэх нь та</span>
+                <span className="pay-done-light">Орц {litPercent}% гэрэлтэй · {light.units} айлын {light.paid} нь төлсөн</span>
               </div>
               <div className="pay-done-actions">
                 <Button as={Link} to="/" variant="primary">Нүүр рүү буцах</Button>
-                <button type="button" className="pay-ghost" onClick={() => setPaid(false)}>Дахин үзэх</button>
               </div>
             </div>
-          ) : (
+          ) : invoice ? (
             <>
               <div className="pay-qr-row">
                 <div className="pay-qr" role="img" aria-label="QPay төлбөрийн QR код">
@@ -119,31 +160,38 @@ export default function Pay() {
                 <span className="pay-qr-hint">эсвэл банкаа сонгоно уу</span>
                 <div className="pay-banks-grid">
                   {/* Түр — QPay-ийн банкны линк нэмэгдэх хүртэл юу ч хийхгүй */}
-                  {sampleBanks.map((b) => <button key={b} type="button" className="pay-bank">{b}</button>)}
+                  {banks.map((b) => <button key={b} type="button" className="pay-bank">{b}</button>)}
                 </div>
               </div>
 
-              {/* Демо — backend байхгүй тул төлсөн мэт харагдуулна */}
-              <button type="button" className="pay-demo" onClick={() => setPaid(true)}>Төлсөн гэж дуурайх (демо)</button>
+              <Toast>{state.message}</Toast>
+              {/* Демо — POST /api/resident/pay үлдэгдлийг QPay-ээр төлсөн гэж DB-д бичнэ */}
+              <button type="button" className="pay-demo" onClick={payDemo} disabled={state.sending}>
+                {state.sending ? 'Бүртгэж байна…' : `Төлсөн гэж дуурайх (демо) · ${money(left)}`}
+              </button>
             </>
+          ) : (
+            <h2 id="qr-title">Төлөх нэхэмжлэл алга</h2>
           )}
         </section>
       </div>
 
       <section className="pay-history" aria-labelledby="hist-title">
         <h2 id="hist-title">Төлбөрийн түүх</h2>
-        <Table columns={historyColumns} minWidth={560}>
-          {samplePayHistory.map((h) => (
-            <tr key={h.id}>
-              <td className="bold">{h.month}</td>
-              <td className="dim">{h.date}</td>
-              <td className="dim">{h.via}</td>
-              <td className="num bold">{money(h.amount)}</td>
-              {/* Түр — баримт татах API нэмэгдэх хүртэл ажиллахгүй */}
-              <td className="num"><Button size="small">PDF</Button></td>
-            </tr>
-          ))}
-        </Table>
+        {history.length === 0 ? (
+          <p>Төлбөрийн түүх алга</p>
+        ) : (
+          <Table columns={historyColumns} minWidth={480}>
+            {history.map((h) => (
+              <tr key={h.id}>
+                <td className="bold">{monthOf(h.period)}-р сар</td>
+                <td className="dim">{monthDay(h.paid_at)}</td>
+                <td className="dim">{methodNames[h.method] ?? h.method}</td>
+                <td className="num bold">{money(h.amount)}</td>
+              </tr>
+            ))}
+          </Table>
+        )}
       </section>
     </div>
   )

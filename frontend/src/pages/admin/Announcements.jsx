@@ -12,8 +12,8 @@ import Table from '../../components/UI/Table'
 import Toast from '../../components/UI/Toast'
 import api from '../../api/client'
 import LiveBar from '../../components/admin/LiveBar'
+import useLive from '../../hooks/useLive'
 import useApi from '../../hooks/useApi'
-import { liveAnnouncements } from '../../samples/admin/live'
 import './styles/Announcements.css'
 
 // Хэнд илгээх — backend-ийн audience утга: 'all' эсвэл орцны дугаар
@@ -54,6 +54,7 @@ function smsText(title, body) {
 const emptyForm = { title: '', body: '', audience: 'all', sms: true, important: false }
 
 export default function Announcements() {
+  const live = useLive('announcements') // "ШУУД" мөр — /api/admin/live/announcements
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin' // оршин суугч зөвхөн нийтэлсэн зарлалыг харна
   // Шинэ зарлалын form — 5 талбар хамт хадгалагдана.
@@ -99,7 +100,7 @@ export default function Announcements() {
   return (
     <div className="announcements">
       {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...liveAnnouncements} />
+      <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader
         sub={isAdmin ? 'Оршин суугчдад апп ба SMS-ээр хүрнэ' : 'СӨХ-ийн мэдээ, мэдэгдэл'}

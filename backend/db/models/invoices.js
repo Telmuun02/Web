@@ -11,12 +11,13 @@
  *
  * forUnit(unitId) - нэг тоотын нэхэмжлэлүүд, шинээс нь
  * monthlySummary(fromPeriod, buildingId) - сар бүрийн нэхэмжилсэн / цугларсан дүн (Dashboard)
+ * entranceSummary(fromPeriod, buildingId) - сар, орц бүрээр нэхэмжлэлийн тоо ба бүрэн төлөгдсөн нь (Reports "Төлөлт орцоор")
  * debtors(limit, buildingId) - хугацаа хэтэрсэн өртэй тоотууд, өр ихээс нь
  * overdueTotal(buildingId) - нийт хэтэрсэн өр, хэдэн тоот
  * counts(period, search, buildingId) - таб бүрийн тоо { all, unpaid, partial, paid, overdue }
  * list(period, filters, buildingId) - нэхэмжлэлийн жагсаалт (таб, хайлттай)
  * monthProgress(buildingId) - энэ сарын нэхэмжлэлээс хэд нь бүрэн төлөгдсөн
- * currentForUnit(unitId) - тоотын энэ сарын нэхэмжлэл, төлсөн дүнтэй
+ * currentForUnit(unitId) - тоотын энэ сарын нэхэмжлэл, төлсөн дүн, задаргааны мөрүүдтэй (lines)
  * entranceMonth(entranceId) - орцны тоот бүр энэ сард төлсөн эсэх ("орцны гэрэл")
  * onTimeCount(unitId) - сүүлийн 12 сард хугацаандаа төлсөн сарын тоо
  */
@@ -60,6 +61,23 @@ async function monthlySummary(fromPeriod, buildingId) {
       units: Number(r.units),
       paid_units: Number(r.paid_units),
     };
+  });
+}
+
+async function entranceSummary(fromPeriod, buildingId) {
+  var q = db('invoices as i')
+    .join('units as u', 'u.id', 'i.unit_id')
+    .join('entrances as e', 'e.id', 'u.entrance_id')
+    .select('i.period', 'e.number as entrance')
+    .count({ units: 'i.id' })
+    .select(db.raw("SUM(i.status = 'paid') AS paid_units"))
+    .where('i.period', '>=', fromPeriod)
+    .groupBy('i.period', 'e.number')
+    .orderBy(['i.period', 'e.number']);
+  var rows = await Units.inBuilding(q, buildingId, 'i.unit_id');
+
+  return rows.map(function (r) {
+    return { period: r.period, entrance: r.entrance, units: Number(r.units), paid_units: Number(r.paid_units) };
   });
 }
 
@@ -205,7 +223,9 @@ async function currentForUnit(unitId) {
     .where('i.unit_id', unitId)
     .where('i.period', thisMonth())
     .first();
-  return row && { ...row, paid: Number(row.paid) };
+  if (!row) return row;
+  var lines = await db('invoice_lines').select('name', 'amount').where('invoice_id', row.id).orderBy('position');
+  return { ...row, paid: Number(row.paid), lines: lines };
 }
 
 async function entranceMonth(entranceId) {
@@ -234,6 +254,7 @@ async function onTimeCount(unitId) {
 
 module.exports = {
   ...base,
+  entranceSummary,
   onTimeCount,
   forUnit,
   monthlySummary,

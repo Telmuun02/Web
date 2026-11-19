@@ -14,7 +14,6 @@ import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import usePagedList from '../../hooks/usePagedList'
 import useTabParam from '../../hooks/useTabParam'
-import { liveRequests } from '../../samples/admin/live'
 import './styles/Requests.css'
 
 // Төлөв бүрийн нэр, шошгоны өнгө, дараагийн алхмын товчны бичиг
@@ -77,7 +76,7 @@ function toRow(r) {
 }
 
 export default function Requests() {
-  const live = useLive('requests', liveRequests) // "ШУУД" мөр — /api/admin/live/requests
+  const live = useLive('requests') // "ШУУД" мөр — /api/admin/live/requests
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin' // оршин суугч зөвхөн харна, томилох/хаах товч admin-д л
   const [tab, setTab] = useTabParam('open') // /admin/requests?tab=new

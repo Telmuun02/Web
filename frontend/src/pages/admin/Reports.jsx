@@ -10,38 +10,26 @@ import StatCard from '../../components/UI/StatCard'
 import Switch from '../../components/UI/Switch'
 import Table from '../../components/UI/Table'
 import LiveBar from '../../components/admin/LiveBar'
+import useLive from '../../hooks/useLive'
 import useApi from '../../hooks/useApi'
-import { liveReports } from '../../samples/admin/live'
 import './styles/Reports.css'
 
-// Түр жишээ — зарлага, нөөц сангийн өгөгдөл DB-д одоохондоо алга
-const sampleExpenseStats = [
-  { label: 'Зарлага', value: '8.4 сая₮', note: 'Төсвөөс 0.2 сая₮ бага' },
-  { label: 'Нөөц сан', value: '14.2 сая₮', note: 'Энэ сард +1.2 сая₮', tone: 'dark' },
-]
+// expenses.category → дэлгэцийн нэр
+const expenseNames = {
+  salary: 'Ажилчдын цалин',
+  utilities: 'Нийтийн дулаан, ус',
+  elevator: 'Лифтний үйлчилгээ',
+  cleaning: 'Цэвэрлэгээ',
+  electricity: 'Нийтийн цахилгаан',
+  repair: 'Засвар үйлчилгээ',
+  other: 'Бусад',
+}
 
 // '2026-10-01' → '2026 оны 10-р сар'
 function monthLabel(period) {
   const [year, month] = period.split('-')
   return `${year} оны ${Number(month)}-р сар`
 }
-
-// Зарлага ангиллаар (₮) — түр жишээ
-const sampleExpenses = [
-  { name: 'Ажилчдын цалин', amount: 3200000 },
-  { name: 'Нийтийн дулаан, ус', amount: 1900000 },
-  { name: 'Лифтний үйлчилгээ', amount: 1100000 },
-  { name: 'Цэвэрлэгээ', amount: 900000 },
-  { name: 'Нийтийн цахилгаан', amount: 700000 },
-  { name: 'Бусад', amount: 600000 },
-]
-
-// Орц бүрийн төлөлтийн хувь — түр жишээ
-const sampleEntrances = [
-  { name: '1-р орц', percent: 82 },
-  { name: '2-р орц', percent: 77 },
-  { name: '3-р орц', percent: 72 },
-]
 
 // adminOnly — оршин суугчид харагдахгүй
 const sampleDocs = [
@@ -65,6 +53,7 @@ function million(n) {
 }
 
 export default function Reports() {
+  const live = useLive('reports') // "ШУУД" мөр — /api/admin/live/reports
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin'
   const [shared, setShared] = useState(true) // тайланг оршин суугчдад нийтлэх эсэх
@@ -79,25 +68,44 @@ export default function Reports() {
   const closed = (report?.months ?? []).filter((m) => m.period !== thisMonth).reverse()
   const month = closed.find((m) => m.period === period) ?? closed[0]
 
+  // Сонгосон сарын орц бүрийн төлөлт — GET /api/admin/reports-ийн entrances
+  const entrances = (report?.entrances ?? [])
+    .filter((e) => e.period === month?.period)
+    .map((e) => ({
+      name: `${e.entrance}-р орц`,
+      percent: e.units ? Math.round((e.paid_units / e.units) * 100) : 0,
+    }))
+
+  // Сонгосон сарын зарлага ангиллаар, ихээс нь — GET /api/admin/reports-ийн expenses
+  const expenses = (report?.expenses ?? [])
+    .filter((x) => x.period === month?.period)
+    .map((x) => ({ name: expenseNames[x.category] ?? x.category, amount: x.amount }))
+    .sort((a, b) => b.amount - a.amount)
+  const total = expenses.reduce((sum, x) => sum + x.amount, 0)
+  // Хамгийн том зарлага — зурвасын уртыг үүнтэй харьцуулна (= 100%)
+  const largest = expenses[0]
+
   const stats = [
     month
       ? { label: 'Орлого', value: `${million(month.collected)} сая₮`, note: `Нэхэмжилсний ${month.billed ? Math.round((month.collected / month.billed) * 100) : 0}%` }
       : { label: 'Орлого', value: '—', note: 'Хаагдсан сар алга' },
-    ...sampleExpenseStats,
+    month
+      ? { label: 'Зарлага', value: `${million(total)} сая₮`, note: `Орлогоос ${million(Math.abs(month.collected - total))} сая₮ ${month.collected >= total ? 'бага' : 'их'}` }
+      : { label: 'Зарлага', value: '—' },
+    report
+      ? { label: 'Нөөц сан', value: `${million(report.reserve.balance)} сая₮`, note: 'Нийт цугласан − нийт зарлага', tone: 'dark' }
+      : { label: 'Нөөц сан', value: '—', tone: 'dark' },
     report
       ? { label: 'Хуримтлагдсан өр', value: `${million(report.overdue.debt)} сая₮`, note: `${report.overdue.units} тоот`, tone: 'bad' }
       : { label: 'Хуримтлагдсан өр', value: '—', tone: 'bad' },
   ]
 
-  const total = sampleExpenses.reduce((sum, x) => sum + x.amount, 0)
-  // Хамгийн том зарлага — зурвасын уртыг үүнтэй харьцуулна (= 100%)
-  const largest = sampleExpenses.reduce((a, b) => (b.amount > a.amount ? b : a))
   const docs = sampleDocs.filter((d) => isAdmin || !d.adminOnly)
 
   return (
     <div className="reports">
-      {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
-      <LiveBar {...liveReports} />
+      {/* Шууд мөр — GET /api/admin/live/reports */}
+      <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub="Хаагдсан сарын санхүү" title="Тайлан">
         <label className="reports-month">
@@ -119,10 +127,10 @@ export default function Reports() {
       <div className="reports-columns">
         <Card
           title="Зарлагын бүтэц"
-          sub={`Нийт ${million(total)} сая₮ · хамгийн том нь ${largest.name.toLowerCase()}`}
+          sub={largest ? `Нийт ${million(total)} сая₮ · хамгийн том нь ${largest.name.toLowerCase()}` : 'Энэ сард зарлага бүртгэгдээгүй'}
           className="reports-expenses"
         >
-          {sampleExpenses.map((x) => (
+          {expenses.map((x) => (
             <div key={x.name} className="reports-expense">
               <span>{x.name}</span>
               <ProgressBar value={(x.amount / largest.amount) * 100} size={12} />
@@ -132,7 +140,8 @@ export default function Reports() {
         </Card>
 
         <Card title="Төлөлт орцоор" sub={month ? `${Number(month.period.split('-')[1])}-р сарын нэхэмжлэлийн төлөлт` : 'Нэхэмжлэлийн төлөлт'} className="reports-entrances">
-          {sampleEntrances.map((e) => (
+          {entrances.length === 0 && <span className="dim">Энэ сард нэхэмжлэл алга</span>}
+          {entrances.map((e) => (
             <div key={e.name} className="reports-entrance">
               <div className="reports-entrance-head">
                 <span>{e.name}</span>

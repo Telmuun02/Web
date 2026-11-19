@@ -16,7 +16,6 @@ import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import usePagedList from '../../hooks/usePagedList'
 import useTabParam from '../../hooks/useTabParam'
-import { liveInvoices } from '../../samples/admin/live'
 import './styles/Invoices.css'
 
 // Төлөв бүрийн нэр ба шошгоны өнгө
@@ -89,7 +88,7 @@ function toRow(inv) {
 }
 
 export default function Invoices() {
-  const live = useLive('invoices', liveInvoices) // "ШУУД" мөр — /api/admin/live/invoices
+  const live = useLive('invoices') // "ШУУД" мөр — /api/admin/live/invoices
   // /admin/invoices?tab=debtors гэж ирвэл тэр табаар нээгдэнэ (Dashboard-ийн "Бүгдийг харах")
   const [tab, setTab] = useTabParam('all')
   const [query, setQuery] = useState('')

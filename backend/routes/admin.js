@@ -8,6 +8,7 @@ var announcementsController = require('../controllers/admin/announcementsControl
 var reportsController = require('../controllers/admin/reportsController');
 var staffController = require('../controllers/admin/staffController');
 var liveController = require('../controllers/admin/liveController');
+var activityController = require('../controllers/admin/activityController');
 
 /**
  * admin хуудастай холбоотой api ууд ба доор байдлаар харагдана.
@@ -43,5 +44,7 @@ router.get('/reports', reportsController.show);
 router.get('/staff', staffController.index);
 
 router.get('/live/:page', liveController.show);
+
+router.get('/activity', activityController.show);
 
 module.exports = router;

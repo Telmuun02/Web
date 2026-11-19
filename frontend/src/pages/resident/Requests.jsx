@@ -2,35 +2,62 @@ import { useState } from 'react'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
 import Field from '../../components/UI/Field'
 import PageHeader from '../../components/UI/PageHeader'
-import Switch from '../../components/UI/Switch'
 import Toast from '../../components/UI/Toast'
-// Backend-тэй түр холбоогүй — бүх өгөгдөл жишээ файлаас
-import { requestSteps, requestTypes, sampleMyRequests } from '../../samples/resident/requests'
+import api from '../../api/client'
+import useApi from '../../hooks/useApi'
+import { monthDay } from '../../utils/format'
 import './styles/Requests.css'
 
+// Хүсэлтийн төрөл — id нь DB-ийн requests.category-той ижил, tint: үсгийн дэвсгэр
+const requestTypes = [
+  { id: 'plumbing', label: 'Сантехник', tint: 'var(--tint-navy)' },
+  { id: 'electrical', label: 'Цахилгаан', tint: 'var(--tint-yellow)' },
+  { id: 'elevator', label: 'Лифт', tint: 'var(--tint-orange)' },
+  { id: 'cleaning', label: 'Цэвэрлэгээ', tint: 'var(--tint-green)' },
+  { id: 'other', label: 'Бусад', tint: 'var(--tint-red)' },
+]
+
+const requestSteps = ['Илгээсэн', 'Хүлээн авсан', 'Хийгдэж байна', 'Шийдсэн']
+
+// Backend-ийн stage → хэд дэх алхам хүртэл явсан (1–4)
+const stageStep = { new: 1, assigned: 2, progress: 3, done: 4 }
+
+// Хүсэлтийн доорх тайлбар мөр
+function requestNote(r) {
+  if (r.stage === 'new') return 'СӨХ хүлээн авахыг хүлээж байна'
+  if (r.stage === 'assigned') return `${r.assigned_name ?? 'Ажилтан'} хариуцлаа`
+  if (r.stage === 'progress') return `Хийгдэж байна${r.assigned_name ? ` · ${r.assigned_name}` : ''}`
+  return r.status === 'rejected' ? 'Татгалзсан' : 'Шийдэгдсэн'
+}
+
 // Шинэ хүсэлтийн анхны утгууд
-const emptyForm = { type: 'fix', title: '', body: '', anonymous: false }
+const emptyForm = { type: 'plumbing', title: '', body: '' }
 
 export default function Requests() {
-  // Шинэ хүсэлтийн form — 4 талбар хамт.
-  // "Илгээх" товч гарчгийн уртаас хамаарч идэвхжих тул FormData биш state
+  // Шинэ хүсэлтийн form — "Илгээх" товч гарчгийн уртаас хамаарч идэвхжих тул FormData биш state
   const [form, setForm] = useState(emptyForm)
-  const [list, setList] = useState(sampleMyRequests)
-  const [toast, setToast] = useState('')
-  const { type, title, body, anonymous } = form
+  const [status, setStatus] = useState({ sending: false, toast: '', freshId: null })
+  // GET /api/resident/requests — илгээсний дараа reload хийнэ
+  const { data: list, loading, error, reload } = useApi('/resident/requests', null, { fallback: [] })
+  const { type, title, body } = form
 
-  // Нэг талбарыг солино: set('type')('complaint')
+  // Нэг талбарыг солино: set('type')('electrical')
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
 
-  const cantSend = title.trim().length < 3
+  const cantSend = title.trim().length < 3 || status.sending
 
-  // Түр — хүсэлтийн API нэмэгдэх хүртэл зөвхөн дэлгэц дээр жагсаалтын эхэнд нэмнэ
-  function send() {
+  // POST /api/resident/requests — тоот, хэрэглэгчийг backend token-оос авна
+  async function send() {
     if (cantSend) return
-    const item = { id: Date.now(), type, title: title.trim(), when: 'Одоо', step: 1, note: 'СӨХ хүлээн авахыг хүлээж байна', fresh: true }
-    setList([item, ...list])
-    setForm((f) => ({ ...f, title: '', body: '' })) // төрөл, нэр нууцлах сонголт хэвээр үлдэнэ
-    setToast('Хүсэлт илгээгдлээ. Хариуг мэдэгдлээр авна.')
+    setStatus({ sending: true, toast: '', freshId: null })
+    try {
+      const created = await api.post('/resident/requests', { category: type, title: title.trim(), description: body.trim() })
+      setForm((f) => ({ ...f, title: '', body: '' })) // төрөл хэвээр үлдэнэ
+      setStatus({ sending: false, toast: 'Хүсэлт илгээгдлээ. Явцыг энд харна.', freshId: created.id })
+      reload()
+    } catch (err) {
+      setStatus({ sending: false, toast: err.message, freshId: null })
+    }
   }
 
   return (
@@ -63,7 +90,8 @@ export default function Requests() {
           <Field label="Гарчиг">
             <input
               value={title}
-              onChange={(e) => { set('title')(e.target.value); setToast('') }}
+              maxLength={150}
+              onChange={(e) => { set('title')(e.target.value); setStatus((s) => ({ ...s, toast: '' })) }}
               placeholder="Жишээ: Угаалтуурын доор ус дусаж байна"
             />
           </Field>
@@ -71,6 +99,7 @@ export default function Requests() {
           <Field label="Дэлгэрэнгүй">
             <textarea
               rows="4"
+              maxLength={2000}
               value={body}
               onChange={(e) => set('body')(e.target.value)}
               placeholder="Хаана, хэзээнээс, ямар байдалтай байгааг бичнэ үү"
@@ -82,35 +111,38 @@ export default function Requests() {
             <button type="button" className="rq-photo">
               <AddPhotoAlternateOutlined sx={{ fontSize: 22 }} /> Зураг нэмэх · 3 хүртэл
             </button>
-            <div className="rq-anon">
-              <Switch label="Нэрээ нууцлах" hint="Зөвхөн СӨХ-ийн дарга харна" checked={anonymous} onChange={set('anonymous')} />
-            </div>
           </div>
 
-          <Toast>{toast}</Toast>
+          <Toast>{status.toast}</Toast>
 
-          <button type="button" className="rq-send" onClick={send} disabled={cantSend}>Илгээх</button>
+          <button type="button" className="rq-send" onClick={send} disabled={cantSend}>
+            {status.sending ? 'Илгээж байна…' : 'Илгээх'}
+          </button>
         </section>
 
         {/* Миний хүсэлтүүд */}
         <section className="rq-mine" aria-labelledby="mine-title">
           <h2 id="mine-title">Миний хүсэлт ({list.length})</h2>
+          {error && <p role="alert">{error}</p>}
+          {!error && loading && list.length === 0 && <p>Ачааллаж байна…</p>}
+          {!error && !loading && list.length === 0 && <p>Та одоогоор хүсэлт илгээгээгүй байна</p>}
           {list.map((r) => {
-            const label = requestTypes.find((t) => t.id === r.type)?.label ?? r.type
-            const done = r.step === requestSteps.length
+            const label = requestTypes.find((t) => t.id === r.category)?.label ?? r.category
+            const step = stageStep[r.stage]
+            const done = step === requestSteps.length
             return (
-              <article key={r.id} className={r.fresh ? 'rq-item fresh' : 'rq-item'}>
-                <span className="rq-meta">{label} · {r.when}</span>
+              <article key={r.id} className={r.id === status.freshId ? 'rq-item fresh' : 'rq-item'}>
+                <span className="rq-meta">{label} · {monthDay(r.created_at)}</span>
                 <span className="rq-title">{r.title}</span>
                 {/* Явц — хийгдсэн алхмууд тод, бүрэн шийдсэн бол ногоон */}
-                <ol className={done ? 'rq-steps done' : 'rq-steps'} aria-label={`Явц: ${requestSteps[r.step - 1]}`}>
+                <ol className={done ? 'rq-steps done' : 'rq-steps'} aria-label={`Явц: ${requestSteps[step - 1]}`}>
                   {requestSteps.map((s, i) => (
-                    <li key={s} className={`${i < r.step ? 'reached' : ''}${i === r.step - 1 ? ' current' : ''}`.trim() || undefined}>
+                    <li key={s} className={`${i < step ? 'reached' : ''}${i === step - 1 ? ' current' : ''}`.trim() || undefined}>
                       <span className="rq-bar" />{s}
                     </li>
                   ))}
                 </ol>
-                <span className="rq-note">{r.note}</span>
+                <span className="rq-note">{requestNote(r)}</span>
               </article>
             )
           })}

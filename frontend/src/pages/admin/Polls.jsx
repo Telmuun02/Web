@@ -13,7 +13,6 @@ import Toast from '../../components/UI/Toast'
 import LiveBar from '../../components/admin/LiveBar'
 import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
-import { livePolls } from '../../samples/admin/live'
 import './styles/Polls.css'
 
 const defaultThreshold = 50 // ирцийн босго (%) — санал хураалт сонгоогүй үед харуулах
@@ -53,7 +52,7 @@ function decision(p) {
 }
 
 export default function Polls() {
-  const live = useLive('polls', livePolls) // "ШУУД" мөр — /api/admin/live/polls
+  const live = useLive('polls') // "ШУУД" мөр — /api/admin/live/polls
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin' // санал хураалт үүсгэх, сануулах товч зөвхөн admin-д
   const [showNew, setShowNew] = useState(false)

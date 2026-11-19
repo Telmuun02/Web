@@ -6,16 +6,30 @@ import Avatar from '../../components/UI/Avatar'
 import Button from '../../components/UI/Button'
 import Segmented from '../../components/UI/Segmented'
 import Switch from '../../components/UI/Switch'
-// Backend-тэй түр холбоогүй — бүх өгөгдөл жишээ файлаас
-import { fontSizes, sampleFamily, sampleNotifySettings, sampleResident } from '../../samples/resident/profile'
+import useApi from '../../hooks/useApi'
 import './styles/Profile.css'
 
+// Мэдэгдлийн тохиргоо — on: анхдагч утга. DB-д хадгалах хүснэгт алга тул одоогоор зөвхөн дэлгэц дээр
+const notifySettings = [
+  { key: 'avatar', label: 'Хуралд аватартай орох', hint: 'Нүүр тань анхдагчаар нууцлагдана', on: true },
+  { key: 'pay', label: 'Төлбөрийн сануулга', hint: 'Хугацаанаас 3 хоногийн өмнө · SMS', on: true },
+  { key: 'meeting', label: 'Хурлын сануулга', hint: '1 цагийн өмнө · апп ба имэйл', on: true },
+  { key: 'news', label: 'Шинэ зарлал', hint: 'Чухал зарлал үргэлж ирнэ', on: false },
+]
+
+const fontSizes = [
+  { value: 's', label: 'Жижиг', px: 14 },
+  { value: 'm', label: 'Дунд', px: 16 },
+  { value: 'l', label: 'Том', px: 19 },
+]
+
 // [{ key: 'pay', on: true }, …] → { pay: true, … }
-const initialNotify = Object.fromEntries(sampleNotifySettings.map((s) => [s.key, s.on]))
+const initialNotify = Object.fromEntries(notifySettings.map((s) => [s.key, s.on]))
 
 export default function Profile() {
   const { user, onLogout } = useOutletContext()
-  // Түр — тохиргоо хадгалах API нэмэгдэх хүртэл зөвхөн дэлгэц дээр
+  // GET /api/resident/profile — тоот, нэг тоотод бүртгэлтэй гишүүд, цагтаа төлсөн сар
+  const { data, error } = useApi('/resident/profile', null, { fallback: null })
   // Бүх тохиргоо нэг object-д: мэдэгдлийн унтраалгууд + үсгийн хэмжээ
   const [prefs, setPrefs] = useState({ ...initialNotify, fontSize: 'm' })
 
@@ -23,9 +37,13 @@ export default function Profile() {
   const set = (key) => (value) => setPrefs((p) => ({ ...p, [key]: value }))
 
   const previewPx = fontSizes.find((f) => f.value === prefs.fontSize).px
+  const family = data?.family ?? []
+  const place = data?.unit ? `${data.unit.entrance}-р орц · ${data.unit.code} тоот` : 'Тоот бүртгэгдээгүй'
 
   return (
     <div className="res-profile-page">
+      {error && <p role="alert">{error}</p>}
+
       {/* Тойм */}
       <section className="pf-hero" aria-label="Профайлын тойм">
         <span className="pf-avatar" aria-hidden="true">
@@ -33,19 +51,19 @@ export default function Profile() {
         </span>
         <div className="pf-who">
           <h1>{user.name}</h1>
-          <span className="pf-muted">{sampleResident.place}</span>
+          <span className="pf-muted">{data ? place : 'Ачааллаж байна…'}</span>
         </div>
         <div className="pf-tiles">
           <Link to="/pay" className="pf-tile">
-            <span className="pf-muted small">Төлбөрийн түүх</span>
-            <span className="pf-tile-value">{sampleResident.onTimeMonths} сар цагтаа</span>
+            <span className="pf-muted small">Сүүлийн 12 сард</span>
+            <span className="pf-tile-value">{data?.on_time_months ?? '—'} сар цагтаа</span>
           </Link>
           <div className="pf-tile">
-            <span className="pf-muted small">Гэр бүлийн гишүүд</span>
-            <span className="pf-tile-value">{sampleFamily.length} хүн</span>
+            <span className="pf-muted small">Тоотын гишүүд</span>
+            <span className="pf-tile-value">{data ? `${family.length} хүн` : '—'}</span>
           </div>
         </div>
-        {/* Түр — профайл засах маягт дараа нэмэгдэнэ */}
+        {/* Түр — профайл засах маягт дараа нэмэгдэнэ (PUT /api/profile бэлэн) */}
         <Button>
           <EditOutlined sx={{ fontSize: 18 }} /> Засах
         </Button>
@@ -53,21 +71,19 @@ export default function Profile() {
 
       <div className="pf-columns">
         <div className="pf-col">
-          {/* Гэр бүлийн гишүүд */}
+          {/* Нэг тоотод бүртгэлтэй гишүүд */}
           <section className="pf-card" aria-labelledby="fam-title">
             <div className="pf-card-head">
-              <h2 id="fam-title">Гэр бүлийн гишүүд</h2>
-              {/* Түр — урилга илгээх API нэмэгдэх хүртэл ажиллахгүй */}
-              <Button size="small">+ Урих</Button>
+              <h2 id="fam-title">Тоотын гишүүд</h2>
             </div>
-            {sampleFamily.map((f) => (
+            {data && family.length === 0 && <span className="pf-muted small">Бүртгэлтэй гишүүн алга</span>}
+            {family.map((f) => (
               <div key={f.id} className="pf-member">
                 <Avatar name={f.name} />
                 <span className="pf-member-text">
                   <span className="pf-member-name">{f.name}</span>
-                  <span className="pf-muted small">{f.role}</span>
+                  <span className="pf-muted small">{f.me ? 'Та' : 'Гишүүн'}</span>
                 </span>
-                <span className={f.app ? 'pf-app on' : 'pf-app'}>{f.app ? 'Апп-тай' : 'Апп-гүй'}</span>
               </div>
             ))}
           </section>
@@ -84,7 +100,7 @@ export default function Profile() {
           {/* Хурал ба мэдэгдэл */}
           <section className="pf-card pf-settings" aria-labelledby="set-title">
             <h2 id="set-title">Хурал ба мэдэгдэл</h2>
-            {sampleNotifySettings.map((s) => (
+            {notifySettings.map((s) => (
               <Switch
                 key={s.key}
                 label={s.label}

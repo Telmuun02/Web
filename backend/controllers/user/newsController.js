@@ -2,13 +2,13 @@
  * Зарлал ба санал хураалт - /api/resident/news
  * Хуудас: resident News (/news)
  *
- * index - өөрийн орцонд харагдах зарлал + санал хураалтууд
+ * index - өөрийн орцонд харагдах зарлал + санал хураалтууд + удахгүй болох хурал дээр хураах саналууд
  *   GET /api/resident/news
  * vote - санал өгөх (тоотыг token-оос)
  *   POST /api/resident/polls/:id/vote
  */
 
-var { Announcements, Polls } = require('../../db/models');
+var { Announcements, Polls, Meetings } = require('../../db/models');
 var { currentResident, noUnit } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/news' });
 
@@ -17,10 +17,11 @@ async function index(req, res, next) {
     var me = await currentResident(req);
     if (!me || !me.unit) return noUnit(req, res);
 
-    var [posts, polls, myVotes] = await Promise.all([
+    var [posts, polls, myVotes, meeting] = await Promise.all([
       Announcements.forEntrance(me.unit.entrance_id, 30),
       Polls.list(),
       Polls.votesOfUnit(me.unit.id),
+      Meetings.next(),
     ]);
 
     var active = await Promise.all(
@@ -51,6 +52,11 @@ async function index(req, res, next) {
         return { ...p, my_option_id: myVotes[p.id] || null };
       }),
       past_polls: past,
+      meeting_votes: meeting
+        ? meeting.agenda
+          .filter(function (a) { return a.poll_id; })
+          .map(function (a) { return { meeting_id: meeting.id, starts_at: meeting.starts_at, title: a.poll_title }; })
+        : [],
     });
   } catch (err) {
     next(err);

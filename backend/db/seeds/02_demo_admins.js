@@ -3,6 +3,7 @@
  * Орц бүрийг хариуцах засварчин, бэлэн төлбөр бүртгэсэн нягтлан
  * 01_demo_invoices.js-ийн орц, төлбөр байх ёстой.
  * Дахин ажиллуулж болно: @sokh.mn ажилтнуудыг устгаад шинээр үүсгэнэ.
+ * Ажилтан руу RESTRICT-ээр заадаг meetings, expenses-ийг эхэлж устгана (07, 08 дахин үүсгэнэ).
  *
  * password(n) - 1 → 11111111, 2 → 22222222
  * seed(knex) - STAFF-ийг оруулж, орц, төлбөрт холбоно
@@ -32,6 +33,8 @@ function password(n) {
 }
 
 async function seed(knex) {
+  await knex('meetings').del();
+  await knex('expenses').del();
   await knex('poll_votes').del();
   await knex('poll_options').del();
   await knex('polls').del();

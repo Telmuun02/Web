@@ -36,14 +36,22 @@ export default function Chat() {
 
   const isGroup = room.key === 'entrance'
   const onlineIds = new Set(chat.online.map((p) => `${p.role}:${p.id}`))
-  const neighborsOnline = data.neighbors.filter((n) => n.id !== user.id && onlineIds.has(`user:${n.id}`))
+  // Нэг тоот = нэг бүртгэл: тоотын аль нэг утас онлайн бол тоот онлайн. Өөрийн тоотыг хасна
+  const homes = Object.values(data.neighbors.reduce((map, n) => {
+    if (n.unitId === user.unit_id) return map
+    const home = map[n.unitId] ?? { key: n.unitId, name: n.name, online: false }
+    home.online = home.online || onlineIds.has(`user:${n.id}`)
+    map[n.unitId] = home
+    return map
+  }, {}))
+  const neighborsOnline = homes.filter((h) => h.online)
   const staffOnline = data.staff.filter((s) => onlineIds.has(`admin:${s.id}`))
 
-  // Баруун талын жагсаалт: групп бол онлайн хөршүүд (эхэнд нь онлайн), СӨХ бол ажилтнууд
+  // Баруун талын жагсаалт: групп бол хөрш тоотууд (эхэнд нь онлайн), СӨХ бол ажилтнууд
   const people = isGroup
-    ? [...neighborsOnline, ...data.neighbors.filter((n) => n.id !== user.id && !onlineIds.has(`user:${n.id}`))]
+    ? [...neighborsOnline, ...homes.filter((h) => !h.online)]
         .slice(0, 8)
-        .map((n) => ({ key: n.id, name: n.name, sub: `${n.unit} тоот`, online: onlineIds.has(`user:${n.id}`) }))
+        .map((h) => ({ ...h, sub: '' }))
     : data.staff.map((s) => ({ key: s.id, name: s.name, sub: positionLabel[s.position] ?? 'Ажилтан', online: onlineIds.has(`admin:${s.id}`), admin: true }))
 
   const subtitle = isGroup
@@ -113,7 +121,7 @@ export default function Chat() {
               </span>
               <span>
                 <strong>{p.name}</strong>
-                <small>{p.online ? `${p.sub} · онлайн` : p.sub}</small>
+                <small>{[p.sub, p.online && 'онлайн'].filter(Boolean).join(' · ') || 'офлайн'}</small>
               </span>
             </div>
           ))}

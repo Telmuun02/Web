@@ -44,7 +44,7 @@ async function main() {
     email: args.email.toLowerCase(),
     password_hash: await bcrypt.hash(password, BCRYPT_ROUNDS),
   };
-  if (args.phone) data.phone = args.phone;
+  if (args.phone) data.phone = require('../lib/verify').normalizePhone(args.phone) || args.phone;
   if (role === 'admin') {
     data.position = args.position || 'staff';
   } else if (args.unit) {

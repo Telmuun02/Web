@@ -33,6 +33,11 @@ router.patch('/requests/:id(\\d+)', requestsController.update);
 
 router.get('/units', unitsController.index);
 router.get('/units/:id(\\d+)', unitsController.show);
+router.post('/units/:id(\\d+)/phones', unitsController.addPhone);
+router.delete('/units/:id(\\d+)/phones/:userId(\\d+)', unitsController.removePhone);
+router.get('/units/pending', unitsController.pending);
+router.post('/units/pending/:userId(\\d+)', unitsController.link);
+router.delete('/units/pending/:userId(\\d+)', unitsController.reject);
 
 router.get('/polls', pollsController.index);
 router.get('/polls/:id(\\d+)', pollsController.show);

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined'
-import Avatar from '../../components/UI/Avatar'
 import Button from '../../components/UI/Button'
 import Card from '../../components/UI/Card'
 import ListItem from '../../components/UI/ListItem'
@@ -12,6 +12,7 @@ import StatCard from '../../components/UI/StatCard'
 import Table from '../../components/UI/Table'
 import Tabs from '../../components/UI/Tabs'
 import LiveBar from '../../components/admin/LiveBar'
+import api from '../../api/client'
 import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import useTabParam from '../../hooks/useTabParam'
@@ -40,13 +41,6 @@ function money(n) {
   return `${n.toLocaleString('en-US')}₮`
 }
 
-// '9911 2203' → '9911-••03' — утасны дугаарыг бүтнээр нь харуулахгүй
-function maskPhone(phone) {
-  if (!phone) return '—'
-  const digits = phone.replace(/\D/g, '')
-  return digits.length < 6 ? phone : `${digits.slice(0, 4)}-••${digits.slice(-2)}`
-}
-
 // Үлдэгдлийн өнгө: их өр — улаан, өргүй — ногоон
 function debtTone(debt) {
   if (debt >= bigDebt) return 'bad'
@@ -71,7 +65,65 @@ export default function Units() {
   const sel = rows.find((u) => u.id === selId) ?? rows[0]
 
   // Сонгосон тоотын гишүүд — /api/admin/units/:id
-  const { data: detail } = useApi(sel ? `/admin/units/${sel.id}` : null, null, { fallback: null, live: ['units', 'users', 'invoices', 'payments'] })
+  const { data: detail, reload: reloadDetail } = useApi(sel ? `/admin/units/${sel.id}` : null, null, { fallback: null, live: ['units', 'users', 'invoices', 'payments'] })
+  // Өөрөө бүртгүүлсэн, тоотод холбогдоогүй бүртгэлүүд — шинэ бүртгэл WebSocket-оор шууд нэмэгдэнэ
+  const { data: pending, reload: reloadPending } = useApi('/admin/units/pending', null, { fallback: [], live: ['users'] })
+  const [linkState, setLinkState] = useState({ error: '', busy: false })
+
+  async function linkRegistration(e, reg) {
+    e.preventDefault()
+    const unitId = new FormData(e.currentTarget).get('unit')
+    setLinkState({ error: '', busy: true })
+    try {
+      await api.post(`/admin/units/pending/${reg.id}`, { unitId: Number(unitId) })
+      setLinkState({ error: '', busy: false })
+      reloadPending()
+    } catch (err) {
+      setLinkState({ error: err.message, busy: false })
+    }
+  }
+
+  async function rejectRegistration(reg) {
+    if (!window.confirm(`${reg.phone} бүртгэлийг устгах уу?`)) return
+    setLinkState({ error: '', busy: true })
+    try {
+      await api.delete(`/admin/units/pending/${reg.id}`)
+      setLinkState({ error: '', busy: false })
+      reloadPending()
+    } catch (err) {
+      setLinkState({ error: err.message, busy: false })
+    }
+  }
+
+  // Утас бүртгэх / хасах — оршин суугч тэр утсаараа /register-ээр баталгаажуулж нэвтэрнэ
+  const [phoneState, setPhoneState] = useState({ error: '', busy: false })
+
+  async function addPhone(e) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const phone = new FormData(form).get('phone')
+    setPhoneState({ error: '', busy: true })
+    try {
+      await api.post(`/admin/units/${sel.id}/phones`, { phone })
+      form.reset()
+      setPhoneState({ error: '', busy: false })
+      reloadDetail()
+    } catch (err) {
+      setPhoneState({ error: err.message, busy: false })
+    }
+  }
+
+  async function removePhone(p) {
+    if (!window.confirm(`${p.phone} дугаарыг ${sel.code} тоотоос хасах уу? Энэ утсаар нэвтрэх боломжгүй болно.`)) return
+    setPhoneState({ error: '', busy: true })
+    try {
+      await api.delete(`/admin/units/${sel.id}/phones/${p.id}`)
+      setPhoneState({ error: '', busy: false })
+      reloadDetail()
+    } catch (err) {
+      setPhoneState({ error: err.message, busy: false })
+    }
+  }
   const people = detail?.id === sel?.id ? detail.residents : []
 
   const residents = units.reduce((sum, u) => sum + u.residents, 0)
@@ -93,10 +145,31 @@ export default function Units() {
         <Button>
           <FileUploadOutlined sx={{ fontSize: 18 }} /> Excel-ээс оруулах
         </Button>
-        <Button variant="primary">
-          <AddOutlined sx={{ fontSize: 18 }} /> Оршин суугч нэмэх
-        </Button>
       </PageHeader>
+
+      {/* Өөрөө бүртгүүлсэн, тоотод холбогдоогүй бүртгэл — холбосны дараа оршин суугч нэвтэрнэ */}
+      {pending.length > 0 && (
+        <Card as="section" className="units-pending" aria-labelledby="pending-title">
+          <h2 id="pending-title">Холбогдоогүй бүртгэл · {pending.length}</h2>
+          <span className="units-muted">Утсаараа бүртгүүлсэн хүмүүс. Тоотыг нь шалгаад холбоно уу, танихгүй бол устгана.</span>
+          {pending.map((reg) => (
+            <form key={reg.id} className="units-pending-row" onSubmit={(e) => linkRegistration(e, reg)}>
+              <span className="units-pending-phone">
+                <strong>{reg.phone}</strong>
+                <span className="units-muted">{new Date(reg.created_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}</span>
+              </span>
+              <label className="visually-hidden" htmlFor={`unit-${reg.id}`}>{reg.phone} дугаарыг холбох тоот</label>
+              <select id={`unit-${reg.id}`} name="unit" required defaultValue="">
+                <option value="" disabled>Тоот сонгох…</option>
+                {units.map((u) => <option key={u.id} value={u.id}>{u.code}</option>)}
+              </select>
+              <Button type="submit" variant="dark" disabled={linkState.busy}>Холбох</Button>
+              <Button type="button" variant="danger" disabled={linkState.busy} onClick={() => rejectRegistration(reg)}>Устгах</Button>
+            </form>
+          ))}
+          {linkState.error && <p className="units-phone-error" role="alert">{linkState.error}</p>}
+        </Card>
+      )}
 
       <div className="units-stats">
         {stats.map((s) => <StatCard key={s.label} {...s} />)}
@@ -149,13 +222,29 @@ export default function Units() {
             </div>
 
             <div>
-              <span className="units-subtitle">Гишүүд</span>
+              <span className="units-subtitle">Бүртгэлтэй утас · {people.length}</span>
               {people.map((p) => (
-                <ListItem key={p.id} icon={<Avatar name={p.name} />} title={p.name} hint="Оршин суугч">
-                  <span className="units-phone">{maskPhone(p.phone)}</span>
+                <ListItem
+                  key={p.id}
+                  title={p.phone}
+                  hint={p.activated ? 'Идэвхжсэн — апп-д нэвтэрдэг' : 'Хүлээгдэж байна — утсаараа бүртгүүлээгүй'}
+                >
+                  <button type="button" className="units-phone-remove" aria-label={`${p.phone} дугаарыг хасах`} onClick={() => removePhone(p)} disabled={phoneState.busy}>
+                    <CloseOutlined sx={{ fontSize: 18 }} />
+                  </button>
                 </ListItem>
               ))}
-              {people.length === 0 && <p className="units-muted">Бүртгэлтэй оршин суугч алга</p>}
+              {people.length === 0 && <p className="units-muted">Утас бүртгээгүй — оршин суугч нэвтэрч чадахгүй</p>}
+
+              {/* Шинэ утас — оршин суугч энэ дугаараараа "Бүртгүүлэх"-ээр SMS баталгаажуулна */}
+              <form className="units-phone-add" onSubmit={addPhone}>
+                <label className="visually-hidden" htmlFor="new-phone">Шинэ утасны дугаар</label>
+                <input id="new-phone" name="phone" inputMode="tel" placeholder="99112233" maxLength={15} required />
+                <Button type="submit" variant="dark" disabled={phoneState.busy}>
+                  <AddOutlined sx={{ fontSize: 18 }} /> Утас нэмэх
+                </Button>
+              </form>
+              {phoneState.error && <p className="units-phone-error" role="alert">{phoneState.error}</p>}
             </div>
 
             <div className="units-balance">
@@ -168,13 +257,7 @@ export default function Units() {
               <Link to="/admin/invoices" className="units-link">Нэхэмжлэл харах →</Link>
             </div>
 
-            <div className="units-actions">
-              {/* Түр — засах, урилга илгээх API нэмэгдэх хүртэл ажиллахгүй */}
-              <Button>Засах</Button>
-              <Button variant="dark">Урилга илгээх</Button>
-            </div>
-
-            <span className="units-note">Утасны дугаарыг зөвхөн удирдлага бүтнээр харна.</span>
+            <span className="units-note">Нэг тоот — нэг бүртгэл. Бүртгэсэн утас бүрээр оршин суугч 144773 руу SMS илгээж баталгаажуулаад нэвтэрнэ.</span>
           </Card>
         )}
       </div>

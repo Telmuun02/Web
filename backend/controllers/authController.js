@@ -2,20 +2,35 @@
  * Нэвтрэлт - /api/auth/...
  * Хуудас: Login (/login), ForgotPassword (/forgot-password)
  *
- * login - имэйл/утас, нууц үгээр нэвтэрч JWT өгнө (cookie + хариунд)
+ * login - нууц үгээр нэвтэрч JWT өгнө (cookie + хариунд). Ажилтан зөвхөн имэйлээр, оршин суугч зөвхөн утсаар
  *   POST /api/auth/login - { login, password, as: 'admin' | 'user' }
  * logout - token cookie-г устгана
  *   POST /api/auth/logout
  * me - одоо нэвтэрсэн хэрэглэгчийн мэдээлэл, role-той
  *   GET /api/auth/me
- * forgotPassword - (хоосон, бичигдээгүй)
- * resetPassword - (хоосон, бичигдээгүй)
+ * startSession(res, id, role) - JWT үүсгэж cookie-д тавина, token буцаана (verifyController ч хэрэглэнэ)
+ * (Бүртгүүлэх, нууц үг сэргээх — controllers/verifyController.js, утсаар SMS баталгаажуулна)
  */
 
 var bcrypt = require('bcryptjs');
 var jwt = require('jsonwebtoken');
 var { Users, Admins } = require('../db/models');
 var log = require('../lib/logger').child({ module: 'auth' });
+var { normalizePhone } = require('../lib/verify');
+
+function startSession(res, id, role) {
+    var token = jwt.sign({ id: id, role: role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+
+    res.cookie('token', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return token;
+}
 
 async function login(req, res, next) {
     try {
@@ -27,8 +42,19 @@ async function login(req, res, next) {
             return res.status(400).json({ error: 'login болон password хоёрыг заавал оруулна' });
         }
 
+        if (as === 'user') {
+            login = normalizePhone(login);
+            if (!login) return res.status(400).json({ error: 'Утасны дугаараа зөв оруулна уу (8 оронтой)' });
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login)) {
+            return res.status(400).json({ error: 'Ажилтан имэйл хаягаараа нэвтэрнэ' });
+        }
+
         var Model = as === 'admin' ? Admins : Users;
         var user = await Model.findForLogin(login);
+
+        if (as === 'user' && user && !user.password_hash) {
+            return res.status(403).json({ error: 'Энэ утсаар бүртгэл идэвхжээгүй байна. "Бүртгүүлэх" дээр дарж утсаа баталгаажуулна уу' });
+        }
 
         var ok = user && user.password_hash && (await bcrypt.compare(password, user.password_hash));
 
@@ -43,19 +69,10 @@ async function login(req, res, next) {
         }
         if (as === 'user' && !user.unit_id) {
             log.warn({ id: user.id, as: as, ip: req.ip }, 'Тоотгүй оршин суугч нэвтрэх оролдлого');
-            return res.status(403).json({ error: 'Та ямар нэг тоотод бүртгэлгүй байна' });
+            return res.status(403).json({ error: 'Бүртгэл тань үүссэн. СӨХ таныг тоотод тань холбосны дараа нэвтэрнэ' });
         }
 
-        var token = jwt.sign({ id: user.id, role: as }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
-
-        res.cookie('token', token, {
-            httpOnly: true, 
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+        var token = startSession(res, user.id, as);
 
         log.info({ id: user.id, as: as, ip: req.ip }, 'Нэвтэрлээ');
         res.json({ token });
@@ -89,10 +106,5 @@ async function me(req, res, next) {
     }
 }
 
-async function forgotPassword(req, res, next) {
-}
 
-async function resetPassword(req, res, next) {
-}
-
-module.exports = { login, logout, me, forgotPassword, resetPassword };
+module.exports = { login, logout, me, startSession };

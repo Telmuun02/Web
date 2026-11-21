@@ -1,14 +1,11 @@
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined'
-import EditOutlined from '@mui/icons-material/EditOutlined'
-import Avatar from '../../components/UI/Avatar'
+import LockResetOutlined from '@mui/icons-material/LockResetOutlined'
+import PhoneIphoneOutlined from '@mui/icons-material/PhoneIphoneOutlined'
 import Button from '../../components/UI/Button'
-import Field from '../../components/UI/Field'
 import Segmented from '../../components/UI/Segmented'
 import Switch from '../../components/UI/Switch'
-import Toast from '../../components/UI/Toast'
-import api from '../../api/client'
 import useApi from '../../hooks/useApi'
 import './styles/Profile.css'
 
@@ -30,11 +27,8 @@ const fontSizes = [
 const initialNotify = Object.fromEntries(notifySettings.map((s) => [s.key, s.on]))
 
 export default function Profile() {
-  const { user, onLogout, onUserChange } = useOutletContext()
-  // "Засах" — нэр, утас, имэйл. Хадгалахдаа одоогийн нууц үгээр баталгаажуулна (PUT /api/profile)
-  const [editing, setEditing] = useState(false)
-  const [saveState, setSaveState] = useState({ error: '', toast: '', saving: false })
-  // GET /api/resident/profile — тоот, нэг тоотод бүртгэлтэй гишүүд, цагтаа төлсөн сар
+  const { user, onLogout } = useOutletContext()
+  // GET /api/resident/profile — тоот, тоотод бүртгэлтэй утаснууд, цагтаа төлсөн сар
   const { data, error } = useApi('/resident/profile', null, { fallback: null, live: ['users', 'payments', 'invoices'] })
   // Бүх тохиргоо нэг object-д: мэдэгдлийн унтраалгууд + үсгийн хэмжээ
   const [prefs, setPrefs] = useState({ ...initialNotify, fontSize: 'm' })
@@ -43,28 +37,14 @@ export default function Profile() {
   const set = (key) => (value) => setPrefs((p) => ({ ...p, [key]: value }))
 
   const previewPx = fontSizes.find((f) => f.value === prefs.fontSize).px
-  const family = data?.family ?? []
+  const phones = data?.family ?? []
   const place = data?.unit ? `${data.unit.entrance}-р орц · ${data.unit.code} тоот` : 'Тоот бүртгэгдээгүй'
-
-  async function saveProfile(e) {
-    e.preventDefault()
-    const form = Object.fromEntries(new FormData(e.currentTarget))
-    setSaveState({ error: '', toast: '', saving: true })
-    try {
-      const updated = await api.put('/profile', form)
-      onUserChange?.({ ...user, ...updated })
-      setEditing(false)
-      setSaveState({ error: '', toast: 'Хувийн мэдээлэл хадгалагдлаа', saving: false })
-    } catch (err) {
-      setSaveState({ error: err.message, toast: '', saving: false })
-    }
-  }
 
   return (
     <div className="res-profile-page">
       {error && <p role="alert">{error}</p>}
 
-      {/* Тойм */}
+      {/* Тойм — нэг тоот = нэг бүртгэл, тоотоор нэрлэгдэнэ */}
       <section className="pf-hero" aria-label="Профайлын тойм">
         <span className="pf-avatar" aria-hidden="true">
           <DarkModeOutlined sx={{ fontSize: 40 }} />
@@ -79,53 +59,35 @@ export default function Profile() {
             <span className="pf-tile-value">{data?.on_time_months ?? '—'} сар цагтаа</span>
           </Link>
           <div className="pf-tile">
-            <span className="pf-muted small">Гэр бүлийн гишүүд</span>
-            <span className="pf-tile-value">{data ? `${family.length} хүн` : '—'}</span>
+            <span className="pf-muted small">Бүртгэлтэй утас</span>
+            <span className="pf-tile-value">{data ? `${phones.length} утас` : '—'}</span>
           </div>
         </div>
-        <Button onClick={() => setEditing((e) => !e)} aria-expanded={editing}>
-          <EditOutlined sx={{ fontSize: 18 }} /> {editing ? 'Болих' : 'Засах'}
+        {/* Нууц үг солих — утсаараа SMS баталгаажуулна (verify.mn). Утсаа СӨХ солино */}
+        <Button as={Link} to="/forgot-password" state={{ login: user.phone ?? '' }}>
+          <LockResetOutlined sx={{ fontSize: 18 }} /> Нууц үг солих
         </Button>
       </section>
 
-      <Toast>{saveState.toast}</Toast>
-
-      {/* Хувийн мэдээлэл засах — утас эсвэл имэйлийн аль нэг заавал */}
-      {editing && (
-        <form className="pf-card pf-edit" onSubmit={saveProfile} aria-labelledby="edit-title">
-          <h2 id="edit-title">Хувийн мэдээлэл</h2>
-          <div className="pf-edit-grid">
-            <Field label="Нэр"><input name="name" defaultValue={user.name ?? ''} required maxLength={100} /></Field>
-            <Field label="Утас"><input name="phone" defaultValue={user.phone ?? ''} inputMode="tel" maxLength={20} /></Field>
-            <Field label="Имэйл"><input name="email" type="email" defaultValue={user.email ?? ''} maxLength={150} /></Field>
-            <Field label="Одоогийн нууц үг"><input name="password" type="password" required autoComplete="current-password" /></Field>
-          </div>
-          {saveState.error && <p className="pf-error" role="alert">{saveState.error}</p>}
-          <div className="pf-edit-actions">
-            <Button type="submit" variant="primary" disabled={saveState.saving}>{saveState.saving ? 'Хадгалж байна…' : 'Хадгалах'}</Button>
-            <Button type="button" onClick={() => setEditing(false)}>Болих</Button>
-          </div>
-        </form>
-      )}
-
       <div className="pf-columns">
         <div className="pf-col">
-          {/* Нэг тоотод бүртгэлтэй гишүүд */}
+          {/* Тоотод бүртгэлтэй утаснууд — СӨХ нэмж, хасна. Утас бүр өөрийн нууц үгээр нэвтэрнэ */}
           <section className="pf-card" aria-labelledby="fam-title">
             <div className="pf-card-head">
-              <h2 id="fam-title">Гэр бүлийн гишүүд</h2>
+              <h2 id="fam-title">Бүртгэлтэй утас</h2>
             </div>
-            {data && family.length === 0 && <span className="pf-muted small">Бүртгэлтэй гишүүн алга</span>}
-            {family.map((f) => (
+            {data && phones.length === 0 && <span className="pf-muted small">Бүртгэлтэй утас алга</span>}
+            {phones.map((f) => (
               <div key={f.id} className="pf-member">
-                <Avatar name={f.name} />
+                <span className="pf-phone-icon" aria-hidden="true"><PhoneIphoneOutlined sx={{ fontSize: 20 }} /></span>
                 <span className="pf-member-text">
-                  <span className="pf-member-name">{f.name}</span>
-                  <span className="pf-muted small">{f.me ? 'Та' : 'Гэр бүл'}</span>
+                  <span className="pf-member-name">{f.phone}</span>
+                  <span className="pf-muted small">{f.me ? 'Та энэ утсаар нэвтэрсэн' : 'Гэр бүлийн гишүүн'}</span>
                 </span>
-                <span className={f.app ? 'pf-app on' : 'pf-app'}>{f.app ? 'Апп-тай' : 'Апп-гүй'}</span>
+                <span className={f.app ? 'pf-app on' : 'pf-app'}>{f.app ? 'Идэвхжсэн' : 'Бүртгүүлээгүй'}</span>
               </div>
             ))}
+            <span className="pf-muted small">Утас нэмэх, хасах бол СӨХ-д хандана уу.</span>
           </section>
 
           {/* Үсгийн хэмжээ */}

@@ -1,6 +1,7 @@
 /**
  * Самбарыг турших хуурамч өгөгдөл: 120 тоот, сүүлийн 12 сарын нэхэмжлэл, задаргаа, төлбөр
- * Дахин ажиллуулж болно - тоот, нэхэмжлэл, төлбөрийг устгаад шинээр үүсгэнэ. users-ийг устгахгүй.
+ * Дахин ажиллуулж болно - тоот, нэхэмжлэл, төлбөрийг устгаад шинээр үүсгэнэ. users-ийг устгахгүй
+ * (тоот устахад тэдний unit_id хоосорно — 03_demo_users.js тоот бүрт утсыг дахин холбоно).
  *
  * random(seed) - тогтмол "санамсаргүй" тоо, seed бүрд ижил өгөгдөл гарна
  * toDate(date) - Date → 'YYYY-MM-DD'
@@ -103,11 +104,6 @@ async function seed(knex) {
   }
   await knex('units').insert(units);
   var unitRows = await knex('units').select('id', 'code').orderBy('id');
-
-  var residents = await knex('users').select('id').whereNot('email', 'like', '%sokh.mn').orderBy('id');
-  for (var r = 0; r < residents.length; r++) {
-    await knex('users').where({ id: residents[r].id }).update({ unit_id: unitRows[r].id });
-  }
 
   var invoices = [];
   unitRows.forEach(function (unit, u) {

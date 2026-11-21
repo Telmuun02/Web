@@ -1,10 +1,10 @@
 /**
  * Messages - чат (chat_messages, chat_reads хүснэгтүүд)
- * Өрөө: 'entrance:<орцны id>' — орцны групп, 'soh:<оршин суугчийн id>' — оршин суугч ↔ СӨХ
+ * Өрөө: 'entrance:<орцны id>' — орцны групп, 'soh:<тоотын id>' — тоот ↔ СӨХ (тоотын бүх утас нэг ярианд)
  *
- * entranceRoom(id), sohRoom(userId) - өрөөний нэр
+ * entranceRoom(id), sohRoom(unitId) - өрөөний нэр
  * parseRoom(room) - 'entrance:34' → { kind: 'entrance', id: 34 }, буруу бол null
- * canAccess(who, room) - who = { role, id, entranceId }: ажилтан бүх өрөөнд, оршин суугч өөрийн орц ба өөрийн СӨХ чатад
+ * canAccess(who, room) - who = { role, id, unitId, entranceId }: ажилтан бүх өрөөнд, оршин суугч өөрийн орц ба өөрийн тоотын СӨХ чатад
  * list(room, before, limit) - өрөөний мессежүүд хуучнаас шинэ рүү, before өгвөл түүнээс өмнөх
  * find(id) - нэг мессеж илгээгчийн нэртэй
  * create(room, senderType, senderId, body) - мессеж нэмээд буцаана
@@ -12,7 +12,7 @@
  * markRead(room, readerType, readerId) - өрөөний сүүлийн мессеж хүртэл уншсан гэж тэмдэглэнэ
  * unread(room, readerType, readerId) - уншаагүй мессежийн тоо (өөрийнхөө бичснийг тоолохгүй)
  * last(room) - сүүлийн мессеж
- * sohThreads(adminId) - СӨХ-тэй бичигдсэн бүх хувийн чат: оршин суугч, тоот, сүүлийн мессеж, уншаагүй
+ * sohThreads(adminId) - СӨХ-тэй бичигдсэн бүх тоотын чат: тоот, утаснууд, сүүлийн мессеж, уншаагүй
  * entranceGroups() - орц бүрийн групп: айл, сүүлийн мессеж
  * residentsOf(entranceId) - орцны оршин суугчид (онлайн жагсаалтад)
  *
@@ -28,8 +28,8 @@ function entranceRoom(id) {
   return 'entrance:' + id;
 }
 
-function sohRoom(userId) {
-  return 'soh:' + userId;
+function sohRoom(unitId) {
+  return 'soh:' + unitId;
 }
 
 function parseRoom(room) {
@@ -42,7 +42,7 @@ function canAccess(who, room) {
   if (!r || !who) return false;
   if (who.role === 'admin') return true;
   if (r.kind === 'entrance') return who.entranceId === r.id;
-  return who.id === r.id;
+  return who.unitId === r.id;
 }
 
 function withSender() {
@@ -69,7 +69,7 @@ function toMessage(row) {
       type: row.sender_type,
       id: row.sender_id,
       name: (admin ? row.admin_name : row.user_name) || 'Хэрэглэгч',
-      sub: admin ? 'СӨХ · ' + (positionLabel[row.position] || 'Ажилтан') : row.unit_code ? row.unit_code + ' тоот' : '',
+      sub: admin ? 'СӨХ · ' + (positionLabel[row.position] || 'Ажилтан') : '',
     },
   };
 }
@@ -134,9 +134,9 @@ async function sohThreads(adminId) {
     .orderBy('last_id', 'desc');
   if (!rooms.length) return [];
 
-  var userIds = rooms.map(function (r) { return parseRoom(r.room).id; });
-  var [users, lasts, unreadRows] = await Promise.all([
-    db('users as s').leftJoin('units as u', 'u.id', 's.unit_id').select('s.id', 's.name', 's.phone', 'u.code').whereIn('s.id', userIds),
+  var unitIds = rooms.map(function (r) { return parseRoom(r.room).id; });
+  var [units, lasts, unreadRows] = await Promise.all([
+    db('units').select('id', 'code').whereIn('id', unitIds),
     withSender().whereIn('m.id', rooms.map(function (r) { return r.last_id; })),
     db('chat_messages as m')
       .leftJoin('chat_reads as r', function () {
@@ -152,13 +152,13 @@ async function sohThreads(adminId) {
   ]);
 
   return rooms.map(function (r) {
-    var userId = parseRoom(r.room).id;
-    var user = users.find(function (x) { return x.id === userId; }) || {};
+    var unitId = parseRoom(r.room).id;
+    var unit = units.find(function (x) { return x.id === unitId; }) || {};
     var lastRow = lasts.find(function (x) { return x.id === r.last_id; });
     var count = unreadRows.find(function (x) { return x.room === r.room; });
     return {
       room: r.room,
-      user: { id: userId, name: user.name || 'Хэрэглэгч', phone: user.phone || null, unit: user.code || null },
+      unit: { id: unitId, code: unit.code || '?' },
       last: lastRow ? toMessage(lastRow) : null,
       unread: count ? Number(count.n) : 0,
     };
@@ -179,7 +179,7 @@ async function entranceGroups() {
 async function residentsOf(entranceId) {
   return db('users as s')
     .join('units as u', 'u.id', 's.unit_id')
-    .select('s.id', 's.name', 'u.code')
+    .select('s.id', 's.name', 's.unit_id', 'u.code')
     .where('u.entrance_id', entranceId)
     .orderBy('u.code');
 }

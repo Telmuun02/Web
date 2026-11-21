@@ -6,7 +6,7 @@
  * index - хоёр табын жагсаалт: оршин суугчдын чатууд (уншаагүйтэй), орцны группүүд
  *   GET /api/admin/messages
  * show - нэг өрөөний мессежүүд + толгойн мэдээлэл, уншсан гэж тэмдэглэнэ
- *   GET /api/admin/messages/:room?before=  (room = soh:<оршин суугчийн id> | entrance:<орцны id>)
+ *   GET /api/admin/messages/:room?before=  (room = soh:<тоотын id> | entrance:<орцны id>)
  * send - оршин суугчид хариулна (зөвхөн хувийн чатад — группт ажилтан бичихгүй, зарлалаар хандана)
  *   POST /api/admin/messages/:room - { text } → мессеж
  * read - өрөөг уншсан гэж тэмдэглэнэ
@@ -14,22 +14,24 @@
  * hide - зүй бус мессежийг нуух / буцааж харуулах
  *   PATCH /api/admin/messages/item/:id - { hidden: true | false }
  *
- * header(room) - (дотоод) өрөөний гарчиг: оршин суугчийн нэр, тоот, утас эсвэл орцны дугаар
+ * header(room, chairman) - (дотоод) өрөөний гарчиг: тоот, бүртгэлтэй утаснууд (даргаас бусдад нууцалсан) эсвэл орцны дугаар
  */
 
-var { Messages, Entrances } = require('../../db/models');
+var { Messages, Entrances, Admins } = require('../../db/models');
+var { maskPhone } = require('../../lib/verify');
 var db = require('../../db');
 var log = require('../../lib/logger').child({ module: 'admin/messages' });
 
 var MAX_LEN = 1000;
 
-async function header(room) {
+async function header(room, chairman) {
   var r = Messages.parseRoom(room);
   if (r.kind === 'soh') {
-    var user = await db('users as s').leftJoin('units as u', 'u.id', 's.unit_id')
-      .select('s.id', 's.name', 's.phone', 'u.code').where('s.id', r.id).first();
-    if (!user) return null;
-    return { kind: 'soh', title: user.name, unit: user.code, phone: user.phone, userId: user.id };
+    var unit = await db('units').select('id', 'code').where('id', r.id).first();
+    if (!unit) return null;
+    var phones = await db('users').where('unit_id', unit.id).orderBy('id').pluck('phone');
+    if (!chairman) phones = phones.map(maskPhone);
+    return { kind: 'soh', title: unit.code + ' тоот', unit: unit.code, phones: phones, unitId: unit.id };
   }
   var entrance = (await Entrances.list()).find(function (e) { return e.id === r.id; });
   if (!entrance) return null;
@@ -49,7 +51,8 @@ async function show(req, res, next) {
   try {
     var room = req.params.room;
     if (!Messages.parseRoom(room)) return res.status(404).json({ error: 'Ийм чат алга' });
-    var head = await header(room);
+    var me = await Admins.find(req.user.id);
+    var head = await header(room, Boolean(me && me.position === 'chairman'));
     if (!head) return res.status(404).json({ error: 'Ийм чат алга' });
 
     var before = Number(req.query.before) || null;

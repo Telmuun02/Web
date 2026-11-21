@@ -55,7 +55,7 @@ export default function Login({ onLogin }) {
       <form className="auth-card" onSubmit={handleSubmit} noValidate>
         <div className="auth-head">
           <h2>Нэвтрэх</h2>
-          <span className="auth-muted">Имэйл эсвэл утасны дугаараа оруулна уу</span>
+          <span className="auth-muted">{as === 'user' ? 'Утасны дугаар, нууц үгээрээ нэвтэрнэ үү' : 'Ажилтны имэйл хаяг, нууц үгээрээ нэвтэрнэ үү'}</span>
         </div>
 
         <Segmented label="Аль эрхээр нэвтрэх" options={roles} value={as} onChange={setAs} />
@@ -64,12 +64,13 @@ export default function Login({ onLogin }) {
         {error && <div className="auth-error" role="alert">{error}</div>}
 
         <label className="auth-field">
-          <span>Имэйл эсвэл утас</span>
+          <span>{as === 'user' ? 'Утасны дугаар' : 'Имэйл'}</span>
           <input
-            type="text"
+            type={as === 'user' ? 'tel' : 'email'}
+            inputMode={as === 'user' ? 'tel' : 'email'}
             name="login"
             autoComplete="username"
-            placeholder="99112233"
+            placeholder={as === 'user' ? '99112233' : 'name@gmail.com'}
             value={login}
             onChange={(e) => setLogin(e.target.value)}
             required
@@ -89,9 +90,14 @@ export default function Login({ onLogin }) {
           />
         </label>
 
-        <Link to="/forgot-password" state={{ login: login.trim() }} className="auth-link auth-forgot">
-          Нууц үгээ мартсан?
-        </Link>
+        {/* Оршин суугч: нууц үг сэргээх, анх бүртгүүлэх нь утсаар (SMS). Ажилтан даргадаа хандана */}
+        {as === 'user' ? (
+          <Link to="/forgot-password" state={{ login: login.trim() }} className="auth-link auth-forgot">
+            Нууц үгээ мартсан?
+          </Link>
+        ) : (
+          <span className="auth-muted auth-forgot">Нууц үгээ мартсан бол СӨХ-ийн даргад хандана уу</span>
+        )}
 
         <button
           type="submit"
@@ -100,6 +106,12 @@ export default function Login({ onLogin }) {
         >
           {submitting ? 'Нэвтэрч байна…' : 'Нэвтрэх'}
         </button>
+
+        {as === 'user' && (
+          <span className="auth-muted auth-help">
+            Анх удаа юу? <Link to="/register" state={{ login: login.trim() }} className="auth-link">Утсаараа бүртгүүлэх</Link>
+          </span>
+        )}
       </form>
     </AuthLayout>
   )

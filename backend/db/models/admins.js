@@ -5,7 +5,7 @@
  * password_hash-ийг энгийн query-д буцаахгүй (publicColumns)
  *
  * base: all, find, where, create, update, remove
- * findForLogin(login) - имэйл эсвэл утсаар, password_hash-тай нь (нэвтрэхэд)
+ * findForLogin(email) - имэйлээр (том жижиг үсэг ялгахгүй), password_hash-тай нь (нэвтрэхэд)
  * findWithPassword(id) - id-аар, password_hash-тай нь (мэдээлэл солихын өмнө шалгахад)
  * list() - идэвхтэй ажилтнууд, нэрээр эрэмбэлсэн
  * byAdmin(q, column, adminId) - (дотоод) adminId өгсөн бол query-г тэр ажилтнаар шүүнэ
@@ -21,8 +21,8 @@ var publicColumns = ['id', 'name', 'phone', 'email', 'position', 'hired_at', 'ac
 
 var base = createModel('admins', { columns: publicColumns });
 
-async function findForLogin(login) {
-  return db('admins').where({ email: login }).orWhere({ phone: login }).first();
+async function findForLogin(email) {
+  return db('admins').whereRaw('LOWER(email) = ?', [String(email).toLowerCase()]).first();
 }
 
 async function findWithPassword(id) {

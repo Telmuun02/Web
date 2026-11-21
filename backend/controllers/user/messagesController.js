@@ -12,7 +12,7 @@
  * read - өрөөг уншсан гэж тэмдэглэнэ (нээлттэй өрөөнд шинэ мессеж ирэхэд)
  *   POST /api/resident/messages/:key/read
  *
- * roomOf(me, key) - (дотоод) 'entrance' → 'entrance:<орцны id>', 'soh' → 'soh:<миний id>'
+ * roomOf(me, key) - (дотоод) 'entrance' → 'entrance:<орцны id>', 'soh' → 'soh:<манай тоотын id>'
  * forResident(message) - (дотоод) нуусан мессежийн бичвэрийг оршин суугчид харуулахгүй
  */
 
@@ -24,7 +24,7 @@ var MAX_LEN = 1000;
 
 function roomOf(me, key) {
   if (key === 'entrance') return Messages.entranceRoom(me.unit.entrance_id);
-  if (key === 'soh') return Messages.sohRoom(me.user.id);
+  if (key === 'soh') return Messages.sohRoom(me.unit.id);
   return null;
 }
 
@@ -57,7 +57,7 @@ async function rooms(req, res, next) {
       ],
       pinned: pinned ? { id: pinned.id, title: pinned.title } : null,
       homes: new Set(neighbors.map(function (n) { return n.code; })).size,
-      neighbors: neighbors.map(function (n) { return { id: n.id, name: n.name, unit: n.code }; }),
+      neighbors: neighbors.map(function (n) { return { id: n.id, unitId: n.unit_id, name: n.name, unit: n.code }; }),
       staff: staff.map(function (a) { return { id: a.id, name: a.name, position: a.position }; }),
     });
   } catch (err) {

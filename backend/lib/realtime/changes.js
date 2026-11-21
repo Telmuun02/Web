@@ -111,6 +111,11 @@ async function notifications(changes) {
       if (poll) out.push({ to: { role: 'user' }, msg: { title: 'Шинэ санал хураалт', body: poll.title, link: '/news' } });
     }
 
+    if (c.tbl === 'users' && c.op === 'insert' && !c.unit_id) {
+      var signup = await db('users').select('phone').where('id', c.row_id).whereNull('unit_id').first();
+      if (signup) out.push({ to: { role: 'admin' }, msg: { title: 'Шинэ бүртгэл', body: signup.phone + ' — тоотод холбохыг хүлээж байна', link: '/admin/units' } });
+    }
+
     if (c.tbl === 'meetings' && c.op === 'insert') {
       var m = await db('meetings').select('title').where('id', c.row_id).first();
       if (m) out.push({ to: { role: 'user' }, msg: { title: 'Хурал товлогдлоо', body: m.title, link: '/meeting' } });
@@ -153,9 +158,9 @@ async function chatItems(changes) {
     if (c.op !== 'insert' || !room || room.kind !== 'soh') continue;
     var preview = message.body.length > 80 ? message.body.slice(0, 80) + '…' : message.body;
     if (message.sender.type === 'admin') {
-      out.push({ to: { userId: room.id }, msg: { type: 'notify', title: 'СӨХ-ээс мессеж', body: message.sender.name + ': ' + preview, link: '/chat' } });
+      out.push({ to: { unitId: room.id }, msg: { type: 'notify', title: 'СӨХ-ээс мессеж', body: message.sender.name + ': ' + preview, link: '/chat' } });
     } else {
-      out.push({ to: { role: 'admin' }, msg: { type: 'notify', title: 'Шинэ мессеж · ' + message.sender.sub, body: message.sender.name + ': ' + preview, link: '/admin/chat' } });
+      out.push({ to: { role: 'admin' }, msg: { type: 'notify', title: 'Шинэ мессеж · ' + message.sender.name, body: preview, link: '/admin/chat' } });
     }
   }
   return out;

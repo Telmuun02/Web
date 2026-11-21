@@ -55,7 +55,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login onLogin={setUser} />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword mode="reset" onLogin={setUser} />} />
+        <Route path="/register" element={<ForgotPassword mode="register" onLogin={setUser} />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     )
@@ -72,6 +73,8 @@ function App() {
   return (
     <Routes>
       {/**login huudas */}
+      {/* Нэвтэрсэн оршин суугч ч нууц үгээ SMS-ээр солино (Профайл → Нууц үг солих) */}
+      <Route path="/forgot-password" element={<ForgotPassword mode="reset" onLogin={setUser} />} />
       <Route path="/login" element={<Navigate to={homePath(user)} replace />} />
 
       {/**admin huudas */}

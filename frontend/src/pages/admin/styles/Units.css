@@ -182,3 +182,78 @@ tr.units-row.selected {
   line-height: 1.5;
   color: var(--muted-text);
 }
+
+/* Тоотын бүртгэлтэй утас — хасах, нэмэх */
+.units-phone-remove {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--on-red);
+  cursor: pointer;
+}
+
+.units-phone-add {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.units-phone-add input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.units-phone-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-red);
+}
+
+/* Холбогдоогүй бүртгэл */
+.units-pending {
+  border: 2px solid var(--yellow);
+}
+
+.units-pending h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.units-pending-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.units-pending-phone {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.units-pending-row select {
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}

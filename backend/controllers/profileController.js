@@ -1,6 +1,7 @@
 /**
- * Профайл засах - ажилтан, оршин суугч хоёулаа
- * Хуудас: admin Profile (/admin/profile), resident Profile (/profile)
+ * Профайл засах - зөвхөн ажилтан. Оршин суугчийн утсыг СӨХ бүртгэдэг (тоот = бүртгэл),
+ * нууц үгээ /forgot-password-оор (SMS баталгаажуулалт) солино
+ * Хуудас: admin Profile (/admin/profile)
  *
  * update - нэр, утас, имэйл, нууц үг солих. Одоогийн нууц үгээр баталгаажуулна
  *   PUT /api/profile
@@ -13,6 +14,9 @@ var log = require('../lib/logger').child({ module: 'profile' });
 
 async function update(req, res, next) {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Утасны дугаараа СӨХ-өөр солиулна уу. Нууц үгээ "Нууц үг солих"-оор солино' });
+    }
     var name = String(req.body.name || '').trim();
     var phone = String(req.body.phone || '').trim() || null; 
     var email = String(req.body.email || '').trim().toLowerCase() || null;
@@ -24,8 +28,8 @@ async function update(req, res, next) {
     if (!name) {
       return res.status(400).json({ error: 'Нэрээ оруулна уу' });
     }
-    if (!phone && !email) {
-      return res.status(400).json({ error: 'Утас эсвэл имэйлийн аль нэгийг оруулна уу' });
+    if (!email) {
+      return res.status(400).json({ error: 'Имэйлээ оруулна уу — ажилтан имэйлээр нэвтэрдэг' });
     }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Имэйл буруу байна' });

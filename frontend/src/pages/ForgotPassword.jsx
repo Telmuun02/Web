@@ -1,198 +1,206 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import SmsOutlined from '@mui/icons-material/SmsOutlined'
 import AuthLayout from '../components/Auth/AuthLayout'
 import PasswordInput from '../components/Auth/PasswordInput'
 import api from '../api/client'
+import { homePath } from '../utils/home'
 import './styles/Auth.css'
 
-const RESEND_SECONDS = 60
 const MIN_PASSWORD = 8
+const POLL_MS = 3000
 
-// 2 алхам: 1) имэйл/утас оруулж код авах  2) код + шинэ нууц үг
-export default function ForgotPassword() {
+const texts = {
+  register: { title: 'Бүртгүүлэх', lead: 'Утасны дугаараа оруулна уу. Утсаа SMS-ээр баталгаажуулаад нууц үгээ тохируулна.' },
+  reset: { title: 'Нууц үг сэргээх', lead: 'Бүртгэлтэй утасны дугаараа оруулна уу. Утсаа баталгаажуулаад шинэ нууц үг тохируулна.' },
+}
+
+// Утсаар бүртгүүлэх / нууц үг сэргээх — verify.mn (reverse SMS):
+//   1) утас → POST /api/auth/verify → код ба 144773 дугаар
+//   2) хэрэглэгч өөрийн утаснаас кодоо 144773 руу SMS-ээр илгээнэ, бид 3 сек тутам шалгана
+//   3) баталгаажмагц нууц үг тохируулна → POST /api/auth/verify/:id/complete
+//      тоотод холбогдсон бол шууд нэвтэрнэ, үгүй бол СӨХ тоотод холбохыг хүлээнэ (pending)
+// mode: 'register' (/register) | 'reset' (/forgot-password) — урсгал нь адилхан, бичиг нь өөр
+export default function ForgotPassword({ mode = 'reset', onLogin }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const [step, setStep] = useState('request')
-  const [login, setLogin] = useState(location.state?.login ?? '')
-  const [channel, setChannel] = useState('sms')
-  const [code, setCode] = useState('')
+  const t = texts[mode]
+  const [step, setStep] = useState('phone') // phone → sms → password → (pending)
+  const [phone, setPhone] = useState(location.state?.login ?? '')
+  const [session, setSession] = useState(null) // { id, shortcode, code, smsUri, instruction, expiresAt, activated? }
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [cooldown, setCooldown] = useState(0)
+  const [now, setNow] = useState(() => Date.now())
 
-  // Код дахин илгээх хүртэлх секунд тоолуур
+  // SMS хүлээж байх үед: 3 сек тутам баталгаажсан эсэхийг асууна, секунд тоолуур явна
   useEffect(() => {
-    if (cooldown <= 0) return
-    const timer = setTimeout(() => setCooldown((s) => s - 1), 1000)
-    return () => clearTimeout(timer)
-  }, [cooldown])
+    if (step !== 'sms' || !session) return
+    const tick = setInterval(() => setNow(Date.now()), 1000)
+    const poll = setInterval(async () => {
+      try {
+        const { status, activated } = await api.get(`/auth/verify/${session.id}`)
+        if (status === 'verified') {
+          setSession((s) => ({ ...s, activated })) // шинэ бүртгэл үү, нууц үг сэргээх үү — баталгаажсаны дараа л мэднэ
+          setStep('password')
+          setError('')
+        } else if (status === 'expired') {
+          setStep('phone')
+          setError('Хугацаа дууссан. Дахин код авна уу.')
+        }
+      } catch {
+        // сүлжээ түр тасарвал дараагийн удаа дахин асууна
+      }
+    }, POLL_MS)
+    return () => {
+      clearInterval(tick)
+      clearInterval(poll)
+    }
+  }, [step, session])
 
-  async function sendCode() {
+  async function start(e) {
+    e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
-      // Бүртгэлгүй хаяг байсан ч ижил хариу буцаана (хэн бүртгэлтэйг таахаас сэргийлнэ)
-      const result = await api.post('/auth/forgot-password', { login: login.trim() })
-      setChannel(result.channel)
-      setStep('reset')
-      setCooldown(RESEND_SECONDS)
+      const created = await api.post('/auth/verify', { phone: phone.trim() })
+      setSession(created)
+      setNow(Date.now())
+      setStep('sms')
     } catch (err) {
-      setError(err.message || 'Код илгээж чадсангүй, дахин оролдоно уу')
+      setError(err.message)
     } finally {
       setSubmitting(false)
     }
   }
 
-  async function handleRequest(e) {
-    e.preventDefault()
-    await sendCode()
-  }
-
-  async function handleReset(e) {
+  async function complete(e) {
     e.preventDefault()
     setError('')
-
-    if (password.length < MIN_PASSWORD) {
-      setError(`Нууц үг дор хаяж ${MIN_PASSWORD} тэмдэгт байх ёстой`)
-      return
-    }
-    if (password !== confirm) {
-      setError('Нууц үг таарахгүй байна')
-      return
-    }
+    if (password.length < MIN_PASSWORD) return setError(`Нууц үг дор хаяж ${MIN_PASSWORD} тэмдэгт байх ёстой`)
+    if (password !== confirm) return setError('Нууц үг таарахгүй байна')
 
     setSubmitting(true)
     try {
-      await api.post('/auth/reset-password', { login: login.trim(), code, password })
-      navigate('/login', {
-        replace: true,
-        state: { login: login.trim(), notice: 'Нууц үг амжилттай солигдлоо. Шинэ нууц үгээрээ нэвтэрнэ үү.' },
-      })
+      const result = await api.post(`/auth/verify/${session.id}/complete`, { password }) // холбогдсон бол cookie тавигдана
+      if (result.pending) {
+        setStep('pending')
+        setSubmitting(false)
+        return
+      }
+      const me = await api.get('/auth/me')
+      onLogin?.(me)
+      navigate(homePath(me), { replace: true })
     } catch (err) {
-      setError(err.message || 'Нууц үг сольж чадсангүй')
+      setError(err.message)
       setSubmitting(false)
     }
   }
 
-  function changeLogin() {
-    setStep('request')
-    setCode('')
-    setError('')
-  }
+  const secondsLeft = session ? Math.max(0, Math.floor((new Date(session.expiresAt) - now) / 1000)) : 0
+  const countdown = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
 
   return (
     <AuthLayout>
-      {step === 'request' ? (
-        <form className="auth-card" onSubmit={handleRequest} noValidate>
+      {step === 'phone' && (
+        <form className="auth-card" onSubmit={start} noValidate>
           <Link to="/login" className="auth-back">
             <ArrowBackOutlined sx={{ fontSize: 16 }} /> Нэвтрэх рүү буцах
           </Link>
-
           <div className="auth-head">
-            <h2>Нууц үг сэргээх</h2>
-            <span className="auth-muted">
-              Бүртгэлтэй имэйл эсвэл утасны дугаараа оруулбал баталгаажуулах код илгээнэ.
-            </span>
+            <h2>{t.title}</h2>
+            <span className="auth-muted">{t.lead}</span>
           </div>
 
           {error && <div className="auth-error" role="alert">{error}</div>}
 
           <label className="auth-field">
-            <span>Имэйл эсвэл утас</span>
+            <span>Утасны дугаар</span>
             <input
-              type="text"
-              name="login"
-              autoComplete="username"
+              type="tel"
+              name="phone"
+              inputMode="tel"
+              autoComplete="tel"
               placeholder="99112233"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               required
               autoFocus
             />
+            <span className="auth-hint">Бүртгүүлсний дараа СӨХ таныг тоотод тань холбоно</span>
           </label>
 
-          <button type="submit" className="auth-submit" disabled={submitting || !login.trim()}>
-            {submitting ? 'Илгээж байна…' : 'Код илгээх'}
+          <button type="submit" className="auth-submit" disabled={submitting || !phone.trim()}>
+            {submitting ? 'Түр хүлээнэ үү…' : 'Код авах'}
           </button>
         </form>
-      ) : (
-        <form className="auth-card" onSubmit={handleReset} noValidate>
-          <button type="button" className="auth-back" onClick={changeLogin}>
-            <ArrowBackOutlined sx={{ fontSize: 16 }} /> Өөр хаяг оруулах
-          </button>
+      )}
 
+      {step === 'sms' && session && (
+        <div className="auth-card">
+          <button type="button" className="auth-back" onClick={() => setStep('phone')}>
+            <ArrowBackOutlined sx={{ fontSize: 16 }} /> Өөр дугаар оруулах
+          </button>
           <div className="auth-head">
-            <h2>Шинэ нууц үг</h2>
+            <h2>Утсаа баталгаажуулна уу</h2>
             <span className="auth-muted">
-              Хэрэв <strong>{login.trim()}</strong> бүртгэлтэй бол{' '}
-              {channel === 'email' ? 'имэйлээр' : 'SMS-ээр'} 6 оронтой код илгээлээ.
+              <strong>{phone.trim()}</strong> дугаараасаа <strong>{session.shortcode}</strong> руу доорх кодыг SMS-ээр илгээнэ үү.
             </span>
+          </div>
+
+          <div className="auth-sms-code" aria-label={`Илгээх код ${session.code}`}>{session.code}</div>
+
+          <a className="auth-submit auth-sms-btn" href={session.smsUri}>
+            <SmsOutlined sx={{ fontSize: 20 }} /> SMS илгээх
+          </a>
+
+          <span className="auth-muted auth-help" role="status" aria-live="polite">
+            <span className="auth-waiting" aria-hidden="true" /> Таны SMS-ийг хүлээж байна · {countdown}
+          </span>
+          <span className="auth-hint">
+            Оператор 150₮ авна. 2 SIM-тэй бол бүртгэлтэй дугаарын SIM-ээ сонгоно уу. Утсан дээрээ "SMS илгээх" дарвал мессеж бэлэн бичигдсэн нээгдэнэ.
+          </span>
+        </div>
+      )}
+
+      {step === 'password' && (
+        <form className="auth-card" onSubmit={complete} noValidate>
+          <div className="auth-head">
+            <h2>{session?.activated ? 'Шинэ нууц үг' : 'Нууц үг тохируулах'}</h2>
+            <span className="auth-muted">Утас баталгаажлаа ✓ Одоо нэвтрэх нууц үгээ оруулна уу.</span>
           </div>
 
           {error && <div className="auth-error" role="alert">{error}</div>}
 
           <label className="auth-field">
-            <span>Баталгаажуулах код</span>
-            <input
-              type="text"
-              name="code"
-              className="auth-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="••••••"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              required
-              autoFocus
-            />
-          </label>
-
-          <label className="auth-field">
-            <span>Шинэ нууц үг</span>
-            <PasswordInput
-              name="new-password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <span>Нууц үг</span>
+            <PasswordInput name="new-password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required autoFocus />
             <span className="auth-hint">Дор хаяж {MIN_PASSWORD} тэмдэгт</span>
           </label>
 
           <label className="auth-field">
-            <span>Шинэ нууц үг давтах</span>
-            <PasswordInput
-              name="confirm-password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-            />
+            <span>Нууц үг давтах</span>
+            <PasswordInput name="confirm-password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
           </label>
 
-          <button
-            type="submit"
-            className="auth-submit"
-            disabled={submitting || code.length !== 6 || !password || !confirm}
-          >
-            {submitting ? 'Хадгалж байна…' : 'Нууц үг солих'}
+          <button type="submit" className="auth-submit" disabled={submitting || !password || !confirm}>
+            {submitting ? 'Хадгалж байна…' : 'Хадгалаад нэвтрэх'}
           </button>
-
-          <span className="auth-muted auth-help">
-            Код ирээгүй юу?{' '}
-            {cooldown > 0 ? (
-              <span>{cooldown} секундын дараа дахин илгээх боломжтой</span>
-            ) : (
-              <button type="button" className="auth-link" onClick={sendCode} disabled={submitting}>
-                Дахин илгээх
-              </button>
-            )}
-          </span>
         </form>
+      )}
+      {step === 'pending' && (
+        <div className="auth-card">
+          <div className="auth-head">
+            <h2>Бүртгэл үүслээ ✓</h2>
+            <span className="auth-muted">
+              <strong>{phone.trim()}</strong> дугаар баталгаажлаа. СӨХ-ийн ажилтан таныг тоотод тань холбосны дараа
+              энэ утас, нууц үгээрээ нэвтэрнэ. Хурдан холбуулахыг хүсвэл СӨХ-д тоотоо хэлээрэй.
+            </span>
+          </div>
+          <Link to="/login" state={{ login: phone.trim() }} className="auth-submit auth-sms-btn">Нэвтрэх хуудас руу</Link>
+        </div>
       )}
     </AuthLayout>
   )

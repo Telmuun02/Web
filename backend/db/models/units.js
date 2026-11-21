@@ -10,7 +10,7 @@
  * all(buildingId) - бүх тоот, орц, тоотоор эрэмбэлсэн
  * byEntrance(entrance, buildingId) - нэг орцны тоотууд
  * find(id) - нэг тоот, орцны дугаартай
- * withResidents(id) - тоот + тэнд амьдардаг оршин суугчид
+ * withResidents(id) - тоот + бүртгэлтэй утаснууд (activated — оршин суугч баталгаажуулж нууц үгээ тохируулсан эсэх)
  * occupancy(buildingId) - нийт тоот, оршин суугчтай тоот
  * list(filters, buildingId) - тоотын жагсаалт, оршин суугч, өртэй { entrance, q }
  */
@@ -58,6 +58,7 @@ async function withResidents(id) {
 
   unit.residents = await db('users')
     .select('id', 'name', 'phone', 'email')
+    .select(db.raw('password_hash IS NOT NULL AS activated'))
     .where({ unit_id: id })
     .orderBy('id');
   return unit;

@@ -64,9 +64,9 @@ export default function Chat() {
   let title = ''
   let sub = ''
   if (head?.kind === 'soh') {
-    title = `${head.title}${head.unit ? ` · ${head.unit}` : ''}`
-    const online = onlineResidents.some((p) => p.id === head.userId)
-    sub = [online ? 'Апп-д онлайн' : 'Оршин суугч', head.phone].filter(Boolean).join(' · ')
+    title = head.title
+    const online = onlineResidents.some((p) => p.name === head.title) // тоотын аль нэг утас онлайн
+    sub = [online ? 'Апп-д онлайн' : 'Офлайн', ...(head.phones ?? [])].join(' · ')
   } else if (head?.kind === 'entrance') {
     title = head.title
     sub = `${onlineResidents.length} оршин суугч онлайн · ажилтан зөвхөн уншина, нууж болно`
@@ -102,10 +102,10 @@ export default function Chat() {
               className={t.room === room ? 'admin-chat-item on' : 'admin-chat-item'}
               onClick={() => select(t.room)}
             >
-              <span className="admin-chat-av" aria-hidden="true">{t.user.name[0]}</span>
+              <span className="admin-chat-av" aria-hidden="true">{t.unit.code.split('-')[0]}</span>
               <span className="admin-chat-item-text">
                 <span className="admin-chat-item-top">
-                  <strong>{t.user.name}{t.user.unit && ` · ${t.user.unit}`}</strong>
+                  <strong>{t.unit.code} тоот</strong>
                   <small>{shortTime(t.last?.created_at)}</small>
                 </span>
                 <span className={t.unread ? 'admin-chat-last unread' : 'admin-chat-last'}>
@@ -155,7 +155,7 @@ export default function Chat() {
                   <ArrowBackRounded sx={{ fontSize: 20 }} />
                 </button>
                 <span className={isGroup ? 'admin-chat-av group' : 'admin-chat-av'} aria-hidden="true">
-                  {head?.kind === 'entrance' ? head.entrance : head?.title?.[0]}
+                  {head?.kind === 'entrance' ? head.entrance : head?.unit?.split('-')[0]}
                 </span>
                 <span className="admin-chat-head-text">
                   <strong>{title}</strong>

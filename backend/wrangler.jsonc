@@ -1,51 +1,53 @@
 // Cloudflare Worker-ийн тохиргоо (npm run deploy)
 // Нууц утгуудыг энд бичихгүй — `npx wrangler secret put JWT_SECRET` гэх мэтээр Cloudflare-д хадгална.
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sukh-hub",
-  "main": "worker.js",
-  "compatibility_date": "2026-11-01",
-  "compatibility_flags": ["nodejs_compat"],
-
-  // process.env-д орох энгийн (нууц биш) утгууд
-  "vars": {
-    "NODE_ENV": "production",
-    "JWT_EXPIRES_IN": "7d"
-  },
-
-  // D1 өгөгдлийн сан. database_id-г `npx wrangler d1 create sukh-hub` командын хариунаас хуулна
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "sukh-hub",
-      "database_id": "00000000-0000-0000-0000-000000000000",
-      "migrations_dir": "migrations"
-    }
-  ],
-
-  // Frontend (Vite build). /api/* хүсэлт Worker-т, бусад нь шууд эндээс; React Router-ийн замууд index.html руу
-  "assets": {
-    "directory": "../frontend/dist",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
-  },
-
-  // Knex бүх өгөгдлийн сангийн driver-ийг require хийдэг — ашиглахгүй тул хоосон файлаар солино.
-  // pino нь зөвхөн компьютер дээр (lib/logger.js) хэрэглэгдэнэ.
-  "alias": {
-    "better-sqlite3": "./lib/empty.js",
-    "sqlite3": "./lib/empty.js",
-    "mysql": "./lib/empty.js",
-    "mysql2": "./lib/empty.js",
-    "mariadb/callback": "./lib/empty.js",
-    "pg": "./lib/empty.js",
-    "pg-query-stream": "./lib/empty.js",
-    "oracledb": "./lib/empty.js",
-    "tedious": "./lib/empty.js",
-    "pino": "./lib/empty.js",
-    "pino-pretty": "./lib/empty.js"
-  },
-
-  // Cloudflare dashboard → Workers → sukh-hub → Logs
-  "observability": { "enabled": true }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "sukh-hub",
+	"main": "worker.js",
+	"compatibility_date": "2026-11-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	// process.env-д орох энгийн (нууц биш) утгууд
+	"vars": {
+		"NODE_ENV": "production",
+		"JWT_EXPIRES_IN": "7d"
+	},
+	// D1 өгөгдлийн сан. database_id-г `npx wrangler d1 create sukh-hub` командын хариунаас хуулна
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sukh-hub",
+			"database_id": "2c34d8ac-5770-4a69-89f5-2c25eb80b5a6",
+			"migrations_dir": "migrations"
+		}
+	],
+	// Frontend (Vite build). /api/* хүсэлт Worker-т, бусад нь шууд эндээс; React Router-ийн замууд index.html руу
+	"assets": {
+		"directory": "../frontend/dist",
+		"not_found_handling": "single-page-application",
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	// Knex бүх өгөгдлийн сангийн driver-ийг require хийдэг — ашиглахгүй тул хоосон файлаар солино.
+	// pino нь зөвхөн компьютер дээр (lib/logger.js) хэрэглэгдэнэ.
+	"alias": {
+		"better-sqlite3": "./lib/empty.js",
+		"sqlite3": "./lib/empty.js",
+		"mysql": "./lib/empty.js",
+		"mysql2": "./lib/empty.js",
+		"mariadb/callback": "./lib/empty.js",
+		"pg": "./lib/empty.js",
+		"pg-query-stream": "./lib/empty.js",
+		"oracledb": "./lib/empty.js",
+		"tedious": "./lib/empty.js",
+		"pino": "./lib/empty.js",
+		"pino-pretty": "./lib/empty.js",
+		"iconv-lite": "./lib/iconv-lite.js"
+	},
+	// Cloudflare dashboard → Workers → sukh-hub → Logs
+	"observability": {
+		"enabled": true
+	}
 }

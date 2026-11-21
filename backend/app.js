@@ -3,6 +3,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
 var log = require('./lib/logger');
+var { isWorker } = require('./lib/runtime');
 
 var apiRouter = require('./routes/api');
 
@@ -25,7 +26,8 @@ app.use(morgan('dev', {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+// Cloudflare дээр static файлыг assets (frontend/dist) өгнө, __dirname ч байхгүй
+if (!isWorker) app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api', apiRouter);
 

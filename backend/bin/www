@@ -5,6 +5,9 @@
  * port дээр сонсож, алдаа гарвал лог бичнэ. Энэ нь Express-ийн стандарт www файл юм.
  */
 
+var path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
+
 var app = require('../app');
 var realtime = require('../lib/realtime');
 var dbWatcher = require('../lib/DBwatcher');

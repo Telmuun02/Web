@@ -22,11 +22,13 @@
  */
 
 var { Invoices, Payments, Requests, Announcements, Polls } = require('../db/models');
+var time = require('../lib/time');
 
 var MAX_LIMIT = 10;
 
 function day(d) {
-  return d ? new Date(d).toISOString().slice(0, 10) : null;
+  if (!d) return null;
+  return /^d{4}-d{2}-d{2}$/.test(d) ? d : time.ymd(new Date(d));
 }
 
 function limitOf(input, fallback) {

@@ -1,31 +1,83 @@
-// Төвлөрсөн logger
-//   терминал      — бүх лог, өнгөтэй (pino-pretty)
-//   logs/app.log  — бүх лог нэг файлд, JSON
-// Хөгжүүлэлтэд debug хүртэл, production-д info-оос дээш бичнэ (LOG_LEVEL-ээр солино)
-var fs = require('fs');
-var path = require('path');
-var pino = require('pino');
-var pretty = require('pino-pretty');
+/**
+ * Төвлөрсөн logger — log.info({ id: 1 }, 'Нэвтэрлээ') гэж хэрэглэнэ
+ *   Компьютер дээр (Node)  — pino: терминалд өнгөтэй + logs/app.log (JSON), npm run logs-оор харна
+ *   Cloudflare Workers     — console руу JSON мөр бичнэ, Cloudflare dashboard → Workers → Logs-д харагдана
+ *                             (Workers дээр файл бичих боломжгүй)
+ * Хөгжүүлэлтэд debug хүртэл, production-д info-оос дээш бичнэ (LOG_LEVEL-ээр солино)
+ * Нууц үг, token логт хэзээ ч бичигдэхгүй (redact)
+ *
+ * workerLogger(bindings) - (дотоод) pino-тэй ижил API-тай (info, warn, error, child...) console logger
+ * nodeLogger() - (дотоод) pino logger, logger.fileOnly нь зөвхөн файлд бичнэ
+ */
 
-var logDir = path.join(__dirname, '..', 'logs');
-fs.mkdirSync(logDir, { recursive: true });
+var { isWorker } = require('./runtime');
 
-var options = {
-  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
-  timestamp: pino.stdTimeFunctions.isoTime,
-  // Нууц үг, token логт хэзээ ч бичигдэхгүй
-  redact: ['password', '*.password', 'token', '*.token'],
-};
+var LEVELS = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 };
+var SECRET_KEYS = ['password', 'token'];
 
-var file = pino.destination({ dest: path.join(logDir, 'app.log'), sync: true });
+function level() {
+  return process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+}
 
-var logger = pino(options, pino.multistream([
-  { level: 'debug', stream: pretty({ colorize: true, translateTime: 'SYS:yyyy-mm-dd HH:MM:ss' }) },
-  { level: 'debug', stream: file },
-]));
+function clean(obj) {
+  var out = {};
+  for (var key in obj) {
+    var v = obj[key];
+    if (SECRET_KEYS.indexOf(key) !== -1) out[key] = '[Redacted]';
+    else if (v instanceof Error) out[key] = { message: v.message, stack: v.stack };
+    else out[key] = v;
+  }
+  return out;
+}
 
-// Зөвхөн logs/app.log-д — терминалд (npm run start) гарахгүй, npm run logs-оор харна.
-// Чатбот гэх мэт олон давтагддаг лог терминалыг дүүргэхгүйн тулд
-logger.fileOnly = pino(options, file);
+function workerLogger(bindings) {
+  var logger = {};
 
-module.exports = logger;
+  Object.keys(LEVELS).forEach(function (name) {
+    logger[name] = function (obj, msg) {
+      if (LEVELS[name] < LEVELS[level()]) return;
+      if (typeof obj === 'string') {
+        msg = obj;
+        obj = {};
+      }
+      var line = Object.assign({ level: name, time: new Date().toISOString() }, bindings, clean(obj || {}), { msg: msg });
+      var write = LEVELS[name] >= 50 ? console.error : LEVELS[name] >= 40 ? console.warn : console.log;
+      write(JSON.stringify(line));
+    };
+  });
+
+  logger.child = function (extra) {
+    return workerLogger(Object.assign({}, bindings, extra));
+  };
+  logger.fileOnly = logger;
+  return logger;
+}
+
+function nodeLogger() {
+  var fs = require('fs');
+  var path = require('path');
+  var pino = require('pino');
+  var pretty = require('pino-pretty');
+
+  var logDir = path.join(__dirname, '..', 'logs');
+  fs.mkdirSync(logDir, { recursive: true });
+
+  var options = {
+    level: level(),
+    timestamp: pino.stdTimeFunctions.isoTime,
+    redact: ['password', '*.password', 'token', '*.token'],
+  };
+
+  var file = pino.destination({ dest: path.join(logDir, 'app.log'), sync: true });
+
+  var logger = pino(options, pino.multistream([
+    { level: 'debug', stream: pretty({ colorize: true, translateTime: 'SYS:yyyy-mm-dd HH:MM:ss' }) },
+    { level: 'debug', stream: file },
+  ]));
+
+  // Зөвхөн logs/app.log-д — чатбот гэх мэт олон давтагддаг лог терминалыг дүүргэхгүйн тулд
+  logger.fileOnly = pino(options, file);
+  return logger;
+}
+
+module.exports = isWorker ? workerLogger({}) : nodeLogger();

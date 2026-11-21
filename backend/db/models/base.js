@@ -16,6 +16,7 @@
  */
 
 var db = require('..');
+var { now } = require('../sql');
 
 function createModel(table, options) {
   options = options || {};
@@ -40,7 +41,7 @@ function createModel(table, options) {
   }
 
   async function update(id, data) {
-    if (timestamps) data = Object.assign({}, data, { updated_at: db.fn.now() });
+    if (timestamps) data = Object.assign({}, data, { updated_at: now() });
     await db(table).where({ id: id }).update(data);
     return find(id);
   }

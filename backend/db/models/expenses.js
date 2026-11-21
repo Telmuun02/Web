@@ -21,10 +21,15 @@ async function byCategory(fromPeriod) {
     .sum({ amount: 'amount' })
     .where('period', '>=', fromPeriod)
     .groupBy('period', 'category')
-    .orderBy(['period', 'category']);
-  return rows.map(function (r) {
-    return { period: r.period, category: r.category, amount: Number(r.amount) };
-  });
+    .orderBy('period');
+  return rows
+    .map(function (r) {
+      return { period: r.period, category: r.category, amount: Number(r.amount) };
+    })
+    .sort(function (a, b) {
+      if (a.period !== b.period) return a.period < b.period ? -1 : 1;
+      return categories.indexOf(a.category) - categories.indexOf(b.category);
+    });
 }
 
 async function reserve() {

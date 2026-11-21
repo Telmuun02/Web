@@ -8,6 +8,7 @@
  */
 
 var db = require('..');
+var { now } = require('../sql');
 var createModel = require('./base');
 
 var base = createModel('meetings');
@@ -21,7 +22,7 @@ async function agendaOf(meetingId) {
 }
 
 async function next() {
-  var meeting = await db('meetings').where('ends_at', '>', db.fn.now()).orderBy('starts_at').first();
+  var meeting = await db('meetings').where('ends_at', '>', now()).orderBy('starts_at').first();
   if (!meeting) return null;
   return { ...meeting, online: Boolean(meeting.online), agenda: await agendaOf(meeting.id) };
 }

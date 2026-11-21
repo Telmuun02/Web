@@ -14,6 +14,7 @@
  */
 
 var db = require('..');
+var { monthStart } = require('../sql');
 var createModel = require('./base');
 
 var publicColumns = ['id', 'name', 'phone', 'email', 'position', 'hired_at', 'active', 'created_at', 'updated_at'];
@@ -69,11 +70,11 @@ async function recentActions(limit, adminId) {
 }
 
 async function monthCounts(adminId) {
-  var monthStart = db.raw("DATE_FORMAT(CURDATE(), '%Y-%m-01')");
+  var from = monthStart();
   var [payments, announcements, polls] = await Promise.all([
-    db('payments').where('recorded_by', adminId).where('paid_at', '>=', monthStart).count({ n: '*' }).first(),
-    db('announcements').where('created_by', adminId).where('created_at', '>=', monthStart).count({ n: '*' }).first(),
-    db('polls').where('created_by', adminId).where('created_at', '>=', monthStart).count({ n: '*' }).first(),
+    db('payments').where('recorded_by', adminId).where('paid_at', '>=', from).count({ n: '*' }).first(),
+    db('announcements').where('created_by', adminId).where('created_at', '>=', from).count({ n: '*' }).first(),
+    db('polls').where('created_by', adminId).where('created_at', '>=', from).count({ n: '*' }).first(),
   ]);
   return { payments: Number(payments.n), announcements: Number(announcements.n), polls: Number(polls.n) };
 }

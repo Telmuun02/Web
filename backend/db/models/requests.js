@@ -21,6 +21,7 @@
  */
 
 var db = require('..');
+var { now, today } = require('../sql');
 var createModel = require('./base');
 var Units = require('./units');
 
@@ -106,7 +107,7 @@ async function countByCategory(from, buildingId) {
 
 async function avgResolveHours(from, buildingId) {
   var q = db('requests')
-    .select(db.raw('AVG(TIMESTAMPDIFF(HOUR, created_at, resolved_at)) AS hours'))
+    .select(db.raw('AVG(CAST((julianday(resolved_at) - julianday(created_at)) * 24 AS INTEGER)) AS hours'))
     .whereNotNull('resolved_at')
     .where('created_at', '>=', from)
     .first();
@@ -118,14 +119,14 @@ async function avgResolveHours(from, buildingId) {
 async function setStatus(id, status) {
   return base.update(id, {
     status: status,
-    resolved_at: status === 'resolved' ? db.fn.now() : null,
+    resolved_at: status === 'resolved' ? now() : null,
   });
 }
 
 async function resolvedToday(buildingId) {
   var q = db('requests')
     .where('status', 'resolved')
-    .where('resolved_at', '>=', db.raw('CURDATE()'))
+    .where('resolved_at', '>=', today())
     .count({ n: '*' })
     .first();
   var row = await Units.inBuilding(q, buildingId, 'unit_id');

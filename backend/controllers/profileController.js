@@ -8,6 +8,7 @@
 
 var bcrypt = require('bcryptjs');
 var { Users, Admins } = require('../db/models');
+var { isDuplicate } = require('../db/errors');
 var log = require('../lib/logger').child({ module: 'profile' });
 
 async function update(req, res, next) {
@@ -53,7 +54,7 @@ async function update(req, res, next) {
 
     res.json({ ...updated, role: req.user.role });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
+    if (isDuplicate(err)) {
       return res.status(409).json({ error: 'Энэ утас эсвэл имэйлийг өөр хэрэглэгч ашиглаж байна' });
     }
     next(err);

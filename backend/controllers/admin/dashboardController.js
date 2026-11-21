@@ -8,7 +8,7 @@
  *   GET /api/admin/dashboard/debtors?limit=
  *
  * Дотоод туслах (show дуудна):
- *   toPeriod, monthStart - огнооны туслах
+ *   (огноо: lib/time.js — Монголын цагаар)
  *   month - "Сарын төлөлт" карт
  *   hours - сүүлийн 6 цагийн орлого
  *   payments - сүүлийн 5 төлбөр
@@ -20,29 +20,19 @@
 
 var { Invoices, Payments, Requests, Polls, Units, Admins } = require('../../db/models');
 var activity = require('./activityController');
+var time = require('../../lib/time');
 
 var methodLabel = { qpay: 'QPay', bank: 'Дансаар', cash: 'Бэлэн', card: 'Карт' };
 
-function toPeriod(date) {
-  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-01';
-}
-
-function monthStart(monthsAgo) {
-  var d = new Date();
-  d.setDate(1);
-  d.setMonth(d.getMonth() - monthsAgo);
-  return toPeriod(d);
-}
-
 async function month() {
-  var [row] = await Invoices.monthlySummary(toPeriod(new Date()));
+  var [row] = await Invoices.monthlySummary(time.monthStart(0));
   row = row || { units: 0, paid_units: 0, collected: 0, billed: 0 };
   return { paidUnits: row.paid_units, units: row.units, collected: row.collected, billed: row.billed };
 }
 
 async function hours() {
   var rows = await Payments.hourly(6);
-  var current = new Date().getHours();
+  var current = time.hour();
   var list = [];
   for (var i = 5; i >= 0; i--) {
     var hour = (current - i + 24) % 24;
@@ -95,10 +85,10 @@ async function poll() {
 }
 
 async function months() {
-  var rows = await Invoices.monthlySummary(monthStart(11));
+  var rows = await Invoices.monthlySummary(time.monthStart(11));
   var list = [];
   for (var m = 11; m >= 0; m--) {
-    var period = monthStart(m);
+    var period = time.monthStart(m);
     var row = rows.find(function (r) { return r.period === period; });
     list.push({ period: period, billed: row ? row.billed : 0, collected: row ? row.collected : 0 });
   }

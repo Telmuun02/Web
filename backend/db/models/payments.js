@@ -3,7 +3,7 @@
  *
  * base: all, find, where, create, update, remove
  * forInvoice(invoiceId) - нэг нэхэмжлэлийн төлбөрүүд
- * record(invoiceId, data) - төлбөр бүртгээд нэхэмжлэлийн төлөвийг шинэчилнэ (transaction)
+ * record(invoiceId, data) - төлбөр бүртгээд нэхэмжлэлийн төлөвийг шинэчилнэ (db.batch — нэг transaction)
  * todayTotal(buildingId) - өнөөдөр орсон нийт дүн, төлбөрийн тоо
  * hourly(hours, buildingId) - сүүлийн n цагийн орлого, цаг тутам
  * recent(limit, buildingId) - сүүлийн төлбөрүүд, тоот, оршин суугчийн нэртэй
@@ -12,6 +12,7 @@
  */
 
 var db = require('..');
+var { now, today } = require('../sql');
 var createModel = require('./base');
 var Units = require('./units');
 
@@ -22,25 +23,26 @@ async function forInvoice(invoiceId) {
 }
 
 async function record(invoiceId, data) {
-  return db.transaction(async function (trx) {
-    var invoice = await trx('invoices').where({ id: invoiceId }).forUpdate().first();
-    if (!invoice) return null;
+  var invoice = await db('invoices').where({ id: invoiceId }).first();
+  if (!invoice) return null;
 
-    var [id] = await trx('payments').insert({ ...data, invoice_id: invoiceId });
+  var paid = db('payments').where({ invoice_id: invoiceId }).sum('amount');
+  var status = db.raw(
+    "CASE WHEN COALESCE(?, 0) >= amount THEN 'paid' WHEN COALESCE(?, 0) > 0 THEN 'partial' ELSE 'unpaid' END",
+    [paid, paid]
+  );
 
-    var row = await trx('payments').where({ invoice_id: invoiceId }).sum({ paid: 'amount' }).first();
-    var paid = Number(row.paid);
-    var status = paid >= invoice.amount ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
-
-    await trx('invoices').where({ id: invoiceId }).update({ status: status, updated_at: trx.fn.now() });
-    return trx('payments').where({ id: id }).first();
-  });
+  var [inserted] = await db.batch([
+    db('payments').insert({ ...data, invoice_id: invoiceId }).returning('*'),
+    db('invoices').where({ id: invoiceId }).update({ status: status, updated_at: now() }),
+  ]);
+  return inserted.rows[0];
 }
 
 async function todayTotal(buildingId) {
   var q = db('payments as p')
     .join('invoices as i', 'i.id', 'p.invoice_id')
-    .where('p.paid_at', '>=', db.raw('CURDATE()'))
+    .where('p.paid_at', '>=', today())
     .select(db.raw('COALESCE(SUM(p.amount), 0) AS amount, COUNT(*) AS count'))
     .first();
   var row = await Units.inBuilding(q, buildingId, 'i.unit_id');
@@ -50,8 +52,8 @@ async function todayTotal(buildingId) {
 async function hourly(hours, buildingId) {
   var q = db('payments as p')
     .join('invoices as i', 'i.id', 'p.invoice_id')
-    .where('p.paid_at', '>=', db.raw("DATE_FORMAT(NOW() - INTERVAL ? HOUR, '%Y-%m-%d %H:00:00')", [hours - 1]))
-    .select(db.raw('HOUR(p.paid_at) AS hour, SUM(p.amount) AS amount'))
+    .where('p.paid_at', '>=', db.raw("strftime('%Y-%m-%d %H:00:00', datetime('now', '+8 hours', ?))", ['-' + (hours - 1) + ' hours']))
+    .select(db.raw("CAST(strftime('%H', p.paid_at) AS INTEGER) AS hour, SUM(p.amount) AS amount"))
     .groupBy('hour');
   var rows = await Units.inBuilding(q, buildingId, 'i.unit_id');
   return rows.map(function (r) {
@@ -79,8 +81,8 @@ async function forUnit(unitId, limit) {
 }
 
 async function recordedBy(adminId, limit) {
-  var [today, recent] = await Promise.all([
-    db('payments').where('recorded_by', adminId).where('paid_at', '>=', db.raw('CURDATE()')).count({ n: '*' }).first(),
+  var [todayRow, recent] = await Promise.all([
+    db('payments').where('recorded_by', adminId).where('paid_at', '>=', today()).count({ n: '*' }).first(),
     db('payments as p')
       .join('invoices as i', 'i.id', 'p.invoice_id')
       .join('units as u', 'u.id', 'i.unit_id')
@@ -89,7 +91,7 @@ async function recordedBy(adminId, limit) {
       .orderBy('p.paid_at', 'desc')
       .limit(limit || 5),
   ]);
-  return { today: Number(today.n), recent: recent };
+  return { today: Number(todayRow.n), recent: recent };
 }
 
 module.exports = { ...base, forInvoice, record, todayTotal, hourly, recent, forUnit, recordedBy };

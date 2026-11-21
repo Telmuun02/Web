@@ -9,6 +9,7 @@
  */
 
 var { Announcements, Polls, Meetings } = require('../../db/models');
+var { isDuplicate } = require('../../db/errors');
 var { currentResident, noUnit } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/news' });
 
@@ -84,7 +85,7 @@ async function vote(req, res, next) {
     log.info({ by: req.user.id, pollId: poll.id, optionId: optionId }, 'Санал өглөө');
     res.status(201).json({ ...result, my_option_id: optionId });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
+    if (isDuplicate(err)) {
       log.warn({ by: req.user.id, pollId: Number(req.params.id) }, 'Давхар санал өгөх оролдлого');
       return res.status(409).json({ error: 'Танай тоот аль хэдийн санал өгсөн байна' });
     }

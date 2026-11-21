@@ -36,7 +36,7 @@ async function recentResidents(limit, buildingId) {
     .leftJoin('units as u', 'u.id', 's.unit_id')
     .whereNotNull('s.unit_id')
     .select('s.name', 'u.code', 's.created_at')
-    .orderBy('s.created_at', 'desc')
+    .orderBy([{ column: 's.created_at', order: 'desc' }, { column: 's.id', order: 'desc' }])
     .limit(limit);
   return Units.inBuilding(q, buildingId, 's.unit_id');
 }

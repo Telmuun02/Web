@@ -23,6 +23,7 @@
  */
 
 var db = require('..');
+var { now, monthStart } = require('../sql');
 var createModel = require('./base');
 var Units = require('./units');
 
@@ -90,9 +91,9 @@ async function debtors(limit, buildingId) {
     .select(db.raw('SUM(i.amount - COALESCE(p.paid, 0)) AS debt'))
     .count({ months: 'i.id' })
     .whereIn('i.status', ['unpaid', 'partial'])
-    .where('i.due_date', '<', db.fn.now())
+    .where('i.due_date', '<', now())
     .groupBy('u.id', 'u.code', 'e.number', 'u.floor', 'u.area_m2')
-    .orderBy('debt', 'desc')
+    .orderBy([{ column: 'debt', order: 'desc' }, { column: 'u.id' }])
     .limit(limit || 10);
   var rows = await Units.inBuilding(q, buildingId, 'i.unit_id');
 
@@ -107,7 +108,7 @@ async function overdueTotal(buildingId) {
     .select(db.raw('COALESCE(SUM(i.amount - COALESCE(p.paid, 0)), 0) AS debt'))
     .countDistinct({ units: 'i.unit_id' })
     .whereIn('i.status', ['unpaid', 'partial'])
-    .where('i.due_date', '<', db.fn.now())
+    .where('i.due_date', '<', now())
     .first();
   var row = await Units.inBuilding(q, buildingId, 'i.unit_id');
 
@@ -143,10 +144,10 @@ async function counts(period, search, buildingId) {
   var q = db('invoices as i')
     .join('units as u', 'u.id', 'i.unit_id')
     .select(db.raw('COUNT(*) AS total'))
-    .select(db.raw("COALESCE(SUM(i.status = 'unpaid' AND i.due_date >= NOW()), 0) AS unpaid"))
-    .select(db.raw("COALESCE(SUM(i.status = 'partial' AND i.due_date >= NOW()), 0) AS partial"))
+    .select(db.raw("COALESCE(SUM(i.status = 'unpaid' AND i.due_date >= datetime('now', '+8 hours')), 0) AS unpaid"))
+    .select(db.raw("COALESCE(SUM(i.status = 'partial' AND i.due_date >= datetime('now', '+8 hours')), 0) AS partial"))
     .select(db.raw("COALESCE(SUM(i.status = 'paid'), 0) AS paid"))
-    .select(db.raw("COALESCE(SUM(i.status <> 'paid' AND i.due_date < NOW()), 0) AS overdue"))
+    .select(db.raw("COALESCE(SUM(i.status <> 'paid' AND i.due_date < datetime('now', '+8 hours')), 0) AS overdue"))
     .first();
 
   var row = await Units.inBuilding(inScope(q, period, search), buildingId, 'i.unit_id');
@@ -171,7 +172,7 @@ async function list(period, filters, buildingId) {
     .select(db.raw('COALESCE(p.paid, 0) AS paid'))
     .select('lp.method as last_method', 'lp.paid_at as last_paid_at')
     .select(db.raw('(SELECT name FROM users WHERE users.unit_id = i.unit_id ORDER BY id LIMIT 1) AS resident_name'))
-    .select(db.raw("(i.status <> 'paid' AND i.due_date < NOW()) AS overdue"))
+    .select(db.raw("(i.status <> 'paid' AND i.due_date < datetime('now', '+8 hours')) AS overdue"))
     .orderBy([{ column: 'i.period' }, { column: 'u.code' }, { column: 'i.id' }]);
 
   inScope(q, period, filters.q);
@@ -180,9 +181,9 @@ async function list(period, filters, buildingId) {
   if (filters.limit) q.limit(filters.limit).offset(filters.offset || 0);
 
   if (filters.status === 'paid') q.where('i.status', 'paid');
-  if (filters.status === 'overdue') q.whereNot('i.status', 'paid').where('i.due_date', '<', db.fn.now());
+  if (filters.status === 'overdue') q.whereNot('i.status', 'paid').where('i.due_date', '<', now());
   if (filters.status === 'unpaid' || filters.status === 'partial') {
-    q.where('i.status', filters.status).where('i.due_date', '>=', db.fn.now());
+    q.where('i.status', filters.status).where('i.due_date', '>=', now());
   }
 
   var rows = await q;
@@ -205,7 +206,7 @@ async function list(period, filters, buildingId) {
 
 async function monthProgress(buildingId) {
   var q = db('invoices')
-    .where('period', db.raw("DATE_FORMAT(CURDATE(), '%Y-%m-01')"))
+    .where('period', monthStart())
     .select(db.raw("COUNT(*) AS total, COALESCE(SUM(status = 'paid'), 0) AS paid"))
     .first();
   var row = await Units.inBuilding(q, buildingId, 'unit_id');
@@ -213,7 +214,7 @@ async function monthProgress(buildingId) {
 }
 
 function thisMonth() {
-  return db.raw("DATE_FORMAT(CURDATE(), '%Y-%m-01')");
+  return monthStart();
 }
 
 async function currentForUnit(unitId) {
@@ -245,8 +246,8 @@ async function onTimeCount(unitId) {
   var row = await db('invoices as i')
     .where('i.unit_id', unitId)
     .where('i.status', 'paid')
-    .where('i.period', '>=', db.raw("DATE_FORMAT(CURDATE() - INTERVAL 12 MONTH, '%Y-%m-01')"))
-    .whereRaw('(SELECT MAX(p.paid_at) FROM payments p WHERE p.invoice_id = i.id) < i.due_date + INTERVAL 1 DAY')
+    .where('i.period', '>=', monthStart(12))
+    .whereRaw("(SELECT MAX(p.paid_at) FROM payments p WHERE p.invoice_id = i.id) < date(i.due_date, '+1 day')")
     .count({ n: '*' })
     .first();
   return Number(row.n);

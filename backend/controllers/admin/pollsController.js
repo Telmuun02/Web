@@ -11,6 +11,7 @@
  */
 
 var { Polls } = require('../../db/models');
+var time = require('../../lib/time');
 var log = require('../../lib/logger').child({ module: 'admin/polls' });
 
 async function index(req, res, next) {
@@ -34,7 +35,7 @@ async function show(req, res, next) {
 async function store(req, res, next) {
   try {
     var title = String(req.body.title || '').trim();
-    var endsAt = new Date(req.body.ends_at);
+    var endsAt = time.parseLocal(req.body.ends_at);
     var threshold = req.body.threshold_percent === undefined ? 50 : Number(req.body.threshold_percent);
     var options = (Array.isArray(req.body.options) ? req.body.options : [])
       .map(function (o) { return String(o).trim(); })

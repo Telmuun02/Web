@@ -10,6 +10,7 @@
 
 var { currentResident, noUnit } = require('./helpers');
 var chatService = require('../../services/chatService');
+var time = require('../../lib/time');
 var log = require('../../lib/logger').fileOnly.child({ module: 'user/chat' });
 
 var MAX_LEN = 1000;
@@ -18,7 +19,7 @@ function residentContext(me) {
   return [
     'Нэр: ' + me.user.name,
     'Тоот: ' + me.unit.code + ', ' + me.unit.entrance + '-р орц, ' + me.unit.floor + '-р давхар',
-    'Өнөөдөр: ' + new Date().toISOString().slice(0, 10),
+    'Өнөөдөр: ' + time.ymd(),
   ].join('\n');
 }
 

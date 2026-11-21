@@ -15,6 +15,7 @@
  */
 
 var { Invoices, Payments, Requests, Polls, Units, Users, Announcements, Admins } = require('../../db/models');
+var time = require('../../lib/time');
 
 var methodLabel = { qpay: 'QPay', bank: 'Банк', cash: 'Бэлэн', card: 'Карт' };
 
@@ -122,9 +123,7 @@ var positionLabel = { chairman: 'Дарга', accountant: 'Нягтлан', tech
 
 async function announcements() {
   var list = await Announcements.list(50);
-  var monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  var monthStart = time.monthStartDate();
   var thisMonth = list.filter(function (a) { return new Date(a.created_at) >= monthStart; });
 
   return {
@@ -182,7 +181,7 @@ async function profile(req) {
     stats: [
       { label: 'Өнөөдөр бүртгэсэн', value: mine.today + ' төлбөр', tone: 'yellow' },
       { label: 'Идэвхтэй ажилтан', value: staff.length + ' хүн', tone: 'green' },
-      { label: 'Сүүлд бүртгэсэн', value: mine.recent[0] ? new Date(mine.recent[0].paid_at).toLocaleDateString('en-CA') : '—' },
+      { label: 'Сүүлд бүртгэсэн', value: mine.recent[0] ? time.ymd(new Date(mine.recent[0].paid_at)) : '—' },
     ],
     events: mine.recent.map(function (p) {
       return 'Таны бүртгэсэн төлбөр: ' + p.code + ' тоот ' + money(p.amount);

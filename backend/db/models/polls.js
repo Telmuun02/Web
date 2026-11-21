@@ -5,7 +5,7 @@
  * base: all, find, where, create, update, remove
  * active() - одоо явагдаж байгаа санал хураалтууд
  * results(id) - сонголт бүрийн санал, ирц, босгод хүрсэн эсэх
- * createWithOptions(data, labels) - санал хураалт сонголтуудтай нь хамт үүсгэнэ
+ * createWithOptions(data, labels) - санал хураалт сонголтуудтай нь хамт үүсгэнэ (db.batch — нэг transaction)
  * vote(pollId, optionId, userId) - санал өгөх, тоотыг оршин суугчаас авна
  * voteStats(pollId) - нийт санал, сүүлийн 1 цагийнх
  * recentVotes(pollId, limit) - сүүлд санал өгсөн тоотууд
@@ -14,14 +14,15 @@
  */
 
 var db = require('..');
+var { now } = require('../sql');
 var createModel = require('./base');
 
 var base = createModel('polls');
 
 async function active() {
   return db('polls')
-    .where('starts_at', '<=', db.fn.now())
-    .where('ends_at', '>', db.fn.now())
+    .where('starts_at', '<=', now())
+    .where('ends_at', '>', now())
     .orderBy('ends_at');
 }
 
@@ -53,16 +54,17 @@ async function results(id) {
 }
 
 async function createWithOptions(data, labels) {
-  var id = await db.transaction(async function (trx) {
-    var [pollId] = await trx('polls').insert(data);
-    await trx('poll_options').insert(
+  var newPollId = db.raw('(SELECT MAX(id) FROM polls)');
+
+  var [inserted] = await db.batch([
+    db('polls').insert(data).returning('id'),
+    db('poll_options').insert(
       labels.map(function (label, i) {
-        return { poll_id: pollId, label: label, position: i };
+        return { poll_id: newPollId, label: label, position: i };
       })
-    );
-    return pollId;
-  });
-  return results(id);
+    ),
+  ]);
+  return results(inserted.rows[0].id);
 }
 
 async function vote(pollId, optionId, userId) {
@@ -77,7 +79,7 @@ async function vote(pollId, optionId, userId) {
 async function voteStats(pollId) {
   var row = await db('poll_votes')
     .where('poll_id', pollId)
-    .select(db.raw('COUNT(*) AS votes, COALESCE(SUM(created_at >= NOW() - INTERVAL 1 HOUR), 0) AS last_hour'))
+    .select(db.raw("COUNT(*) AS votes, COALESCE(SUM(created_at >= datetime('now', '+8 hours', '-1 hours')), 0) AS last_hour"))
     .first();
   return { votes: Number(row.votes), lastHour: Number(row.last_hour) };
 }
@@ -107,9 +109,9 @@ async function list() {
   ]);
 
   var totalUnits = Number(units.n);
-  var now = new Date();
+  var current = new Date();
   return rows.map(function (r) {
-    var status = new Date(r.starts_at) > now ? 'upcoming' : new Date(r.ends_at) <= now ? 'ended' : 'active';
+    var status = new Date(r.starts_at) > current ? 'upcoming' : new Date(r.ends_at) <= current ? 'ended' : 'active';
     var count = Number(r.votes);
     return {
       ...r,

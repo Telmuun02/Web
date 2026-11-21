@@ -13,6 +13,7 @@
  */
 
 var { Invoices, Payments } = require('../../db/models');
+var time = require('../../lib/time');
 var log = require('../../lib/logger').child({ module: 'admin/invoices' });
 
 /**
@@ -31,8 +32,7 @@ function periodFrom(req) {
   var p = String(req.query.period || '');
   if (/^\d{4}-\d{2}-01$/.test(p)) return p;
 
-  var d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+  return time.monthStart(0);
 }
 
 async function index(req, res, next) {

@@ -8,6 +8,9 @@ var apiRouter = require('./routes/api');
 
 var app = express();
 
+// Cloudflare (Pages proxy + Tunnel)-аар дамжих тул req.ip-г X-Forwarded-For-оос авна.
+app.set('trust proxy', true);
+
 // Хүсэлт бүр терминалд товч харагдана (файлд бичихгүй).
 // Чатботын хүсэлтүүдийг алгасна — тэдгээрийн лог зөвхөн npm run logs-
 var quietPaths = ['/api/resident/chat', '/api/resident/transcribe'];

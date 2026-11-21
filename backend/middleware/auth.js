@@ -1,5 +1,9 @@
-// Нэвтэрсэн эсэхийг шалгана — Laravel-ийн auth middleware шиг
-// Token-ийг cookie (вэб) эсвэл Authorization: Bearer header (mobile)-аас уншина
+// Нэвтэрсэн эсэхийг шалгах authentication middleware. 
+// Энэ нь Express.js-ийн middleware функц бөгөөд HTTP хүсэлтүүдийг шалгаж, хэрэглэгчийн токен хүчинтэй эсэхийг 
+// баталгаажуулдаг. Хэрэв токен хүчинтэй бол хэрэглэгчийн мэдээллийг `req.user` 
+// руу оруулж, дараагийн middleware рүү шилжүүлнэ. 
+// Хэрэв токен байхгүй эсвэл хүчинтэй бус бол 401 Unauthorized хариу илгээнэ.
+
 var jwt = require('jsonwebtoken');
 var log = require('../lib/logger').child({ module: 'auth' });
 

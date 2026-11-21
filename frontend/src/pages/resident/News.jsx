@@ -73,7 +73,7 @@ function PollCard({ poll, onVoted }) {
 
 export default function News() {
   // GET /api/resident/news — санал өгсний дараа тухайн санал хураалтыг хариугаар нь солино
-  const { data, error } = useApi('/resident/news', null, { fallback: null })
+  const { data, error } = useApi('/resident/news', null, { fallback: null, live: ['announcements', 'polls', 'poll_votes'] })
   const [votedPolls, setVotedPolls] = useState({}) // { [poll_id]: санал өгсний дараах дүн }
 
   if (error) return <div className="res-news"><p role="alert">{error}</p></div>

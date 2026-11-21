@@ -52,7 +52,7 @@ const permissions = [
 export default function Profile() {
   const live = useLive('profile') // "ШУУД" мөр — /api/admin/live/profile
   // GET /api/admin/activity — энэ сарын тоо, сүүлийн үйлдлүүд
-  const { data: activity } = useApi('/admin/activity', null, { fallback: { counts: {}, recent: [] } })
+  const { data: activity } = useApi('/admin/activity', null, { fallback: { counts: {}, recent: [] }, live: ['payments', 'announcements', 'polls'] })
   const { user, onLogout } = useOutletContext()
   // Хувийн мэдээллийн form — 4 талбар хамт хадгалагдана. password — өөрчлөлтөө баталгаажуулах нууц үг.
   // Нэрийг дээд хэсэгт бичих зуур харуулдаг тул FormData биш state

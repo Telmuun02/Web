@@ -1,0 +1,83 @@
+.ui-notifications {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+}
+
+.ui-notification {
+  display: flex;
+  align-items: flex-start;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: ui-notification-in 0.2s ease-out;
+}
+
+.ui-notification-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 4px 12px 14px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-notification-body svg {
+  flex-shrink: 0;
+  color: var(--on-yellow);
+  background: var(--tint-yellow);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.ui-notification-body span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ui-notification-body strong {
+  font-size: 14px;
+}
+
+.ui-notification-body small {
+  font-size: 13px;
+  color: var(--muted-text);
+  overflow-wrap: anywhere;
+}
+
+.ui-notification-close {
+  flex-shrink: 0;
+  margin: 8px 8px 0 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted-text);
+  cursor: pointer;
+}
+
+.ui-notification-close:hover {
+  background: var(--line-soft);
+}
+
+@keyframes ui-notification-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}

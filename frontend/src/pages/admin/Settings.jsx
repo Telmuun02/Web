@@ -49,7 +49,7 @@ function example(area, rate) {
 export default function Settings() {
   const live = useLive('settings') // "ШУУД" мөр — /api/admin/live/settings
   // GET /api/admin/staff — идэвхтэй ажилтнууд
-  const { data: staff, error: staffError } = useApi('/admin/staff', null, { fallback: [] })
+  const { data: staff, error: staffError } = useApi('/admin/staff', null, { fallback: [], live: ['admins'] })
   const [form, setForm] = useState({
     mode: 'fixed',
     fixedRate: '85,000', // тоот бүрийн сарын хураамж

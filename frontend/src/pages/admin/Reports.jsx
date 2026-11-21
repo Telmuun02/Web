@@ -61,7 +61,7 @@ export default function Reports() {
 
   // ---------- Server state ----------
   // Сүүлийн 4 сар — явагдаж буй сар + хаагдсан 3 сар
-  const { data: report } = useApi('/admin/reports', { months: 4 }, { fallback: null })
+  const { data: report } = useApi('/admin/reports', { months: 4 }, { fallback: null, live: ['payments', 'invoices', 'expenses', 'requests'] })
 
   // Derived — зөвхөн хаагдсан саруудыг сонгоно (явагдаж буй сар дуусаагүй), шинээс нь
   const thisMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`

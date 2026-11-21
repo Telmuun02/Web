@@ -61,7 +61,7 @@ export default function Units() {
 
   // ---------- Server state ----------
   // Бүх тоотыг нэг удаа татаад (120 орчим) таб, хайлтыг энд шүүнэ — статистик бүх тоотоос бодогдоно
-  const { data: units, loading, error } = useApi('/admin/units', null, { fallback: [] })
+  const { data: units, loading, error } = useApi('/admin/units', null, { fallback: [], live: ['units', 'users', 'invoices', 'payments'] })
 
   // Derived
   const q = query.trim().toLowerCase()
@@ -71,7 +71,7 @@ export default function Units() {
   const sel = rows.find((u) => u.id === selId) ?? rows[0]
 
   // Сонгосон тоотын гишүүд — /api/admin/units/:id
-  const { data: detail } = useApi(sel ? `/admin/units/${sel.id}` : null, null, { fallback: null })
+  const { data: detail } = useApi(sel ? `/admin/units/${sel.id}` : null, null, { fallback: null, live: ['units', 'users', 'invoices', 'payments'] })
   const people = detail?.id === sel?.id ? detail.residents : []
 
   const residents = units.reduce((sum, u) => sum + u.residents, 0)

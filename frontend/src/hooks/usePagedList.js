@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import api from '../api/client'
+import { useTableChange } from './useRealtime'
 
 // Server state — хуудаслалттай жагсаалт + infinite scroll.
 // Backend { rows, next_offset } буцаана (next_offset null бол дараагийн хуудас алга).
@@ -8,7 +9,8 @@ import api from '../api/client'
 // url — null бол татахгүй, params өөрчлөгдөхөд эхний хуудаснаас дахин эхэлнэ
 // toRow — серверийн мөрийг дэлгэцийн мөр болгох функц
 // delay — мс: хайлтын үсэг бүрд хүсэлт явуулахгүйн тулд
-export default function usePagedList(url, params, toRow, { delay = 0 } = {}) {
+// live — хүснэгтийн нэрс: тэдгээр нь DB-д өөрчлөгдөхөд (WebSocket) эхний хуудсыг дахин татна
+export default function usePagedList(url, params, toRow, { delay = 0, live } = {}) {
   const [list, setList] = useState({ rows: [], loading: Boolean(url), error: '', next: null })
   const sentinelRef = useRef(null)
   const requestId = useRef(0) // params солигдоход хуучин хүсэлтийн хариуг хаяна
@@ -54,6 +56,8 @@ export default function usePagedList(url, params, toRow, { delay = 0 } = {}) {
     observer.observe(el)
     return () => observer.disconnect()
   }, [list.next, list.loading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useTableChange(url ? live : null, () => load(0))
 
   // Дэлгэц дээрх мөрүүдийг гараар шинэчлэх (жишээ нь төлбөр бүртгэсний дараа)
   const setRows = (update) => setList((l) => ({ ...l, rows: update(l.rows) }))

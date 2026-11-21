@@ -7,12 +7,14 @@
  * acquireConnection() - нээлттэй файлыг буцаана
  * _query(conn, obj) - нэг SQL-ийг ажиллуулж knex-ийн хүлээдэг хэлбэрээр хариуг тавина
  * batch(queries) - хэд хэдэн SQL-ийг нэг transaction-д ажиллуулна (D1-ийн batch-тай адил)
+ * Өгөгдөл өөрчилсөн бол hooks.wrote() — realtime-д "одоо шалга" гэж дохио өгнө
  */
 
 var fs = require('fs');
 var path = require('path');
 var Client_SQLite3 = require('knex/lib/dialects/sqlite3');
 var values = require('../values');
+var hooks = require('../hooks');
 
 var FILE = process.env.SQLITE_PATH || path.join(__dirname, '..', '..', '.data', 'dev.sqlite');
 var database = null;
@@ -57,6 +59,7 @@ class Client_Local extends Client_SQLite3 {
     var res = run(obj.sql, obj.bindings);
     obj.response = res.rows;
     obj.context = { lastID: res.lastID, changes: res.changes };
+    if (hooks.isWrite(obj.sql)) await hooks.wrote();
     return obj;
   }
 
@@ -68,6 +71,7 @@ class Client_Local extends Client_SQLite3 {
         return run(q.sql, q.bindings);
       });
       db.exec('COMMIT');
+      await hooks.wrote();
       return results;
     } catch (err) {
       db.exec('ROLLBACK');

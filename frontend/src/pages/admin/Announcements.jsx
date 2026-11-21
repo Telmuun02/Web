@@ -64,8 +64,8 @@ export default function Announcements() {
   const { title, body, audience, sms, important } = form
 
   // ---------- Server state ----------
-  const { data: list, reload } = useApi('/admin/announcements', null, { fallback: [] })
-  const { data: units } = useApi('/admin/units', null, { fallback: [] }) // орц бүрийн тоотын тоонд
+  const { data: list, reload } = useApi('/admin/announcements', null, { fallback: [], live: ['announcements'] })
+  const { data: units } = useApi('/admin/units', null, { fallback: [], live: ['units', 'users'] }) // орц бүрийн тоотын тоонд
   const posts = list.map(toPost)
 
   // Derived — "Хэнд" сонголт бүрийн тоотын тоо

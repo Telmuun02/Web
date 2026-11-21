@@ -106,12 +106,12 @@ export default function Invoices() {
     tab === 'debtors' ? null : '/admin/invoices',
     { status, q },
     toRow,
-    { delay: 300 },
+    { delay: 300, live: ['invoices', 'payments'] },
   )
   // Табуудын тоо — таб солиход өөрчлөгдөхгүй, зөвхөн хайлтаас хамаарна
-  const { data: counts, reload: reloadCounts } = useApi('/admin/invoices/counts', { q }, { fallback: {}, delay: 300 })
+  const { data: counts, reload: reloadCounts } = useApi('/admin/invoices/counts', { q }, { fallback: {}, delay: 300, live: ['invoices', 'payments'] })
   // Өр ихтэй бүх тоот — backend өр ихээс нь эрэмбэлж, өргүй тоотыг оруулдаггүй
-  const { data: debtors } = useApi('/admin/dashboard/debtors', { limit: 1000 }, { fallback: [] })
+  const { data: debtors } = useApi('/admin/dashboard/debtors', { limit: 1000 }, { fallback: [], live: ['invoices', 'payments'] })
 
   const now = new Date()
   // Төлөх хугацаа — дараа сарын 10 (12-р сард 1-р сар болно)

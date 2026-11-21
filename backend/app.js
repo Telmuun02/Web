@@ -9,7 +9,7 @@ var apiRouter = require('./routes/api');
 
 var app = express();
 
-// Cloudflare (Pages proxy + Tunnel)-аар дамжих тул req.ip-г X-Forwarded-For-оос авна.
+// Cloudflare-аар дамжих тул req.ip-г X-Forwarded-For-оос авна.
 app.set('trust proxy', true);
 
 // Хүсэлт бүр терминалд товч харагдана (файлд бичихгүй).

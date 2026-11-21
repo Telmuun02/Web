@@ -85,9 +85,9 @@ export default function Requests() {
 
   // ---------- Server state ----------
   // Таб солигдоход эхний хуудаснаас дахин татна, доош гүйлгэхэд дараагийн хуудас
-  const { rows: items, loading, error, setRows, sentinelRef } = usePagedList('/admin/requests', { stage: tab }, toRow)
-  const { data: counts, reload: reloadCounts } = useApi('/admin/requests/counts', null, { fallback: {} }) // табуудын тоо
-  const { data: staff } = useApi('/admin/staff', null, { fallback: [] }) // хариуцагч сонгох жагсаалт
+  const { rows: items, loading, error, setRows, sentinelRef } = usePagedList('/admin/requests', { stage: tab }, toRow, { live: ['requests'] })
+  const { data: counts, reload: reloadCounts } = useApi('/admin/requests/counts', null, { fallback: {}, live: ['requests'] }) // табуудын тоо
+  const { data: staff } = useApi('/admin/staff', null, { fallback: [], live: ['admins'] }) // хариуцагч сонгох жагсаалт
 
   // Derived — сонгосон нь энэ табд байхгүй (эсвэл юу ч сонгоогүй) бол эхнийх нь.
   // Тэгэхээр таб солиход "эхнийхийг сонгох" state шинэчлэл хэрэггүй

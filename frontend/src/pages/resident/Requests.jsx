@@ -38,7 +38,7 @@ export default function Requests() {
   const [form, setForm] = useState(emptyForm)
   const [status, setStatus] = useState({ sending: false, toast: '', freshId: null })
   // GET /api/resident/requests — илгээсний дараа reload хийнэ
-  const { data: list, loading, error, reload } = useApi('/resident/requests', null, { fallback: [] })
+  const { data: list, loading, error, reload } = useApi('/resident/requests', null, { fallback: [], live: ['requests'] })
   const { type, title, body } = form
 
   // Нэг талбарыг солино: set('type')('electrical')

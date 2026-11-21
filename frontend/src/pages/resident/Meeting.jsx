@@ -36,7 +36,7 @@ function AvatarIcon({ d, size }) {
 export default function Meeting() {
   const { user } = useOutletContext()
   // GET /api/resident/meeting — удахгүй болох хурал, хэлэлцэх асуудалтай нь
-  const { data, error } = useApi('/resident/meeting', null, { fallback: null })
+  const { data, error } = useApi('/resident/meeting', null, { fallback: null, live: ['meetings', 'polls', 'poll_votes'] })
   // Хуралд хэрхэн орох тохиргоо — 3 утга хамт.
   // mode: 'avatar' — нүүрээ нууцлах, 'cam' — камертай; avatar — сонгосон аватарын дугаар
   const [look, setLook] = useState({ mode: 'avatar', avatar: 0, micOff: true })

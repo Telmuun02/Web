@@ -55,7 +55,7 @@ const qrCells = buildQr()
 export default function Pay() {
   const { user } = useOutletContext()
   // GET /api/resident/pay — төлсний дараа POST-ын хариугаар шууд солигдоно
-  const { data: loaded, error } = useApi('/resident/pay', null, { fallback: null })
+  const { data: loaded, error } = useApi('/resident/pay', null, { fallback: null, live: ['invoices', 'payments'] })
   const [fresh, setFresh] = useState(null) // демо төлбөрийн дараах шинэ өгөгдөл
   const [state, setState] = useState({ sending: false, message: '' })
   const data = fresh ?? loaded

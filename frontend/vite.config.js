@@ -5,9 +5,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // /api-аар эхэлсэн хүсэлтийг Express (:3000) руу дамжуулна
+    // /api-аар эхэлсэн хүсэлтийг Express (:3000) руу дамжуулна, ws: true — /api/realtime WebSocket-ийг ч мөн
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': { target: 'http://localhost:3000', ws: true },
     },
   },
 })

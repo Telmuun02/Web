@@ -60,10 +60,10 @@ export default function Polls() {
   const [toast, setToast] = useState('')
 
   // ---------- Server state ----------
-  const { data: list, reload } = useApi('/admin/polls', null, { fallback: [] })
+  const { data: list, reload } = useApi('/admin/polls', null, { fallback: [], live: ['polls', 'poll_votes'] })
   const activeItem = list.find((p) => p.status === 'active')
   // Идэвхтэй санал хураалтын дэлгэрэнгүй — сонголт бүрийн санал
-  const { data: active } = useApi(activeItem ? `/admin/polls/${activeItem.id}` : null, null, { fallback: null })
+  const { data: active } = useApi(activeItem ? `/admin/polls/${activeItem.id}` : null, null, { fallback: null, live: ['polls', 'poll_votes'] })
   const poll = active?.id === activeItem?.id ? active : null
 
   // Derived

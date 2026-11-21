@@ -29,7 +29,7 @@ const initialNotify = Object.fromEntries(notifySettings.map((s) => [s.key, s.on]
 export default function Profile() {
   const { user, onLogout } = useOutletContext()
   // GET /api/resident/profile — тоот, нэг тоотод бүртгэлтэй гишүүд, цагтаа төлсөн сар
-  const { data, error } = useApi('/resident/profile', null, { fallback: null })
+  const { data, error } = useApi('/resident/profile', null, { fallback: null, live: ['users', 'payments', 'invoices'] })
   // Бүх тохиргоо нэг object-д: мэдэгдлийн унтраалгууд + үсгийн хэмжээ
   const [prefs, setPrefs] = useState({ ...initialNotify, fontSize: 'm' })
 

@@ -79,7 +79,7 @@ export default function Dashboard() {
 
   // ---------- Server state ----------
   // GET /api/admin/dashboard — 30 сек тутам шинэчилнэ (WebSocket нэмэгдэхэд түлхэлтээр солигдоно)
-  const { data, error } = useApi('/admin/dashboard', null, { fallback: null, refreshEvery: 30 })
+  const { data, error } = useApi('/admin/dashboard', null, { fallback: null, refreshEvery: 120, live: ['payments', 'invoices', 'requests', 'polls', 'poll_votes', 'admins'] })
   const { online } = sampleStats // апп-д онлайн — DB-д өгөгдөл алга
 
   // Товч дарахад өөрчлөгдөх хэсгүүд — одоохондоо зөвхөн дэлгэц дээр (backend-д хадгалахгүй)

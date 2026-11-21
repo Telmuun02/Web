@@ -22,6 +22,11 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	// Realtime (WebSocket) — бүх холболтыг барих Durable Object (lib/realtime/durable.js)
+	"durable_objects": {
+		"bindings": [{ "name": "REALTIME", "class_name": "RealtimeHub" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["RealtimeHub"] }],
 	// Frontend (Vite build). /api/* хүсэлт Worker-т, бусад нь шууд эндээс; React Router-ийн замууд index.html руу
 	"assets": {
 		"directory": "../frontend/dist",

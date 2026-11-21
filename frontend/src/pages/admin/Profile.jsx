@@ -53,7 +53,7 @@ export default function Profile() {
   const live = useLive('profile') // "ШУУД" мөр — /api/admin/live/profile
   // GET /api/admin/activity — энэ сарын тоо, сүүлийн үйлдлүүд
   const { data: activity } = useApi('/admin/activity', null, { fallback: { counts: {}, recent: [] }, live: ['payments', 'announcements', 'polls'] })
-  const { user, onLogout } = useOutletContext()
+  const { user, onLogout, onUserChange } = useOutletContext()
   // Хувийн мэдээллийн form — 4 талбар хамт хадгалагдана. password — өөрчлөлтөө баталгаажуулах нууц үг.
   // Нэрийг дээд хэсэгт бичих зуур харуулдаг тул FormData биш state
   const [form, setForm] = useState({
@@ -79,7 +79,8 @@ export default function Profile() {
   async function saveInfo() {
     setError('')
     try {
-      await api.put('/profile', form)
+      const updated = await api.put('/profile', form)
+      onUserChange?.({ ...user, ...updated }) // sidebar дээрх нэр шууд солигдоно
       setForm((f) => ({ ...f, password: '' })) // нууц үгийг талбарт үлдээхгүй
       setToast('Хувийн мэдээлэл хадгалагдлаа')
     } catch (err) {

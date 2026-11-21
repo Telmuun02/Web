@@ -1,0 +1,237 @@
+.admin-chat {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-chat-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--on-green);
+}
+
+.admin-chat-live i {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--on-green);
+  animation: admin-chat-pulse 1.2s ease-in-out infinite;
+}
+
+.admin-chat-error {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--tint-red);
+  color: var(--on-red);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-chat-columns {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* ---------- Жагсаалт ---------- */
+.admin-chat-list {
+  flex: 1 1 340px;
+  min-width: 0;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-chat-item {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-chat-item.on {
+  border-color: var(--accent);
+}
+
+.admin-chat-av {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tint-navy);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.admin-chat-av.group {
+  border-radius: 14px;
+  background: var(--navy);
+  color: var(--yellow);
+}
+
+.admin-chat-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-chat-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-chat-item-top strong {
+  font-size: 15px;
+}
+
+.admin-chat-item-top small {
+  font-size: 11px;
+  color: var(--muted-text);
+  white-space: nowrap;
+}
+
+.admin-chat-last {
+  font-size: 13px;
+  color: var(--muted-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-chat-last.unread {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.admin-chat-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--yellow);
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-chat-empty {
+  margin: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-text);
+}
+
+/* ---------- Нээлттэй чат ---------- */
+.admin-chat-room {
+  flex: 2 1 520px;
+  min-width: 0;
+  height: 680px;
+  max-height: calc(100vh - 220px);
+  min-height: 460px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.admin-chat-placeholder {
+  margin: auto;
+  color: var(--muted-text);
+  font-size: 14px;
+}
+
+.admin-chat-head {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.admin-chat-head .admin-chat-av {
+  width: 40px;
+  height: 40px;
+}
+
+.admin-chat-head-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-chat-head-text strong {
+  font-size: 16px;
+}
+
+.admin-chat-head-text small {
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
+.admin-chat-back {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  background: var(--page-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+@keyframes admin-chat-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-chat-live i {
+    animation: none;
+  }
+}
+
+/* Жижиг дэлгэц: нэг удаад жагсаалт эсвэл чат л харагдана (утасны дизайн шиг) */
+@media (max-width: 860px) {
+  .admin-chat-list {
+    max-width: none;
+  }
+
+  .admin-chat-columns.has-room .admin-chat-list,
+  .admin-chat-columns:not(.has-room) .admin-chat-room {
+    display: none;
+  }
+
+  .admin-chat-back {
+    display: flex;
+  }
+}

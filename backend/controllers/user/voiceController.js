@@ -1,6 +1,6 @@
 /**
- * Дуу → текст - /api/resident/transcribe
- * Хуудас: чатбот цонхны микрофон (ChatWidget)
+ * Дуу → текст - /api/resident/transcribe, /api/admin/transcribe
+ * Хуудас: чатбот цонхны микрофон (ChatWidget) — оршин суугч, ажилтан хоёулаа
  *
  * transcribe - WAV дууг Chimege-ээр текст болгоно (services/chimegeService)
  *   POST /api/resident/transcribe - WAV body → { text }

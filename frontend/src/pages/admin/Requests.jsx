@@ -64,7 +64,8 @@ function toRow(r) {
   return {
     id: r.id,
     unit: r.unit_code ?? '—',
-    name: r.created_by_name ?? '—',
+    // "Нэрээ нууцлах" — нэрийг зөвхөн дарга харна, бусдад backend нэргүй ирүүлнэ
+    name: r.anonymous ? (r.created_by_name ? `${r.created_by_name} (нэрээ нууцалсан)` : 'Нэрээ нууцалсан') : (r.created_by_name ?? '—'),
     cat: categoryLabels[r.category] ?? r.category,
     title: r.title,
     desc: r.description ?? '',

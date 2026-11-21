@@ -15,6 +15,7 @@ const historyColumns = [
   { label: 'Төлсөн огноо' },
   { label: 'Хэлбэр' },
   { label: 'Дүн', align: 'right' },
+  { label: 'Баримт', align: 'right' },
 ]
 
 // payments.method → дэлгэцийн нэр
@@ -24,6 +25,37 @@ const methodNames = { qpay: 'QPay', bank: 'Дансаар', cash: 'Бэлнээ�
 const banks = ['Хаан', 'Голомт', 'ХХБ', 'Бусад']
 
 const qrSize = 21 // QR код 21 × 21 нүдтэй
+
+// HTML-д аюулгүй болгоно (нэр, тоот зэргийг баримтад оруулахад)
+function escapeHtml(text) {
+  return String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+}
+
+// Төлбөрийн баримт — шинэ цонхонд нээж хэвлэх цонхыг гаргана ("Save as PDF" сонгож PDF болгоно)
+function printReceipt(payment, unit, user) {
+  const win = window.open('', '_blank', 'width=480,height=640')
+  if (!win) return
+  const paidAt = new Date(payment.paid_at)
+  const rows = [
+    ['Баримтын дугаар', `P-${payment.id}`],
+    ['Төлөгч', user.name],
+    ['Тоот', `${unit.code} тоот`],
+    ['Сар', `${monthOf(payment.period)}-р сарын хураамж`],
+    ['Төлсөн огноо', `${paidAt.toLocaleDateString('en-CA')} ${paidAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`],
+    ['Хэлбэр', methodNames[payment.method] ?? payment.method],
+  ]
+  win.document.write(`<!doctype html><html lang="mn"><head><meta charset="utf-8"><title>Төлбөрийн баримт P-${payment.id}</title>
+<style>body{font-family:system-ui,sans-serif;color:#1a1547;margin:32px}h1{font-size:20px;margin:0 0 4px}p{margin:0 0 20px;color:#5b5775}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:8px 0;border-bottom:1px solid #e3e0ef}td:last-child{text-align:right;font-weight:600}
+.total{display:flex;justify-content:space-between;margin-top:20px;font-size:18px;font-weight:800}</style></head><body>
+<h1>СӨХ Hub — төлбөрийн баримт</h1><p>Энэхүү баримт нь төлбөр хүлээн авсныг баталгаажуулна.</p>
+<table>${rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join('')}</table>
+<div class="total"><span>Нийт</span><span>${escapeHtml(money(payment.amount))}</span></div>
+</body></html>`)
+  win.document.close()
+  win.focus()
+  win.print()
+}
 
 // Жишээ QR кодын нүднүүд — гурван буланд "харах дөрвөлжин", бусад нь хээ.
 // Жинхэнэ QR биш, QPay-ийн API холбогдоход серверээс ирсэн зургаар солигдоно
@@ -188,6 +220,9 @@ export default function Pay() {
                 <td className="dim">{monthDay(h.paid_at)}</td>
                 <td className="dim">{methodNames[h.method] ?? h.method}</td>
                 <td className="num bold">{money(h.amount)}</td>
+                <td className="num">
+                  <button type="button" className="pay-receipt" onClick={() => printReceipt(h, unit, user)} aria-label={`${monthOf(h.period)}-р сарын баримт (PDF)`}>PDF</button>
+                </td>
               </tr>
             ))}
           </Table>

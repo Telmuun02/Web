@@ -10,10 +10,23 @@
  *   GET /api/admin/requests/open-count
  * update - төлөв солих, засварчин томилох
  *   PATCH /api/admin/requests/:id
+ *
+ * viewer(req) - (дотоод) хүсэлт үзэж буй ажилтан дарга эсэх
+ * mask(row, chairman) - (дотоод) "Нэрээ нууцлах" хүсэлтийн илгээгчийг даргаас бусдад нууна
  */
 
 var { Requests, Admins } = require('../../db/models');
 var log = require('../../lib/logger').child({ module: 'admin/requests' });
+
+async function viewer(req) {
+  var admin = await Admins.find(req.user.id);
+  return Boolean(admin && admin.position === 'chairman');
+}
+
+function mask(row, chairman) {
+  if (!row.anonymous || chairman) return { ...row, anonymous: Boolean(row.anonymous) };
+  return { ...row, anonymous: true, created_by: null, created_by_name: null };
+}
 
 async function index(req, res, next) {
   try {
@@ -22,11 +35,11 @@ async function index(req, res, next) {
     var limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
     var offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
-    var rows = await Requests.list({ stage: stage, limit: limit + 1, offset: offset });
+    var [rows, chairman] = await Promise.all([Requests.list({ stage: stage, limit: limit + 1, offset: offset }), viewer(req)]);
     var hasMore = rows.length > limit;
 
     res.json({
-      rows: rows.slice(0, limit),
+      rows: rows.slice(0, limit).map(function (r) { return mask(r, chairman); }),
       has_more: hasMore,
       next_offset: hasMore ? offset + limit : null,
     });
@@ -88,7 +101,7 @@ async function update(req, res, next) {
       assignedTo: hasAssignee ? { from: request.assigned_to, to: updated.assigned_to } : undefined,
     }, 'Засварын хүсэлт шинэчиллээ');
 
-    res.json({ ...updated, stage: Requests.stageOf(updated) });
+    res.json(mask({ ...updated, stage: Requests.stageOf(updated) }, await viewer(req)));
   } catch (err) {
     next(err);
   }

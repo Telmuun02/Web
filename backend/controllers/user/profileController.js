@@ -2,12 +2,13 @@
  * Профайл - /api/resident/profile
  * Хуудас: resident Profile (/profile)
  *
- * show - өөрийн мэдээлэл, тоот, гэр бүл, хугацаандаа төлсөн сарын тоо
+ * show - өөрийн мэдээлэл, тоот, гэр бүл (апп-д нэвтэрч чадах эсэхтэй), хугацаандаа төлсөн сарын тоо
  *   GET /api/resident/profile
  * (засах нь PUT /api/profile - controllers/profileController.js)
  */
 
-var { Users, Invoices } = require('../../db/models');
+var db = require('../../db');
+var { Invoices } = require('../../db/models');
 var { currentResident } = require('./helpers');
 var log = require('../../lib/logger').child({ module: 'user/profile' });
 
@@ -20,7 +21,7 @@ async function show(req, res, next) {
     var onTime = 0;
     if (me.unit) {
       [family, onTime] = await Promise.all([
-        Users.where({ unit_id: me.unit.id }),
+        db('users').select('id', 'name').select(db.raw('password_hash IS NOT NULL AS has_app')).where({ unit_id: me.unit.id }).orderBy('id'),
         Invoices.onTimeCount(me.unit.id),
       ]);
     }
@@ -31,7 +32,7 @@ async function show(req, res, next) {
       user: me.user,
       unit: me.unit ? { id: me.unit.id, code: me.unit.code, entrance: me.unit.entrance, floor: me.unit.floor } : null,
       family: family.map(function (f) {
-        return { id: f.id, name: f.name, me: f.id === me.user.id };
+        return { id: f.id, name: f.name, me: f.id === me.user.id, app: Boolean(f.has_app) };
       }),
       on_time_months: onTime,
     });

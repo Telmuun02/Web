@@ -1,6 +1,8 @@
 // Realtime — сервертэй нэг л WebSocket холболт, бүх хуудас хуваалцана.
 //   const off = subscribe((msg) => { ... })   // msg: { type: 'change', tables } эсвэл { type: 'notify', title, body, link }
 //   off()                                     // хуудаснаас гарахад
+//   send({ type: 'typing', room })            // сервер рүү (чатын "бичиж байна", онлайн жагсаалт асуух)
+// Холбогдох бүрт (дахин холбогдсон ч) listener-үүд { type: 'connected' } авна — онлайн жагсаалтаа дахин асууна.
 // Эхний subscribe холболтыг нээж, сүүлийнх нь гарснаас 1 сек хойш хаана (гарсан хэрэглэгчид холболт үлдэхгүй;
 // StrictMode-ийн давхар mount, хуудас солих үед холболт дэмий тасарч нээгдэхгүй).
 // Тасарвал 1с → 2с → 4с ... 30с хүртэл хүлээгээд дахин холбогдоно. 4001 = нэвтрэлт дууссан → /login.
@@ -27,6 +29,7 @@ function connect() {
 
   socket.onopen = () => {
     retryMs = 1000
+    listeners.forEach((fn) => fn({ type: 'connected' }))
     pingTimer = setInterval(() => socket?.readyState === WebSocket.OPEN && socket.send('ping'), PING_MS)
   }
 
@@ -65,6 +68,11 @@ function disconnect() {
     socket.close()
     socket = null
   }
+}
+
+// Холболт нээлттэй бол илгээнэ, үгүй бол хаяна (typing, presence алдагдсан ч зүгээр)
+export function send(data) {
+  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data))
 }
 
 export function subscribe(fn) {

@@ -263,3 +263,18 @@
     animation: none;
   }
 }
+
+/* "Саналаа өөрчлөх" — хар хөх карт дээрх тунгалаг товч */
+.nw-change {
+  align-self: flex-start;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--link);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}

@@ -3,15 +3,25 @@
  * Workers (lib/realtime/durable.js) болон Node (lib/realtime/node.js) хоёулаа үүнийг ашиглана,
  * тэд зөвхөн WebSocket-оо хэрхэн барьж, илгээхээрээ ялгаатай.
  *
- * Client бүр { role: 'admin' | 'user', id, unitId, entranceId } гэсэн "хэн бэ" мэдээлэлтэй.
+ * Client бүр { conn, role: 'admin' | 'user', id, name, unitId, entranceId } гэсэн "хэн бэ" мэдээлэлтэй
+ * (conn — холболт бүрийн давтагдахгүй дугаар).
  * Илгээх мессежүүд:
  *   { type: 'change', tables: ['requests', ...] } — хуудас тухайн хүснэгтээс хамааралтай бол дахин татна
  *   { type: 'notify', title, body, link }          — toast мэдэгдэл
+ *   { type: 'chat', message }                      — чатын шинэ / нуусан мессеж, зөвхөн өрөөнийхөнд
+ *   { type: 'typing', room, who }                  — өрөөнд хэн нэгэн бичиж байна
+ *   { type: 'presence', room, online }             — өрөөний онлайн хүмүүс (асуухад хариулна)
+ *   { type: 'presence_changed' }                   — хэн нэгэн холбогдох / гарахад, онлайн жагсаалтаа дахин асууна
+ * Client-ээс ирэх: { type: 'typing', room }, { type: 'presence', room }
  *
  * latestId() - change_log-ийн хамгийн сүүлийн id (анх эхлэхэд хуучин өөрчлөлтүүдийг алгасна)
  * read(afterId) - afterId-аас хойшхи өөрчлөлтүүд
  * plan(changes) - өөрчлөлтүүдээс илгээх жагсаалт [{ to, msg }] гаргана
- * messageFor(client, item) - plan-ий нэг зүйлээс тухайн client-д илгээх мессеж (хамаагүй бол null)
+ * messageFor(client, item) - plan-ий нэг зүйлээс тухайн client-д илгээх мессеж (хамаагүй бол null).
+ *   Нуусан чатын мессежийн бичвэрийг оршин суугчид илгээхгүй
+ * incoming(client, text, clients) - client-ээс ирсэн мессежид хариу: [{ conn, msg }] — хэнд юу илгээх
+ * online(room, clients) - (дотоод) өрөөний онлайн хүмүүс, хүн бүр нэг удаа
+ * chatItems(changes) - (дотоод) чатын мессежүүдийг өрөөнийхөнд, хувийн чатын шинэ мессежийг toast болгоно
  * matches(client, to) - (дотоод) client энэ хүлээн авагчид орох эсэх
  * changesFor(client, changes) - (дотоод) client-д харагдах хүснэгтүүд: ажилтан бүгдийг,
  *   оршин суугч нийтийнхийг (зарлал, санал хураалт, хурал) болон өөрийн тоотынхыг л харна
@@ -21,6 +31,7 @@
  */
 
 var db = require('../../db');
+var Messages = require('../../db/models/messages');
 var log = require('../logger').child({ module: 'realtime' });
 
 var BATCH = 200;
@@ -114,6 +125,12 @@ async function plan(changes) {
   var list = [{ to: { each: true }, changes: changes }];
 
   try {
+    list = list.concat(await chatItems(changes));
+  } catch (err) {
+    log.error({ err: err }, 'Чатын мессеж бэлдэж чадсангүй');
+  }
+
+  try {
     (await notifications(changes)).forEach(function (n) {
       list.push({ to: n.to, msg: Object.assign({ type: 'notify' }, n.msg) });
     });
@@ -123,7 +140,30 @@ async function plan(changes) {
   return list;
 }
 
+async function chatItems(changes) {
+  var out = [];
+  var picked = changes.filter(function (c) { return c.tbl === 'chat_messages'; }).slice(-50);
+
+  for (var c of picked) {
+    var message = await Messages.find(c.row_id);
+    if (!message) continue;
+    out.push({ to: { room: message.room }, msg: { type: 'chat', message: message } });
+
+    var room = Messages.parseRoom(message.room);
+    if (c.op !== 'insert' || !room || room.kind !== 'soh') continue;
+    var preview = message.body.length > 80 ? message.body.slice(0, 80) + '…' : message.body;
+    if (message.sender.type === 'admin') {
+      out.push({ to: { userId: room.id }, msg: { type: 'notify', title: 'СӨХ-ээс мессеж', body: message.sender.name + ': ' + preview, link: '/chat' } });
+    } else {
+      out.push({ to: { role: 'admin' }, msg: { type: 'notify', title: 'Шинэ мессеж · ' + message.sender.sub, body: message.sender.name + ': ' + preview, link: '/admin/chat' } });
+    }
+  }
+  return out;
+}
+
 function matches(client, to) {
+  if (to.room && !Messages.canAccess(client, to.room)) return false;
+  if (to.userId && (client.role !== 'user' || client.id !== to.userId)) return false;
   if (to.role && client.role !== to.role) return false;
   if (to.unitId && (client.role !== 'user' || client.unitId !== to.unitId)) return false;
   if (to.entranceId && client.entranceId !== to.entranceId) return false;
@@ -135,7 +175,46 @@ function messageFor(client, item) {
     var tables = changesFor(client, item.changes);
     return tables.length ? { type: 'change', tables: tables } : null;
   }
-  return matches(client, item.to) ? item.msg : null;
+  if (!matches(client, item.to)) return null;
+  if (item.msg.type === 'chat' && item.msg.message.hidden && client.role !== 'admin') {
+    return { type: 'chat', message: Object.assign({}, item.msg.message, { body: 'СӨХ энэ мессежийг нуусан' }) };
+  }
+  return item.msg;
 }
 
-module.exports = { latestId, read, plan, messageFor };
+function online(room, clients) {
+  var seen = {};
+  var people = [];
+  clients.forEach(function (c) {
+    var key = c.role + ':' + c.id;
+    if (seen[key] || !Messages.canAccess(c, room)) return;
+    seen[key] = true;
+    people.push({ role: c.role, id: c.id, name: c.name });
+  });
+  return people;
+}
+
+function incoming(client, text, clients) {
+  var data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    return [];
+  }
+  if (!data || !Messages.canAccess(client, data.room)) return [];
+
+  if (data.type === 'typing') {
+    return clients
+      .filter(function (c) { return c.conn !== client.conn && Messages.canAccess(c, data.room); })
+      .map(function (c) {
+        return { conn: c.conn, msg: { type: 'typing', room: data.room, who: { role: client.role, id: client.id, name: client.name } } };
+      });
+  }
+
+  if (data.type === 'presence') {
+    return [{ conn: client.conn, msg: { type: 'presence', room: data.room, online: online(data.room, clients) } }];
+  }
+  return [];
+}
+
+module.exports = { latestId, read, plan, messageFor, incoming };

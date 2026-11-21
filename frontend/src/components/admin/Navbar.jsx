@@ -9,6 +9,7 @@ import './Navbar.css'
 import BarChartOutlined from '@mui/icons-material/BarChartOutlined'
 import BuildOutlined from '@mui/icons-material/BuildOutlined'
 import CampaignOutlined from '@mui/icons-material/CampaignOutlined'
+import ForumOutlined from '@mui/icons-material/ForumOutlined'
 import DashboardOutlined from '@mui/icons-material/DashboardOutlined'
 import HowToVoteOutlined from '@mui/icons-material/HowToVoteOutlined'
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
@@ -27,6 +28,7 @@ const menuItems = [
   { path: '/admin/requests',      label: 'Засварын хүсэлт',     roles: ['admin', 'user'], icon: BuildOutlined },
   { path: '/admin/announcements', label: 'Зарлал',              roles: ['admin', 'user'], icon: CampaignOutlined },
   { path: '/admin/polls',         label: 'Санал хураалт',       roles: ['admin', 'user'], icon: HowToVoteOutlined },
+  { path: '/admin/chat',          label: 'Чат',                 roles: ['admin', 'user'], icon: ForumOutlined },
   { path: '/admin/units',         label: 'Тоот ба оршин суугч', roles: ['admin'],         icon: PeopleOutlined },
   { path: '/admin/reports',       label: 'Тайлан',              roles: ['admin', 'user'],         icon: BarChartOutlined },
   { path: '/admin/settings',      label: 'Тохиргоо',            roles: ['admin'],         icon: SettingsOutlined },
@@ -40,14 +42,14 @@ export default function Navbar({ user, onLogout }) {
     item.roles.includes(user?.role)
   )
 
-  // Цэсний тоонууд — замаар нь: { '/requests': 7 }
+  // Цэсний тоонууд — замаар нь: { '/admin/requests': 7 }
   const [badges, setBadges] = useState({})
 
   // Нэвтэрсэн үед нээлттэй засварын хүсэлтийн тоог авна. Алдаа гарвал тоо харуулахгүй л болно
   useEffect(() => {
     if (!user) return
     api.get('/admin/requests/open-count')
-      .then((res) => setBadges({ '/requests': res.count }))
+      .then((res) => setBadges({ '/admin/requests': res.count }))
       .catch(() => setBadges({}))
   }, [user])
 

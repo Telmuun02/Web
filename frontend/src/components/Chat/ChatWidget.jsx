@@ -9,17 +9,36 @@ import api from '../../api/client'
 import { useRecorder } from '../../hooks/useRecorder'
 import './ChatWidget.css'
 
-const GREETING = { from: 'bot', text: 'Сайн байна уу! Би СӨХ Hub-ын туслах. Танд юугаар туслах вэ?' }
+// Оршин суугч, ажилтан хоёрт өөр API, мэндчилгээ.
+// history — ажилтны бот өмнөх мессежүүдийг (сүүлийн 10) хамт авч "тэр тоот" гэх мэт үргэлжлүүлсэн асуултыг ойлгоно.
+// Оршин суугчийнх зардал хэмнэхийн тулд зөвхөн одоогийн мессежийг авна
+const MODES = {
+  resident: {
+    chat: '/resident/chat',
+    transcribe: '/resident/transcribe',
+    title: 'СӨХ туслах',
+    greeting: 'Сайн байна уу! Би СӨХ Hub-ын туслах. Танд юугаар туслах вэ?',
+    history: false,
+  },
+  admin: {
+    chat: '/admin/chat',
+    transcribe: '/admin/transcribe',
+    title: 'Ажилтны туслах',
+    greeting: 'Сайн байна уу! Би ажилтны туслах. Өр, төлбөр, хүсэлт, тоот, оршин суугч, зарлага, санал хураалтын талаар асуугаарай. Жишээ нь: "Энэ сарын цуглуулалт хэд хувьтай байна?"',
+    history: true,
+  },
+}
+const HISTORY = 10
 
 // Чатыг зөвхөн энэ tab-ын sessionStorage-д хадгална — хуудас солих, refresh хийхэд үлдэнэ,
 // tab хаахад устна. Хэрэглэгч бүрт тусдаа түлхүүр — нэг tab-д өөр хүн нэвтэрвэл холилдохгүй
-function storageKey(userId) {
-  return `chat:${userId}`
+function storageKey(mode, userId) {
+  return `chat:${mode}:${userId}`
 }
 
-function loadMessages(userId) {
+function loadMessages(mode, userId) {
   try {
-    const saved = JSON.parse(sessionStorage.getItem(storageKey(userId)))
+    const saved = JSON.parse(sessionStorage.getItem(storageKey(mode, userId)))
     if (Array.isArray(saved) && saved.length) {
       // Хариулт ирэхээс өмнө refresh хийсэн бол "хүлээж байна" төлөвт гацахгүй
       if (saved[saved.length - 1].from === 'user') {
@@ -30,14 +49,16 @@ function loadMessages(userId) {
   } catch {
     // Хадгалсан зүйл эвдэрсэн эсвэл sessionStorage хаалттай — шинээр эхэлнэ
   }
-  return [GREETING]
+  return [{ from: 'bot', text: MODES[mode].greeting }]
 }
 
-// Оршин суугчийн чатбот — баруун доод буланд бөөрөнхий товч, дарахад чатын цонх гарна.
+// Чатбот — баруун доод буланд бөөрөнхий товч, дарахад чатын цонх гарна.
+// mode: 'resident' (ResidentLayout) | 'admin' (Layout)
 // messages: [{ from: 'user' | 'bot', text, error? }]
-export default function ChatWidget({ userId }) {
+export default function ChatWidget({ userId, mode = 'resident' }) {
+  const config = MODES[mode]
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState(() => loadMessages(userId))
+  const [messages, setMessages] = useState(() => loadMessages(mode, userId))
   const [transcribing, setTranscribing] = useState(false) // дууг текст болгож байгаа эсэх
   const listRef = useRef(null)
   const inputRef = useRef(null)
@@ -51,11 +72,11 @@ export default function ChatWidget({ userId }) {
   // Өөрчлөгдөх бүрт sessionStorage-д хадгална
   useEffect(() => {
     try {
-      sessionStorage.setItem(storageKey(userId), JSON.stringify(messages))
+      sessionStorage.setItem(storageKey(mode, userId), JSON.stringify(messages))
     } catch {
       // Хадгалж чадахгүй бол зүгээр — зөвхөн refresh хийхэд чат алга болно
     }
-  }, [messages, userId])
+  }, [messages, mode, userId])
 
   // Шинэ мессеж нэмэгдэх бүрт хамгийн доод руу гүйлгэнэ
   useEffect(() => {
@@ -116,7 +137,7 @@ export default function ChatWidget({ userId }) {
   // Дууг текст болгоно — backend-ээр дамжуулж Chimege руу
   // (Chimege токен frontend-д байж болохгүй тул шууд хандахгүй)
   async function transcribe(wav) {
-    const { text } = await api.post('/resident/transcribe', wav, {
+    const { text } = await api.post(config.transcribe, wav, {
       headers: { 'Content-Type': 'audio/wav' },
     })
     return text
@@ -147,11 +168,15 @@ export default function ChatWidget({ userId }) {
     form.reset()
     autoGrow()
 
+    // Ажилтны бот: өмнөх мессежүүдийг (мэндчилгээ, алдаагүй) хамт илгээнэ. Оршин суугчийнх: зөвхөн одоогийнхыг
+    const history = config.history
+      ? messages.slice(1).filter((m) => !m.error).slice(-HISTORY).map(({ from, text: t }) => ({ from, text: t }))
+      : undefined
+
     setMessages((m) => [...m, { from: 'user', text }])
 
-    // Зөвхөн одоогийн мессежийг илгээнэ — түүх дэлгэц дээр л үлдэнэ (зардал хэмнэнэ)
     try {
-      const { reply } = await api.post('/resident/chat', { text })
+      const { reply } = await api.post(config.chat, { text, history })
       setMessages((m) => [...m, { from: 'bot', text: reply }])
     } catch (err) {
       setMessages((m) => [...m, { from: 'bot', text: err.message, error: true }])
@@ -165,7 +190,7 @@ export default function ChatWidget({ userId }) {
           <header className="chat-head">
             <span className="chat-avatar"><SmartToyOutlined sx={{ fontSize: 20 }} /></span>
             <div className="chat-title">
-              <strong>СӨХ туслах</strong>
+              <strong>{config.title}</strong>
               <span>{waiting ? 'Бичиж байна...' : 'Онлайн'}</span>
             </div>
             <button type="button" className="chat-close" onClick={() => setOpen(false)} aria-label="Хаах">

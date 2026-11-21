@@ -181,3 +181,38 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* "Засах" маягт */
+.pf-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.pf-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pf-error {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--tint-red);
+  color: var(--on-red);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Гэр бүлийн гишүүн апп-д нэвтэрч чадах эсэх */
+.pf-app {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+.pf-app.on {
+  color: var(--on-green);
+}

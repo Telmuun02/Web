@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
 import Field from '../../components/UI/Field'
+import Switch from '../../components/UI/Switch'
 import PageHeader from '../../components/UI/PageHeader'
 import Toast from '../../components/UI/Toast'
 import api from '../../api/client'
@@ -31,7 +32,7 @@ function requestNote(r) {
 }
 
 // Шинэ хүсэлтийн анхны утгууд
-const emptyForm = { type: 'plumbing', title: '', body: '' }
+const emptyForm = { type: 'plumbing', title: '', body: '', anonymous: false }
 
 export default function Requests() {
   // Шинэ хүсэлтийн form — "Илгээх" товч гарчгийн уртаас хамаарч идэвхжих тул FormData биш state
@@ -39,7 +40,7 @@ export default function Requests() {
   const [status, setStatus] = useState({ sending: false, toast: '', freshId: null })
   // GET /api/resident/requests — илгээсний дараа reload хийнэ
   const { data: list, loading, error, reload } = useApi('/resident/requests', null, { fallback: [], live: ['requests'] })
-  const { type, title, body } = form
+  const { type, title, body, anonymous } = form
 
   // Нэг талбарыг солино: set('type')('electrical')
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
@@ -51,7 +52,7 @@ export default function Requests() {
     if (cantSend) return
     setStatus({ sending: true, toast: '', freshId: null })
     try {
-      const created = await api.post('/resident/requests', { category: type, title: title.trim(), description: body.trim() })
+      const created = await api.post('/resident/requests', { category: type, title: title.trim(), description: body.trim(), anonymous })
       setForm((f) => ({ ...f, title: '', body: '' })) // төрөл хэвээр үлдэнэ
       setStatus({ sending: false, toast: 'Хүсэлт илгээгдлээ. Явцыг энд харна.', freshId: created.id })
       reload()
@@ -105,6 +106,9 @@ export default function Requests() {
               placeholder="Хаана, хэзээнээс, ямар байдалтай байгааг бичнэ үү"
             />
           </Field>
+
+          {/* Нэрээ нууцлах — ажилтнуудад тоот л харагдана, нэрийг зөвхөн дарга харна */}
+          <Switch label="Нэрээ нууцлах" hint="Зөвхөн СӨХ-ийн дарга харна" checked={anonymous} onChange={set('anonymous')} />
 
           <div className="rq-extras">
             {/* Түр — зураг хадгалах API нэмэгдэх хүртэл ажиллахгүй */}

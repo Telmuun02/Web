@@ -1,0 +1,182 @@
+import { useSearchParams } from 'react-router-dom'
+import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded'
+import ChatThread from '../../components/Chat/ChatThread'
+import PageHeader from '../../components/UI/PageHeader'
+import Tabs from '../../components/UI/Tabs'
+import api from '../../api/client'
+import useApi from '../../hooks/useApi'
+import useChatRoom from '../../hooks/useChatRoom'
+import { monthDay } from '../../utils/format'
+import './styles/Chat.css'
+
+// Ажилтны бэлэн хариултууд — дарахад шууд илгээнэ
+const quickReplies = ['Шалгаад хариу өгье', 'Засварчин өнөөдөр очно', 'Баримт имэйлээр очно', 'Баярлалаа!']
+
+// Жагсаалтын цаг: өнөөдөр '14:31', бусад '11/19'
+function shortTime(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  return d.toDateString() === new Date().toDateString()
+    ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : monthDay(d)
+}
+
+// Чат — оршин суугчдын СӨХ-д бичсэн хувийн чатууд (хариулна) ба орцны группүүд (уншина, нууна).
+// canvas: AdminPhoneChat (вэб хэлбэрт). Мессеж, "бичиж байна", онлайн байдал WebSocket-оор шууд.
+// URL: ?tab=groups — групп таб, ?room=soh:613 — нээлттэй чат
+export default function Chat() {
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'groups' ? 'groups' : 'inbox'
+  const room = params.get('room')
+
+  // GET /api/admin/messages — chat_messages өөрчлөгдөх бүрт (WebSocket) жагсаалт шинэчлэгдэнэ
+  const { data, error } = useApi('/admin/messages', null, { fallback: null, live: ['chat_messages'] })
+  const chat = useChatRoom(room ? `/admin/messages/${encodeURIComponent(room)}` : null, room)
+
+  const threads = data?.threads ?? []
+  const groups = data?.groups ?? []
+  const unreadTotal = threads.reduce((sum, t) => sum + t.unread, 0)
+  const isGroup = room?.startsWith('entrance:')
+  const onlineResidents = chat.online.filter((p) => p.role === 'user')
+
+  function select(next) {
+    const p = {}
+    if (tab === 'groups') p.tab = 'groups'
+    if (next) p.room = next
+    setParams(p, { replace: true })
+  }
+
+  function changeTab(key) {
+    setParams(key === 'groups' ? { tab: 'groups' } : {}, { replace: true })
+  }
+
+  // Зүй бус мессежийг нуух / буцааж харуулах — бусдад WebSocket-оор шууд очно
+  async function toggleHidden(m) {
+    try {
+      await api.patch(`/admin/messages/item/${m.id}`, { hidden: !m.hidden })
+    } catch (err) {
+      window.alert(err.message)
+    }
+  }
+
+  // Нээлттэй чатын толгой (оршин суугчийн утас, тоот) — мессежүүдтэй хамт ирдэг
+  const head = chat.info?.header
+  let title = ''
+  let sub = ''
+  if (head?.kind === 'soh') {
+    title = `${head.title}${head.unit ? ` · ${head.unit}` : ''}`
+    const online = onlineResidents.some((p) => p.id === head.userId)
+    sub = [online ? 'Апп-д онлайн' : 'Оршин суугч', head.phone].filter(Boolean).join(' · ')
+  } else if (head?.kind === 'entrance') {
+    title = head.title
+    sub = `${onlineResidents.length} оршин суугч онлайн · ажилтан зөвхөн уншина, нууж болно`
+  }
+
+  return (
+    <div className="admin-chat">
+      <PageHeader
+        sub="Оршин суугчидтай шууд харилцах"
+        title="Чат"
+        note={<span className="admin-chat-live"><i aria-hidden="true" />ШУУД · {unreadTotal} уншаагүй</span>}
+      />
+
+      <Tabs
+        label="Чатын төрөл"
+        value={tab}
+        onChange={changeTab}
+        items={[
+          { key: 'inbox', label: 'Оршин суугчид', count: unreadTotal },
+          { key: 'groups', label: 'Орцны группүүд' },
+        ]}
+      />
+
+      {error && <p className="admin-chat-error">{error}</p>}
+
+      <div className={room ? 'admin-chat-columns has-room' : 'admin-chat-columns'}>
+        <div className="admin-chat-list">
+          {tab === 'inbox' && threads.map((t) => (
+            <button
+              key={t.room}
+              type="button"
+              aria-pressed={t.room === room}
+              className={t.room === room ? 'admin-chat-item on' : 'admin-chat-item'}
+              onClick={() => select(t.room)}
+            >
+              <span className="admin-chat-av" aria-hidden="true">{t.user.name[0]}</span>
+              <span className="admin-chat-item-text">
+                <span className="admin-chat-item-top">
+                  <strong>{t.user.name}{t.user.unit && ` · ${t.user.unit}`}</strong>
+                  <small>{shortTime(t.last?.created_at)}</small>
+                </span>
+                <span className={t.unread ? 'admin-chat-last unread' : 'admin-chat-last'}>
+                  {t.last ? `${t.last.sender.type === 'admin' ? 'СӨХ: ' : ''}${t.last.body}` : ''}
+                </span>
+              </span>
+              {t.unread > 0 && <span className="admin-chat-badge">{t.unread}</span>}
+            </button>
+          ))}
+          {tab === 'inbox' && !threads.length && data && (
+            <p className="admin-chat-empty">Оршин суугчдаас мессеж ирээгүй байна. Оршин суугч "СӨХ" чатад бичмэгц энд гарна.</p>
+          )}
+
+          {tab === 'groups' && groups.map((g) => (
+            <button
+              key={g.room}
+              type="button"
+              aria-pressed={g.room === room}
+              className={g.room === room ? 'admin-chat-item on' : 'admin-chat-item'}
+              onClick={() => select(g.room)}
+            >
+              <span className="admin-chat-av group" aria-hidden="true">{g.entrance.number}</span>
+              <span className="admin-chat-item-text">
+                <span className="admin-chat-item-top">
+                  <strong>{g.entrance.number}-р орцны групп</strong>
+                  <small>{shortTime(g.last?.created_at)}</small>
+                </span>
+                <span className="admin-chat-last">
+                  {g.last ? `${g.last.sender.name}: ${g.last.body}` : `${g.homes} айл · мессеж алга`}
+                </span>
+              </span>
+            </button>
+          ))}
+          {tab === 'groups' && (
+            <p className="admin-chat-empty">
+              Ажилтан группийн мессежийг уншина, зүй бус мессежийг нууж болно. Оршин суугчдын бие биедээ бичсэн хувийн мессеж байхгүй.
+            </p>
+          )}
+        </div>
+
+        <section className="admin-chat-room" aria-label="Нээлттэй чат">
+          {!room && <p className="admin-chat-placeholder">Зүүн талаас чат сонгоно уу</p>}
+          {room && (
+            <>
+              <header className="admin-chat-head">
+                <button type="button" className="admin-chat-back" aria-label="Жагсаалт руу буцах" onClick={() => select(null)}>
+                  <ArrowBackRounded sx={{ fontSize: 20 }} />
+                </button>
+                <span className={isGroup ? 'admin-chat-av group' : 'admin-chat-av'} aria-hidden="true">
+                  {head?.kind === 'entrance' ? head.entrance : head?.title?.[0]}
+                </span>
+                <span className="admin-chat-head-text">
+                  <strong>{title}</strong>
+                  <small>{sub}</small>
+                </span>
+              </header>
+              <ChatThread
+                chat={chat}
+                me={{ type: 'admin' }}
+                adminSide
+                canWrite={!isGroup}
+                placeholder="Хариу бичих…"
+                quick={quickReplies}
+                actions={isGroup ? (m) => (
+                  <button type="button" onClick={() => toggleHidden(m)}>{m.hidden ? 'Харуулах' : 'Нуух'}</button>
+                ) : undefined}
+              />
+            </>
+          )}
+        </section>
+      </div>
+    </div>
+  )
+}

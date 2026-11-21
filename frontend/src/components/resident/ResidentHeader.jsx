@@ -12,6 +12,7 @@ const menuItems = [
   { path: '/meeting', label: 'Хурал' },
   { path: '/news', label: 'Зарлал' },
   { path: '/cameras', label: 'Камер' },
+  { path: '/chat', label: 'Чат' },
 ]
 
 export default function ResidentHeader({ user }) {

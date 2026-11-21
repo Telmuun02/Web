@@ -15,6 +15,7 @@ import Polls from './pages/admin/Polls'
 import Units from './pages/admin/Units'
 import Reports from './pages/admin/Reports'
 import Settings from './pages/admin/Settings'
+import AdminChat from './pages/admin/Chat'
 
 // Оршин суугч
 import ResidentLayout from './components/resident/ResidentLayout'
@@ -25,6 +26,7 @@ import ResidentMeeting from './pages/resident/Meeting'
 import ResidentNews from './pages/resident/News'
 import ResidentCameras from './pages/resident/Cameras'
 import ResidentProfile from './pages/resident/Profile'
+import ResidentChat from './pages/resident/Chat'
 
 // Хоёулаа
 import Login from './pages/Login'
@@ -74,7 +76,7 @@ function App() {
 
       {/**admin huudas */}
       <Route path="admin" element={<RequireRole user={user} role="admin" />}>
-        <Route element={<Layout user={user} onLogout={logout} />}>
+        <Route element={<Layout user={user} onLogout={logout} onUserChange={setUser} />}>
           <Route index element={<Dashboard />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="invoices/settings" element={<Settings />} />
@@ -85,12 +87,13 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="chat" element={<AdminChat />} />
         </Route>
       </Route>
 
       {/**orshin suugchiin huudas */}
       <Route element={<RequireRole user={user} role="user" />}>
-        <Route element={<ResidentLayout user={user} onLogout={logout} />}>
+        <Route element={<ResidentLayout user={user} onLogout={logout} onUserChange={setUser} />}>
           <Route index element={<Home />} />
           <Route path="pay" element={<ResidentPay />} />
           <Route path="requests" element={<ResidentRequests />} />
@@ -98,6 +101,7 @@ function App() {
           <Route path="news" element={<ResidentNews />} />
           <Route path="cameras" element={<ResidentCameras />} />
           <Route path="profile" element={<ResidentProfile />} />
+          <Route path="chat" element={<ResidentChat />} />
         </Route>
       </Route>
 

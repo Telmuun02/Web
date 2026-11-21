@@ -6,7 +6,7 @@
  * active() - одоо явагдаж байгаа санал хураалтууд
  * results(id) - сонголт бүрийн санал, ирц, босгод хүрсэн эсэх
  * createWithOptions(data, labels) - санал хураалт сонголтуудтай нь хамт үүсгэнэ (db.batch — нэг transaction)
- * vote(pollId, optionId, userId) - санал өгөх, тоотыг оршин суугчаас авна
+ * vote(pollId, optionId, userId) - санал өгөх, тоотыг оршин суугчаас авна. Тоот аль хэдийн өгсөн бол саналаа солино
  * voteStats(pollId) - нийт санал, сүүлийн 1 цагийнх
  * recentVotes(pollId, limit) - сүүлд санал өгсөн тоотууд
  * list() - бүх санал хураалт, status (upcoming/active/ended) болон yes_votes-той
@@ -72,7 +72,10 @@ async function vote(pollId, optionId, userId) {
   var user = await db('users').where({ id: userId }).first();
   if (!option || !user || !user.unit_id) return null;
 
-  await db('poll_votes').insert({ poll_id: pollId, option_id: optionId, unit_id: user.unit_id, user_id: userId });
+  await db('poll_votes')
+    .insert({ poll_id: pollId, option_id: optionId, unit_id: user.unit_id, user_id: userId })
+    .onConflict(['poll_id', 'unit_id'])
+    .merge({ option_id: optionId, user_id: userId, created_at: now() });
   return results(pollId);
 }
 

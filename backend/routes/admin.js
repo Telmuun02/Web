@@ -9,6 +9,9 @@ var reportsController = require('../controllers/admin/reportsController');
 var staffController = require('../controllers/admin/staffController');
 var liveController = require('../controllers/admin/liveController');
 var activityController = require('../controllers/admin/activityController');
+var chatController = require('../controllers/admin/chatController');
+var voiceController = require('../controllers/user/voiceController');
+var messagesController = require('../controllers/admin/messagesController');
 
 /**
  * admin хуудастай холбоотой api ууд ба доор байдлаар харагдана.
@@ -46,5 +49,14 @@ router.get('/staff', staffController.index);
 router.get('/live/:page', liveController.show);
 
 router.get('/activity', activityController.show);
+
+router.post('/chat', chatController.send);
+router.post('/transcribe', voiceController.transcribe);
+
+router.get('/messages', messagesController.index);
+router.patch('/messages/item/:id(\\d+)', messagesController.hide);
+router.get('/messages/:room', messagesController.show);
+router.post('/messages/:room', messagesController.send);
+router.post('/messages/:room/read', messagesController.read);
 
 module.exports = router;

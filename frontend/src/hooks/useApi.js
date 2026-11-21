@@ -32,7 +32,7 @@ export default function useApi(url, params, { fallback, delay = 0, refreshEvery 
       clearTimeout(first)
       clearInterval(timer)
     }
-  }, [url, key, version]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [url, key, version, refreshEvery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const reload = () => setVersion((v) => v + 1)
   useTableChange(url ? live : null, reload)

@@ -11,18 +11,19 @@ import './styles/News.css'
 
 // Нэг идэвхтэй санал хураалт — сонголтууд, ирц, өөрийн санал
 function PollCard({ poll, onVoted }) {
-  const [state, setState] = useState({ sending: false, message: '' })
-  const voted = poll.my_option_id != null
+  const [state, setState] = useState({ sending: false, message: '', changing: false })
+  // Санал өгсөн бол дүнг харуулна. "Саналаа өөрчлөх" дарвал сонголтууд дахин гарна
+  const voted = poll.my_option_id != null && !state.changing
   const total = poll.options.reduce((sum, o) => sum + o.votes, 0)
 
-  // POST /api/resident/polls/:id/vote — нэг тоот нэг л санал, дараа нь өөрчлөхгүй
+  // POST /api/resident/polls/:id/vote — нэг тоот нэг санал. Дахин илгээвэл саналыг солино (дуусахаас өмнө)
   async function vote(optionId) {
-    setState({ sending: true, message: '' })
+    setState({ sending: true, message: '', changing: false })
     try {
       onVoted(await api.post(`/resident/polls/${poll.id}/vote`, { option_id: optionId }))
-      setState({ sending: false, message: '' })
+      setState({ sending: false, message: '', changing: false })
     } catch (err) {
-      setState({ sending: false, message: err.message })
+      setState({ sending: false, message: err.message, changing: true })
     }
   }
 
@@ -37,6 +38,9 @@ function PollCard({ poll, onVoted }) {
           <span role="status" className="nw-mine">
             Таны санал: {poll.options.find((o) => o.id === poll.my_option_id)?.label}
           </span>
+          <button type="button" className="nw-change" onClick={() => setState((s) => ({ ...s, changing: true }))}>
+            Саналаа өөрчлөх
+          </button>
           {poll.options.map((o, i) => {
             const percent = total ? Math.round((o.votes / total) * 100) : 0
             return (
@@ -55,6 +59,7 @@ function PollCard({ poll, onVoted }) {
               type="button"
               className={i === 0 ? 'nw-yes' : 'nw-no'}
               disabled={state.sending}
+              aria-pressed={state.changing ? o.id === poll.my_option_id : undefined}
               onClick={() => vote(o.id)}
             >
               {o.label}

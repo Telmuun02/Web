@@ -28,7 +28,7 @@ var MAX_LIMIT = 10;
 
 function day(d) {
   if (!d) return null;
-  return /^d{4}-d{2}-d{2}$/.test(d) ? d : time.ymd(new Date(d));
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : time.ymd(new Date(d));
 }
 
 function limitOf(input, fallback) {

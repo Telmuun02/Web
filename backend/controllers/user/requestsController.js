@@ -48,6 +48,7 @@ async function store(req, res, next) {
       category: category,
       title: title,
       description: description,
+      anonymous: req.body.anonymous === true,
     });
 
     log.info({ by: me.user.id, unit: me.unit.code, requestId: created.id, category: category }, 'Хүсэлт илгээлээ');

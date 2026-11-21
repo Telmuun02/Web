@@ -20,9 +20,13 @@ var quietPaths = ['/api/resident/chat', '/api/resident/transcribe'];
  * Доорх нь middleware уудыг хийсэн ба эдгээрээр дамжиж хүсэлт ирэх болно.
  */
 
-app.use(morgan('dev', {
-  skip: function (req) { return quietPaths.indexOf(req.originalUrl.split('?')[0]) !== -1; },
-}));
+// Cloudflare дээр morgan ашиглахгүй: res.writeHead-ийг солидог нь Workers-ийн node:http дээр
+// хариуны body-г хоосон болгодог. Тэнд хүсэлт бүр Cloudflare-ийн Logs-д өөрөө бүртгэгдэнэ.
+if (!isWorker) {
+  app.use(morgan('dev', {
+    skip: function (req) { return quietPaths.indexOf(req.originalUrl.split('?')[0]) !== -1; },
+  }));
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());

@@ -1,400 +1,310 @@
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import Avatar from '../../components/UI/Avatar'
-import Badge from '../../components/UI/Badge'
-import Button from '../../components/UI/Button'
-import Card from '../../components/UI/Card'
-import PageHeader from '../../components/UI/PageHeader'
-import ProgressBar from '../../components/UI/ProgressBar'
-import StatCard from '../../components/UI/StatCard'
-import Table from '../../components/UI/Table'
+import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined'
+import ElevatorOutlined from '@mui/icons-material/ElevatorOutlined'
+import PauseRounded from '@mui/icons-material/PauseRounded'
+import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded'
+import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined'
+import VideocamOffOutlined from '@mui/icons-material/VideocamOffOutlined'
+import api from '../../api/client'
 import useApi from '../../hooks/useApi'
 import useNow from '../../hooks/useNow'
-// Лифт, дулаан, ус/цахилгаан, камер, онлайн — DB-д эх сурвалж нь байхгүй тул түр жишээ
-import {
-  liftFloors, sampleCameras, sampleLifts, sampleOnline, sampleStats,
-  sampleSupplyTemp, sampleTemps, sampleUtilities,
-} from '../../samples/admin/dashboard'
+import { sampleAlerts } from '../../samples/admin/dashboard'
 import './styles/Dashboard.css'
 
-const chartTop = 12000000 // ₮ — графикийн дээд хязгаар (12 сая)
-const lowTemp = 20        // °C — үүнээс доош бол хүйтэн
+// Шууд самбар — canvas "Удирдлагын самбар — ажилтан (шууд)".
+// GET /api/admin/dashboard: DB өөрчлөгдөхөд WebSocket-оор шууд, нөөцөөр 2 минут тутам шинэчлэгдэнэ.
+// "Түр зогсоох" дарвал шинэчлэлт зогсоно (уншиж байхад тоо үсрэхгүй).
 
-const debtorColumns = [
-  { label: 'Тоот' },
-  { label: 'Оршин суугч' },
-  { label: 'Өр', align: 'right' },
-  { label: 'Хэтэрсэн' },
-  { label: 'Апп-д сүүлд' },
-  { label: 'Үйлдэл', align: 'right' },
-]
+const LIVE_TABLES = ['payments', 'invoices', 'requests', 'polls', 'poll_votes', 'admins']
 
-// Backend-ийн ангиллын нэр → харуулах нэр (requests.category enum)
-const categoryLabels = {
-  plumbing: 'Сантехник',
-  electrical: 'Цахилгаан',
-  cleaning: 'Цэвэрлэгээ',
-  elevator: 'Лифт',
-  other: 'Бусад',
-}
+const categoryLabels = { plumbing: 'Сантехник', electrical: 'Цахилгаан', cleaning: 'Цэвэрлэгээ', elevator: 'Лифт', other: 'Бусад' }
+const alertIcons = { lift: ElevatorOutlined, cam: VideocamOffOutlined, heat: ThermostatOutlined }
 
 // 170000 → '170,000₮'
 function money(n) {
-  return `${n.toLocaleString('en-US')}₮`
+  return `${Number(n || 0).toLocaleString('en-US')}₮`
 }
 
-// 7900000 → '7.9'
+// 10200000 → '10.2'
 function million(n) {
-  return (n / 1000000).toFixed(1)
+  return (Number(n || 0) / 1000000).toFixed(1)
 }
 
-// Хэдий хугацааны өмнө болсныг үгээр: '40 сек өмнө', '7 мин өмнө'.
-// date — Date эсвэл API-ийн string ('2026-11-01T04:00:00.000Z')
+// '40 сек өмнө', '7 мин өмнө', '3 цагийн өмнө'
 function timeAgo(date, now) {
-  const sec = Math.floor((now - new Date(date)) / 1000)
+  const sec = Math.max(0, Math.floor((now - new Date(date)) / 1000))
   if (sec < 5) return 'дөнгөж сая'
   if (sec < 60) return `${sec} сек өмнө`
   if (sec < 3600) return `${Math.floor(sec / 60)} мин өмнө`
-  return `${Math.floor(sec / 3600)} цагийн өмнө`
+  if (sec < 86400) return `${Math.floor(sec / 3600)} цагийн өмнө`
+  return `${Math.floor(sec / 86400)} өдрийн өмнө`
 }
 
-// Хариугүй хүлээсэн хугацаа: '45 сек', '7 мин'
+// Хариугүй хүлээсэн хугацаа: '45 сек', '7 мин', '3 цаг', '2 өдөр'
 function waitTime(date, now) {
-  const sec = Math.floor((now - new Date(date)) / 1000)
-  return sec < 60 ? `${sec} сек` : `${Math.floor(sec / 60)} мин`
-}
-
-// Ногоон/улаан анивчдаг цэг — "шууд" гэдгийг илэрхийлнэ
-function LiveDot({ tone = 'green' }) {
-  return <span className={`live-dot ${tone}`} aria-hidden="true" />
+  const sec = Math.max(0, Math.floor((now - new Date(date)) / 1000))
+  if (sec < 60) return `${sec} сек`
+  if (sec < 3600) return `${Math.floor(sec / 60)} мин`
+  if (sec < 86400) return `${Math.floor(sec / 3600)} цаг`
+  return `${Math.floor(sec / 86400)} өдөр`
 }
 
 export default function Dashboard() {
   const { user } = useOutletContext()
-
-  // Секунд тутам шинэчлэгдэх цаг — дээрх цаг, "40 сек өмнө" зэрэг бичиг үүгээр өөрчлөгдөнө
   const now = useNow()
+  const [paused, setPaused] = useState(false)
+  const [ackedAlerts, setAckedAlerts] = useState({}) // "Хүлээж авлаа" дарсан анхааруулга: { lift: true }
+  const [reminded, setReminded] = useState({}) // SMS сануулга: { '1-05': 'sending' | 'sent' }
+  const [actionError, setActionError] = useState('')
 
-  // ---------- Server state ----------
-  // GET /api/admin/dashboard — 30 сек тутам шинэчилнэ (WebSocket нэмэгдэхэд түлхэлтээр солигдоно)
-  const { data, error } = useApi('/admin/dashboard', null, { fallback: null, refreshEvery: 120, live: ['payments', 'invoices', 'requests', 'polls', 'poll_votes', 'admins'] })
-  const { online } = sampleStats // апп-д онлайн — DB-д өгөгдөл алга
-
-  // Товч дарахад өөрчлөгдөх хэсгүүд — одоохондоо зөвхөн дэлгэц дээр (backend-д хадгалахгүй)
-  const [seenIds, setSeenIds] = useState({}) // "Хүлээж авах" дарсан хүсэлтүүд: { 1042: true }
-  const [myLog, setMyLog] = useState([]) // энэ дэлгэц дээр хийсэн үйлдлүүд — серверийн log-ийн дээр нэмэгдэнэ
-  const [reminded, setReminded] = useState({}) // SMS илгээсэн тоотууд: { '1-12': true }
+  const { data, error } = useApi('/admin/dashboard', null, {
+    fallback: null,
+    refreshEvery: paused ? 0 : 120,
+    live: paused ? null : LIVE_TABLES,
+  })
 
   if (error && !data) return <div className="dashboard"><p role="alert">{error}</p></div>
   if (!data) return <div className="dashboard"><p>Ачааллаж байна…</p></div>
 
-  const { today, month, openRequests, hours, payments, poll, months, debtors } = data
-  // Ажилтны үйлдэл — GET /api/admin/dashboard-ийн log + энэ дэлгэц дээр хийсэн нь, хамгийн сүүлийн 4
-  const log = [...myLog, ...data.log].slice(0, 4)
+  const { today, month, openRequests, building, payments, requests, poll, debtors } = data
 
-  // Derived — серверийн жагсаалтыг state-д хуулахгүй, дарсан id-гаар seen-ийг тооцоолно
-  const requests = data.requests.map((r) => ({ ...r, seen: r.seen || Boolean(seenIds[r.id]) }))
-
-  // "Хүлээж авах" — хүсэлтийг харсан болгоод, ажилтны үйлдэлд нэмнэ
-  function acknowledge(request) {
-    setSeenIds((map) => ({ ...map, [request.id]: true }))
-    setMyLog((list) => [
-      { id: Date.now(), who: user.name, what: `R-${request.id} хүсэлтийг хүлээж авав`, at: new Date() },
-      ...list,
-    ].slice(0, 4))
-  }
-
-  function remind(code) {
-    setReminded((map) => ({ ...map, [code]: true }))
-  }
-
-  // Картуудын тоо
   const paidPercent = month.units ? Math.round((month.paidUnits / month.units) * 100) : 0
+  const totalUnits = building.reduce((sum, e) => sum + e.units.length, 0)
+  const unpaidUnits = building.reduce((sum, e) => sum + e.units.filter((u) => !u.paid).length, 0)
   const unseen = requests.filter((r) => !r.seen).length
+  const alerts = sampleAlerts.filter((a) => !ackedAlerts[a.id])
+  const ackedCount = sampleAlerts.length - alerts.length
 
-  const liftsDown = sampleLifts.filter((l) => !l.ok).length
-  const camsOnline = sampleCameras.filter((c) => c.online).length
-  const coldEntrances = sampleTemps.filter((t) => t.value < lowTemp).length
-  const alerts = liftsDown + (sampleCameras.length - camsOnline) + coldEntrances
-
-  // Графикуудын өндрийг хамгийн их утгатай харьцуулж бодно
-  const hourTop = Math.max(400000, ...hours.map((h) => h.amount))
-  const onlineTop = 60
-
-  // Идэвхтэй санал хураалт байхгүй бол poll = null
   const votePercent = poll?.units ? Math.round((poll.voted / poll.units) * 100) : 0
-  const voteNeed = poll ? Math.ceil((poll.units * poll.threshold) / 100) - poll.voted : 0
-
-  // 14:03:22
+  const voteNeed = poll ? Math.max(0, Math.ceil((poll.units * poll.threshold) / 100) - poll.voted) : 0
+  const daysLeft = poll ? Math.max(0, Math.ceil((new Date(poll.endsAt) - now) / 86400000)) : 0
   const clock = new Date(now).toLocaleTimeString('en-GB')
-  const currentMonth = Number(months.at(-1).period.split('-')[1])
+
+  // "Хүлээж авах" — хүсэлтийг өөр дээрээ авна (хариуцагч = би). Бусад ажилтанд шууд харагдана
+  async function acknowledge(request) {
+    setActionError('')
+    try {
+      await api.patch(`/admin/requests/${request.id}`, { assigned_to: user.id })
+    } catch (err) {
+      setActionError(err.message)
+    }
+  }
+
+  // SMS сануулга — SMS үйлчилгээ холбогдоогүй тул одоохондоо зөвхөн дэлгэц дээр тэмдэглэнэ
+  function remind(code) {
+    setReminded((m) => ({ ...m, [code]: 'sending' }))
+    setTimeout(() => setReminded((m) => ({ ...m, [code]: 'sent' })), 900)
+  }
 
   return (
     <div className="dashboard">
-      <PageHeader
-        sub={<>Сайн байна уу, <Link to="/admin/profile" className="dash-user">{user.name}</Link></>}
-        title="Шууд самбар"
-        note={<span className="dash-live"><LiveDot />ШУУД · {clock}</span>}
-      >
-        <label className="dash-field">
-          <span>Байр</span>
-          <select>
-            <option>Бүгд (3 орц)</option>
-            <option>1-р орц</option>
-            <option>2-р орц</option>
-            <option>3-р орц</option>
-          </select>
-        </label>
-        <Button>
-          <FileDownloadOutlined sx={{ fontSize: 16 }} /> Excel татах
-        </Button>
-        <Button as={Link} to="/admin/announcements" variant="primary">
-          <AddOutlined sx={{ fontSize: 16 }} /> Зарлал нийтлэх
-        </Button>
-      </PageHeader>
-
-      {/* Дээд талын 5 карт */}
-      <div className="dash-stats">
-        <StatCard label="Өнөөдөр цугласан" value={money(today.amount)} note={`${today.count} төлбөр орсон`} tone="dark" />
-        <StatCard
-          label="Сарын төлөлт"
-          value={`${paidPercent}%`}
-          note={`${month.paidUnits}/${month.units} тоот · ${million(month.collected)} / ${million(month.billed)} сая₮`}
-        >
-          <ProgressBar value={paidPercent} size={6} color="var(--yellow)" />
-        </StatCard>
-        <StatCard
-          label="Нээлттэй хүсэлт"
-          value={openRequests}
-          note={unseen ? `${unseen} нь хариугүй байна` : 'Бүгдийг хүлээж авсан'}
-          noteTone={unseen ? 'bad' : 'good'}
-        />
-        <StatCard label="Апп-д онлайн" value={online} note="оршин суугч яг одоо" />
-        <StatCard label="Анхааруулга" value={alerts} note="Лифт · камер · дулаан" tone={alerts ? 'alert' : undefined} />
+      <div className="dash-head">
+        <div className="dash-head-text">
+          <span className="dash-hello">Сайн байна уу, <Link to="/admin/profile">{user.name}</Link></span>
+          <h1>Шууд самбар</h1>
+          <span className={paused ? 'dash-live paused' : 'dash-live'}>
+            <i aria-hidden="true" />
+            <span>{paused ? 'Түр зогсоосон' : `ШУУД · ${clock}`}</span>
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              aria-label={paused ? 'Шинэчлэлтийг үргэлжлүүлэх' : 'Шинэчлэлтийг түр зогсоох'}
+              title={paused ? 'Үргэлжлүүлэх' : 'Түр зогсоох'}
+            >
+              {paused ? <PlayArrowRounded sx={{ fontSize: 16 }} /> : <PauseRounded sx={{ fontSize: 16 }} />}
+            </button>
+          </span>
+        </div>
+        <Link to="/admin/announcements" className="dash-cta">
+          <AddOutlined sx={{ fontSize: 18 }} /> Зарлал нийтлэх
+        </Link>
       </div>
 
-      <div className="dash-row">
-        {/* Төлбөрийн урсгал */}
-        <Card
-          title={<><LiveDot />Төлбөрийн урсгал</>}
-          action={<Link to="/admin/invoices" className="dash-link">Бүгд →</Link>}
-          className="dash-feed"
+      {/* Энэ сарын төлөлт — байрны цонх бүр нэг айл, төлсөн бол шар гэрэлтэй */}
+      <section className="dash-hero" aria-label="Энэ сарын төлөлт ба өнөөдрийн орлого">
+        {[4, 18, 31, 63, 72, 93].map((left, i) => (
+          <span key={left} className="dash-star" aria-hidden="true" style={{ left: `${left}%`, top: `${[14, 82, 10, 8, 88, 22][i]}%`, animationDelay: `${i * 0.4}s` }} />
+        ))}
+
+        <Link to="/admin/invoices" className="dash-hero-month">
+          <span className="dash-hero-label">Энэ сарын төлөлт</span>
+          <span className="dash-hero-big">{paidPercent}<small>%</small></span>
+          <span className="dash-hero-bar"><span style={{ width: `${paidPercent}%` }} /></span>
+          <span className="dash-hero-note">
+            <strong>{month.paidUnits}</strong> / {month.units} айл гэрлээ асаасан · {million(month.collected)} / {million(month.billed)} сая₮
+          </span>
+        </Link>
+
+        <div
+          className="dash-building"
+          role="img"
+          aria-label={`${building.length} орц, ${totalUnits} айл: ${totalUnits - unpaidUnits} нь төлсөн (шар), ${unpaidUnits} нь төлөөгүй (бараан)`}
         >
-          <div className="hour-bars" role="img" aria-label="Өнөөдрийн цагийн орлогын график">
-            {hours.map((h, i) => (
-              <span key={h.label} className="hour">
-                <span
-                  className={i === hours.length - 1 ? 'hour-bar current' : 'hour-bar'}
-                  style={{ height: `${(h.amount / hourTop) * 100}%` }}
-                />
-                <span className="hour-label">{h.label}</span>
-              </span>
+          <div className="dash-entrances">
+            {building.map((e) => (
+              <div key={e.number} className="dash-entrance">
+                <div className="dash-windows">
+                  {e.units.map((u) => (
+                    <span key={u.code} className={u.paid ? 'lit' : ''} title={`${u.code} — ${u.paid ? 'төлсөн' : 'төлөөгүй'}`} />
+                  ))}
+                </div>
+                <span>{e.number}-р орц</span>
+              </div>
             ))}
           </div>
-          <ul className="feed">
-            {payments.map((p) => (
-              <li key={p.id} className="feed-item">
-                <span className="bold">{p.unit}</span>
-                <span className="feed-who">
-                  <span className="feed-name">{p.name}</span>
-                  <span className="dim">{p.via} · {timeAgo(p.paidAt, now)}</span>
+          <span className="dash-building-note">Шар цонх — энэ сарын төлбөрөө төлсөн айл</span>
+        </div>
+
+        <Link to="/admin/invoices" className="dash-hero-today">
+          <span className="dash-hero-label">Өнөөдөр орсон</span>
+          <span className="dash-hero-money">{money(today.amount)}</span>
+          <span className="dash-hero-note">
+            {today.count} төлбөр{payments[0] && ` · сүүлийнх ${timeAgo(payments[0].paidAt, now)}`}
+          </span>
+        </Link>
+      </section>
+
+      {/* Анхааруулга — лифт, камер, дулаан (одоохондоо жишээ өгөгдөл) */}
+      {alerts.length > 0 ? (
+        <section className="dash-alerts" aria-labelledby="alert-title">
+          <h2 id="alert-title"><i aria-hidden="true" />Анхааруулга · {alerts.length}</h2>
+          <div className="dash-alert-grid">
+            {alerts.map((a) => {
+              const Icon = alertIcons[a.kind]
+              return (
+                <div key={a.id} className="dash-alert">
+                  <span className={`dash-alert-icon ${a.kind}`}><Icon sx={{ fontSize: 22 }} /></span>
+                  <span className="dash-alert-text">
+                    <strong>{a.title}</strong>
+                    <span>{a.note} · {a.minutesAgo < 60 ? `${a.minutesAgo} мин өмнө` : `${Math.floor(a.minutesAgo / 60)} цагийн өмнө`}</span>
+                  </span>
+                  <button type="button" className="dash-btn-line" onClick={() => setAckedAlerts((m) => ({ ...m, [a.id]: true }))}>
+                    Хүлээж авлаа
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      ) : (
+        <section className="dash-allok" aria-label="Байрны систем">
+          <CheckCircleOutlined sx={{ fontSize: 20 }} />
+          Лифт, камер, дулаан — бүгд хэвийн ажиллаж байна
+          {ackedCount > 0 && <span>· {ackedCount} анхааруулгыг хүлээж авсан</span>}
+        </section>
+      )}
+
+      {actionError && <p className="dash-error" role="alert">{actionError}</p>}
+
+      <div className="dash-grid">
+        {/* Хүсэлт — хариугүй нь эхэндээ */}
+        <section className="dash-card" aria-labelledby="req-title">
+          <div className="dash-card-head">
+            <div>
+              <h2 id="req-title">Хүсэлт · <span className={unseen ? 'bad' : 'good'}>{unseen ? `${unseen} хариугүй` : 'бүгд хүлээж авсан'}</span></h2>
+              <span className="dash-card-sub">Хариугүй нь эхэндээ</span>
+            </div>
+            <Link to="/admin/requests">Бүгд ({openRequests}) →</Link>
+          </div>
+          <div className="dash-reqs">
+            {requests.map((r) => (
+              <div key={r.id} className={r.seen ? 'dash-req seen' : 'dash-req'}>
+                <span className="dash-req-meta">
+                  <strong>{r.unit}</strong>{categoryLabels[r.category] ?? r.category}
+                  {!r.seen && now - new Date(r.createdAt) < 3600000 && <span className="dash-tag new">Шинэ</span>}
                 </span>
-                <span className="feed-amount">+{money(p.amount)}</span>
+                <span className="dash-req-title">{r.title}</span>
+                {r.seen ? (
+                  <span className="dash-req-done"><CheckCircleOutlined sx={{ fontSize: 16 }} />Хүлээж авсан{r.who && ` · ${r.who}`}</span>
+                ) : (
+                  <span className="dash-req-actions">
+                    <span className="dash-req-wait">{waitTime(r.createdAt, now)} хүлээж байна</span>
+                    <button type="button" className="dash-btn-dark" onClick={() => acknowledge(r)}>Хүлээж авах</button>
+                  </span>
+                )}
+              </div>
+            ))}
+            {!requests.length && <p className="dash-empty">Шийдээгүй хүсэлт алга</p>}
+          </div>
+        </section>
+
+        {/* Сүүлийн төлбөр */}
+        <section className="dash-card" aria-labelledby="feed-title">
+          <div className="dash-card-head">
+            <h2 id="feed-title"><i className="dash-dot" aria-hidden="true" />Сүүлийн төлбөр</h2>
+            <Link to="/admin/invoices">Бүгд →</Link>
+          </div>
+          <ul className="dash-feed" aria-live="polite">
+            {payments.map((p) => (
+              <li key={p.id}>
+                <span className="dash-unit">{p.unit}</span>
+                <span className="dash-feed-who">
+                  <span>{p.name}</span>
+                  <small>{p.via} · {timeAgo(p.paidAt, now)}</small>
+                </span>
+                <span className="dash-feed-amount">+{money(p.amount)}</span>
               </li>
             ))}
           </ul>
-        </Card>
+        </section>
+      </div>
 
-        {/* Шинэ хүсэлт */}
-        <Card
-          title={<><LiveDot tone="red" />Шинэ хүсэлт</>}
-          action={<Link to="/admin/requests" className="dash-link">Бүгд →</Link>}
-          className="dash-requests"
-        >
-          {requests.map((r) => (
-            <div key={r.id} className={r.seen ? 'req' : `req unseen${r.urgent ? ' urgent' : ''}`}>
-              <span className="req-meta">
-                <strong>{r.unit}</strong> · {categoryLabels[r.category] ?? r.category} · {timeAgo(r.createdAt, now)}
-                {r.urgent && <Badge tone="red" small>Яаралтай</Badge>}
-              </span>
-              <span className="req-title">{r.title}</span>
-              {r.seen ? (
-                <span className="req-seen">Хүлээж авсан</span>
-              ) : (
-                <span className="req-actions">
-                  <span className="req-wait">Хариугүй · {waitTime(r.createdAt, now)}</span>
-                  <Button variant="dark" size="small" onClick={() => acknowledge(r)}>Хүлээж авах</Button>
+      <div className="dash-grid">
+        {/* Өр ихтэй тоот */}
+        <section className="dash-card" aria-labelledby="debt-title">
+          <div className="dash-card-head">
+            <h2 id="debt-title">Өр ихтэй тоот</h2>
+            <Link to="/admin/invoices?tab=debtors">Бүгд →</Link>
+          </div>
+          {debtors.map((d) => {
+            const state = reminded[d.code]
+            return (
+              <div key={d.unit_id} className="dash-debtor">
+                <span className="dash-unit">{d.code}</span>
+                <span className="dash-debtor-who">
+                  <span>{d.name ?? 'Оршин суугчгүй'}</span>
+                  <span className={d.months >= 2 ? 'dash-tag bad' : 'dash-tag warn'}>{d.months} сар хэтэрсэн</span>
                 </span>
-              )}
-            </div>
-          ))}
-        </Card>
-      </div>
-
-      {/* Байрны систем — лифт, дулаан, ус/цахилгаан, камер */}
-      <Card title={<><LiveDot />Байрны систем</>}>
-        <div className="systems">
-          <div className="system">
-            <span className="system-title">Лифт</span>
-            <div className="lifts">
-              {sampleLifts.map((l) => (
-                <div key={l.name} className={l.ok ? 'lift' : 'lift down'}>
-                  <span className="lift-name">{l.name}</span>
-                  {/* Давхар бүрд нэг нүд — лифт байгаа давхар нь тод */}
-                  <span className="lift-shaft" aria-hidden="true">
-                    {Array.from({ length: liftFloors }, (_, i) => (
-                      <span key={i} className={i + 1 === l.floor ? 'lift-cell here' : 'lift-cell'} />
-                    ))}
-                  </span>
-                  <span className="lift-floor">{l.floor}{l.ok && (l.dir === 'up' ? ' ↑' : ' ↓')}</span>
-                  <span className="lift-status">{l.ok ? 'Ажиллаж байна' : l.note}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="system">
-            <span className="system-title">Дулаан (орцны дундаж)</span>
-            {sampleTemps.map((t) => (
-              <div key={t.name} className={t.value < lowTemp ? 'temp cold' : 'temp'}>
-                <span>{t.name}</span>
-                {/* 15°C → 0%, 25°C → 100% */}
-                <ProgressBar value={((t.value - 15) / 10) * 100} color={t.value < lowTemp ? '#3b8fd9' : 'var(--yellow)'} />
-                <span className="temp-value">{t.value.toFixed(1)}°C</span>
+                <span className="dash-debtor-debt">{money(d.debt)}</span>
+                <button
+                  type="button"
+                  className={state === 'sent' ? 'dash-btn-line sent' : 'dash-btn-line'}
+                  disabled={Boolean(state)}
+                  onClick={() => remind(d.code)}
+                >
+                  {state === 'sending' ? 'Илгээж байна…' : state === 'sent' ? 'SMS илгээсэн' : 'SMS сануулах'}
+                </button>
               </div>
-            ))}
-            <span className="dim small">Хэвийн: 20–24°C · Шугамын ус {sampleSupplyTemp.toFixed(1)}°C</span>
-          </div>
+            )
+          })}
+          {!debtors.length && <p className="dash-empty">Өртэй тоот алга</p>}
+        </section>
 
-          <div className="system">
-            <span className="system-title">Ус ба цахилгаан</span>
-            <div className="utilities">
-              {sampleUtilities.map((u) => (
-                <div key={u.label} className="utility">
-                  <span className="dim small">{u.label}</span>
-                  <span className="utility-value">{u.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="system">
-            <span className="system-title">Камер · {camsOnline}/{sampleCameras.length} онлайн</span>
-            {sampleCameras.map((c) => (
-              <div key={c.name} className={c.online ? 'camera' : 'camera off'}>
-                <span className="camera-dot" aria-hidden="true" />
-                <span className="camera-name">{c.name}</span>
-                <span className="camera-status">{c.online ? 'Онлайн' : c.note}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      <div className="dash-trio">
-        <Link to="/admin/polls" className="poll-card">
-          <span className="poll-tag"><LiveDot tone="orange" />Санал хураалт · шууд ирц</span>
-          {poll ? (
-            <>
-              <span className="poll-title">{poll.title}</span>
-              <ProgressBar
-                value={votePercent}
-                size={12}
-                track="rgba(122, 67, 0, 0.15)"
-                marker={poll.threshold}
-                label={`Ирц ${votePercent}%, босго ${poll.threshold}%`}
-              />
-              <span className="poll-note">
-                {poll.voted}/{poll.units} тоот · {votePercent}% · {voteNeed > 0 ? `босго хүртэл ${voteNeed} тоот` : 'босго хүрсэн'}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="poll-title">Идэвхтэй санал хураалт алга</span>
-              <span className="poll-note">Шинэ санал хураалт эхлүүлэх →</span>
-            </>
-          )}
-        </Link>
-
-        <Card title="Апп-ын идэвх · сүүлийн 30 мин" className="dash-small">
-          <div className="spark" role="img" aria-label="Онлайн хэрэглэгчдийн тоо минут тутам">
-            {sampleOnline.map((v, i) => (
-              <span
-                key={i}
-                className={i === sampleOnline.length - 1 ? 'spark-bar current' : 'spark-bar'}
-                style={{ height: `${(v / onlineTop) * 100}%` }}
-              />
-            ))}
-          </div>
-          <span className="dim">Одоо {online} · 34 айл хуралд бүртгүүлсэн · 96 тоот апп-тай</span>
-        </Card>
-
-        <Card title="Ажилтны үйлдэл" className="dash-small">
-          {log.map((g) => (
-            <div key={g.id} className="log-item">
-              <Avatar name={g.who} dark />
-              <span className="log-text">
-                <span><strong>{g.who}</strong> {g.what}</span>
-                <span className="dim small">{timeAgo(g.at, now)}</span>
-              </span>
-            </div>
-          ))}
-        </Card>
-      </div>
-
-      <Card
-        title="Сүүлийн 12 сарын орлого"
-        sub={`${currentMonth}-р сар явж байна`}
-        action={(
-          <div className="legend">
-            <span><i className="swatch billed" />Нэхэмжилсэн</span>
-            <span><i className="swatch collected" />Цугларсан</span>
-          </div>
+        {/* Санал хураалт · шууд ирц */}
+        {poll ? (
+          <Link to="/admin/polls" className={votePercent >= poll.threshold ? 'dash-poll reached' : 'dash-poll'}>
+            <span className="dash-poll-tag"><i aria-hidden="true" />Санал хураалт · шууд ирц</span>
+            <span className="dash-poll-title">{poll.title}</span>
+            <span className="dash-poll-big">{poll.voted}<small> / {poll.units} тоот санал өгсөн</small></span>
+            <span className="dash-poll-bar" role="img" aria-label={`Ирц ${votePercent}%, босго ${poll.threshold}%`}>
+              <span style={{ width: `${Math.min(votePercent, 100)}%` }} />
+              <i aria-hidden="true" style={{ left: `${poll.threshold}%` }} />
+            </span>
+            <span className="dash-poll-need">
+              {voteNeed === 0 ? 'Босго хүрсэн — санал хураалт хүчинтэй боллоо' : `Босго хүртэл ${voteNeed} тоот дутуу`}
+            </span>
+            <span className="dash-poll-foot">Дуусах хүртэл {daysLeft} өдөр · Ирцийн босго {poll.threshold}%</span>
+          </Link>
+        ) : (
+          <Link to="/admin/polls" className="dash-poll">
+            <span className="dash-poll-tag">Санал хураалт</span>
+            <span className="dash-poll-title">Одоогоор идэвхтэй санал хураалт алга</span>
+            <span className="dash-poll-foot">Шинэ санал хураалт үүсгэх →</span>
+          </Link>
         )}
-      >
-        <div className="chart">
-          <div className="chart-axis" aria-hidden="true">
-            <span>12 сая</span><span>8</span><span>4</span><span>0</span>
-          </div>
-          <div className="chart-body" role="img" aria-label="12 сарын нэхэмжилсэн ба цугларсан дүнгийн баганан график">
-            <div className="chart-bars">
-              {months.map((m, i) => (
-                <div key={m.period} className="bar" style={{ height: `${(m.billed / chartTop) * 100}%` }}>
-                  <div
-                    className={i === months.length - 1 ? 'bar-fill current' : 'bar-fill'}
-                    style={{ height: `${m.billed ? (m.collected / m.billed) * 100 : 0}%` }}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="chart-labels">
-              {/* '2026-10-01' → 10 */}
-              {months.map((m) => <span key={m.period}>{Number(m.period.split('-')[1])}</span>)}
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <Card title="Өр ихтэй тоотууд" action={<Link to="/admin/invoices?tab=debtors" className="dash-link">Бүгдийг харах →</Link>}>
-        <Table columns={debtorColumns} minWidth={560}>
-          {debtors.map((d) => (
-            <tr key={d.unit_id}>
-              <td className="bold">{d.code}</td>
-              <td>{d.name ?? '—'}</td>
-              <td className="num bold">{money(d.debt)}</td>
-              <td><Badge tone={d.months >= 2 ? 'red' : 'orange'}>{d.months} сар</Badge></td>
-              <td className={d.last_seen === 'Одоо онлайн' ? 'seen-online' : 'dim'}>{d.last_seen ?? '—'}</td>
-              <td className="num">
-                <Button size="small" onClick={() => remind(d.code)} disabled={reminded[d.code]}>
-                  {reminded[d.code] ? 'Илгээсэн' : 'SMS сануулах'}
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      </Card>
+      </div>
     </div>
   )
 }

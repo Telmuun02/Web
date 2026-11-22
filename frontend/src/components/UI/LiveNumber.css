@@ -1,0 +1,52 @@
+.live-number {
+  position: relative;
+  font-variant-numeric: tabular-nums; /* оронгийн өргөн тэнцүү — тоо өсөхөд хөдлөхгүй */
+}
+
+.live-number-delta {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: max(12px, 0.4em);
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--tint-green);
+  color: var(--on-green);
+  pointer-events: none;
+  animation: live-number-delta 4s ease-out forwards;
+}
+
+@keyframes live-number-delta {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  10%,
+  75% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes live-number-fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-number-delta {
+    animation-name: live-number-fade;
+  }
+}

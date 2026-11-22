@@ -8,17 +8,20 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	// Worker-ийг D1-ийн ойролцоо ажиллуулна — хуудас бүрийн олон query хол зам дахин дахин явахгүй
+	"placement": { "mode": "smart" },
 	// process.env-д орох энгийн (нууц биш) утгууд
 	"vars": {
 		"NODE_ENV": "production",
 		"JWT_EXPIRES_IN": "7d"
 	},
-	// D1 өгөгдлийн сан. database_id-г `npx wrangler d1 create sukh-hub` командын хариунаас хуулна
+	// D1 өгөгдлийн сан — Ази (APAC) бүсэд. database_id-г `npm run d1:create` командын хариунаас хуулна.
+	// Хуучин Баруун Европын (WEUR) D1 'sukh-hub' (2c34d8ac-...) нөөц болж үлдсэн — 2026-11-22-нд шилжүүлэв
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "sukh-hub",
-			"database_id": "2c34d8ac-5770-4a69-89f5-2c25eb80b5a6",
+			"database_name": "sukh-hub-asia",
+			"database_id": "162d518c-0c9f-4843-a082-68fe19032bd3",
 			"migrations_dir": "migrations"
 		}
 	],

@@ -32,11 +32,15 @@ async function run() {
   if (!list.length) return;
   lastId = list[list.length - 1].id;
 
+  var sent = 0;
   wss.clients.forEach(function (ws) {
     if (!ws.client || ws.readyState !== ws.OPEN) return;
     var tables = changes.tablesFor(ws.client, list);
-    if (tables.length) ws.send(JSON.stringify({ type: 'change', tables: tables }));
+    if (!tables.length) return;
+    ws.send(JSON.stringify({ type: 'change', tables: tables }));
+    sent++;
   });
+  log.info({ changes: list.length, lastId: lastId, sent: sent, online: wss.clients.size }, 'Realtime илгээлээ');
 }
 
 function tick() {
@@ -57,10 +61,17 @@ async function onUpgrade(req, socket, head) {
   var client = await identify(tokenFrom(req.headers.cookie, req.url)).catch(function () { return null; });
 
   wss.handleUpgrade(req, socket, head, function (ws) {
-    if (!client) return ws.close(4001, 'unauthorized');
+    if (!client) {
+      log.warn({ ip: req.socket.remoteAddress }, 'Realtime: token буруу, 4001-ээр хаалаа');
+      return ws.close(4001, 'unauthorized');
+    }
     ws.client = client;
+    log.info({ role: client.role, unitId: client.unitId, online: wss.clients.size }, 'Realtime холбогдлоо');
     ws.on('message', function (data) {
       if (String(data) === 'ping') ws.send('pong');
+    });
+    ws.on('close', function (code) {
+      log.info({ role: client.role, unitId: client.unitId, code: code, online: wss.clients.size }, 'Realtime саллаа');
     });
   });
 }

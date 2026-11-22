@@ -1,7 +1,7 @@
 /**
  * Компьютер дээрх .data/dev.sqlite-ийн өгөгдлийг Cloudflare D1 руу илгээх SQL файл болгоно (npm run d1:seed)
  * Гаралт: .data/seed.sql — хүснэгт бүрийг цэвэрлээд мөр бүрийг INSERT болгоно.
- * Дараа нь: wrangler d1 execute sukh-hub --remote --file .data/seed.sql
+ * Дараа нь: wrangler d1 execute sukh-hub-asia --remote --file .data/seed.sql
  *
  * D1 файл импортлохдоо foreign key-г мөр бүрт шууд шалгадаг (defer_foreign_keys тоохгүй).
  * entrances.leader_id → users нь users-ээс өмнө орох тул эхлээд NULL-оор оруулж, төгсгөлд нь UPDATE хийнэ.

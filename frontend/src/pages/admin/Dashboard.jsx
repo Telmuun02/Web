@@ -8,6 +8,7 @@ import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded'
 import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined'
 import VideocamOffOutlined from '@mui/icons-material/VideocamOffOutlined'
 import api from '../../api/client'
+import LiveNumber from '../../components/UI/LiveNumber'
 import useApi from '../../hooks/useApi'
 import useNow from '../../hooks/useNow'
 import { sampleAlerts } from '../../samples/admin/dashboard'
@@ -130,10 +131,10 @@ export default function Dashboard() {
 
         <Link to="/admin/invoices" className="dash-hero-month">
           <span className="dash-hero-label">Энэ сарын төлөлт</span>
-          <span className="dash-hero-big">{paidPercent}<small>%</small></span>
+          <span className="dash-hero-big"><LiveNumber value={paidPercent} /><small>%</small></span>
           <span className="dash-hero-bar"><span style={{ width: `${paidPercent}%` }} /></span>
           <span className="dash-hero-note">
-            <strong>{month.paidUnits}</strong> / {month.units} айл гэрлээ асаасан · {million(month.collected)} / {million(month.billed)} сая₮
+            <strong><LiveNumber value={month.paidUnits} /></strong> / {month.units} айл гэрлээ асаасан · {million(month.collected)} / {million(month.billed)} сая₮
           </span>
         </Link>
 
@@ -159,7 +160,7 @@ export default function Dashboard() {
 
         <Link to="/admin/invoices" className="dash-hero-today">
           <span className="dash-hero-label">Өнөөдөр орсон</span>
-          <span className="dash-hero-money">{money(today.amount)}</span>
+          <span className="dash-hero-money"><LiveNumber value={today.amount} format={money} /></span>
           <span className="dash-hero-note">
             {today.count} төлбөр{payments[0] && ` · сүүлийнх ${timeAgo(payments[0].paidAt, now)}`}
           </span>

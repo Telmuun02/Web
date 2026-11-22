@@ -16,8 +16,10 @@
 
 import { DurableObject } from 'cloudflare:workers';
 import changes from './changes.js';
+import logger from '../logger.js';
 
 var POLL_MS = 2000;
+var log = logger.child({ module: 'realtime' });
 
 export class RealtimeHub extends DurableObject {
   constructor(ctx, env) {
@@ -34,6 +36,7 @@ export class RealtimeHub extends DurableObject {
     var [browser, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment(client);
+    log.info({ role: client.role, unitId: client.unitId, online: this.ctx.getWebSockets().length }, 'Realtime холбогдлоо');
 
     await this.schedule();
     return new Response(null, { status: 101, webSocket: browser });
@@ -43,12 +46,14 @@ export class RealtimeHub extends DurableObject {
     try {
       await this.run();
     } catch (err) {
-      console.error('Realtime шалгалт амжилтгүй: ' + err.message);
+      log.error({ err: err }, 'Realtime шалгалт амжилтгүй');
     }
     await this.schedule();
   }
 
   webSocketClose(ws, code) {
+    var client = ws.deserializeAttachment();
+    log.info({ role: client.role, unitId: client.unitId, code: code }, 'Realtime саллаа');
     try {
       ws.close(code >= 3000 || code === 1000 ? code : 1000);
     } catch (err) {
@@ -65,15 +70,18 @@ export class RealtimeHub extends DurableObject {
     if (!list.length) return;
     await this.ctx.storage.put('lastId', list[list.length - 1].id);
 
+    var sent = 0;
     sockets.forEach(function (ws) {
       var tables = changes.tablesFor(ws.deserializeAttachment(), list);
       if (!tables.length) return;
       try {
         ws.send(JSON.stringify({ type: 'change', tables: tables }));
+        sent++;
       } catch (err) {
         ws.close(1011, 'send failed');
       }
     });
+    log.info({ changes: list.length, lastId: list[list.length - 1].id, sent: sent, online: sockets.length }, 'Realtime илгээлээ');
   }
 
   async schedule() {

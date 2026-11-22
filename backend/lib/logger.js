@@ -40,7 +40,7 @@ function workerLogger(bindings) {
         msg = obj;
         obj = {};
       }
-      var line = Object.assign({ level: name, time: new Date().toISOString() }, bindings, clean(obj || {}), { msg: msg });
+      var line = Object.assign({ level: name }, bindings, clean(obj || {}), { msg: msg });
       var write = LEVELS[name] >= 50 ? console.error : LEVELS[name] >= 40 ? console.warn : console.log;
       write(JSON.stringify(line));
     };

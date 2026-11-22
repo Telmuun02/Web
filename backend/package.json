@@ -14,9 +14,9 @@
     "logs": "node scripts/logs.js",
     "logs:clear": "node scripts/clear-logs.js",
     "cf:dev": "wrangler dev --remote",
-    "d1:create": "wrangler d1 create sukh-hub",
-    "d1:migrate": "wrangler d1 migrations apply sukh-hub --remote",
-    "d1:seed": "node db/export.js && wrangler d1 execute sukh-hub --remote --file .data/seed.sql",
+    "d1:create": "wrangler d1 create sukh-hub-asia --location apac",
+    "d1:migrate": "wrangler d1 migrations apply sukh-hub-asia --remote",
+    "d1:seed": "node db/export.js && wrangler d1 execute sukh-hub-asia --remote --file .data/seed.sql",
     "deploy": "npm --prefix ../frontend run build && wrangler deploy"
   },
   "dependencies": {

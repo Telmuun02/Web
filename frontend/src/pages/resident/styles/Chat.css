@@ -233,22 +233,6 @@
   color: var(--yellow);
 }
 
-.res-chat-person-av i {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 10px;
-  height: 10px;
-  box-sizing: border-box;
-  border-radius: 5px;
-  border: 2px solid var(--surface);
-  background: var(--field-border);
-}
-
-.res-chat-person-av i.on {
-  background: var(--on-green);
-}
-
 .res-chat-cta {
   padding: 18px;
   display: flex;

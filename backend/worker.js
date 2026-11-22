@@ -14,7 +14,6 @@ import http from 'node:http';
 import { httpServerHandler } from 'cloudflare:node';
 import { env } from 'cloudflare:workers';
 import Client_D1 from './db/clients/d1.js';
-import hooks from './db/hooks.js';
 import { tokenFrom, identify } from './lib/realtime/identify.js';
 import app from './app.js';
 
@@ -27,10 +26,6 @@ Client_D1.use(env.DB);
 function hub() {
   return env.REALTIME.get(env.REALTIME.idFromName('hub'));
 }
-
-hooks.onWrite(function () {
-  return hub().poke();
-});
 
 async function connectRealtime(request) {
   if (request.headers.get('Upgrade') !== 'websocket') {

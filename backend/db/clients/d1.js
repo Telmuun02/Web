@@ -8,12 +8,10 @@
  * acquireConnection() - D1-д холболтын pool хэрэггүй, хоосон объект буцаана
  * _query(conn, obj) - нэг SQL-ийг ажиллуулж knex-ийн хүлээдэг хэлбэрээр хариуг тавина
  * batch(queries) - хэд хэдэн SQL-ийг нэг transaction-д ажиллуулна (D1 BEGIN/COMMIT дэмжихгүй)
- * Өгөгдөл өөрчилсөн бол hooks.wrote() — realtime-д "одоо шалга" гэж дохио өгнө
  */
 
 var Client_SQLite3 = require('knex/lib/dialects/sqlite3');
 var values = require('../values');
-var hooks = require('../hooks');
 
 var DB = null;
 
@@ -39,7 +37,6 @@ class Client_D1 extends Client_SQLite3 {
     var res = await DB.prepare(obj.sql).bind(...values.toParams(obj.bindings)).all();
     obj.response = values.fromRows(res.results);
     obj.context = { lastID: res.meta.last_row_id, changes: res.meta.changes };
-    if (hooks.isWrite(obj.sql)) await hooks.wrote();
     return obj;
   }
 
@@ -48,7 +45,6 @@ class Client_D1 extends Client_SQLite3 {
       return DB.prepare(q.sql).bind(...values.toParams(q.bindings));
     });
     var results = await DB.batch(stmts);
-    await hooks.wrote();
     return results.map(function (res) {
       return { rows: values.fromRows(res.results), lastID: res.meta.last_row_id, changes: res.meta.changes };
     });

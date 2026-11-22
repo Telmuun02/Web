@@ -16,7 +16,7 @@ const tables = {
 const empty = { stats: [], events: [] }
 
 // "ШУУД" мөрийн өгөгдөл — хуудас LiveBar-аас өмнө дуудаад prop-оор дамжуулна.
-// GET /api/admin/live/:page — DB өөрчлөгдөхөд шууд, нөөцөөр 2 минут тутам шинэчилнэ. Алдаа гарвал хоосон мөр үлдэнэ
+// GET /api/admin/live/:page — DB өөрчлөгдөхөд WebSocket-оор шууд шинэчилнэ. Алдаа гарвал хоосон мөр үлдэнэ
 export default function useLive(page) {
-  return useApi(`/admin/live/${page}`, null, { fallback: empty, refreshEvery: 120, live: tables[page] }).data
+  return useApi(`/admin/live/${page}`, null, { fallback: empty, live: tables[page] }).data
 }

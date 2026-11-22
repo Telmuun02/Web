@@ -1,8 +1,8 @@
 // Realtime — сервертэй нэг л WebSocket холболт, бүх хуудас хуваалцана.
-//   const off = subscribe((msg) => { ... })   // msg: { type: 'change', tables } эсвэл { type: 'notify', title, body, link }
+//   const off = subscribe((msg) => { ... })   // msg: { type: 'change', tables: ['requests', ...] }
 //   off()                                     // хуудаснаас гарахад
-//   send({ type: 'typing', room })            // сервер рүү (чатын "бичиж байна", онлайн жагсаалт асуух)
-// Холбогдох бүрт (дахин холбогдсон ч) listener-үүд { type: 'connected' } авна — онлайн жагсаалтаа дахин асууна.
+// Холбогдох бүрт listener-үүд { type: 'connected', reconnect } авна.
+// reconnect: true — тасарч байгаад дахин холбогдсон, энэ хооронд алдагдсан өөрчлөлтийг нөхөж дахин татна.
 // Эхний subscribe холболтыг нээж, сүүлийнх нь гарснаас 1 сек хойш хаана (гарсан хэрэглэгчид холболт үлдэхгүй;
 // StrictMode-ийн давхар mount, хуудас солих үед холболт дэмий тасарч нээгдэхгүй).
 // Тасарвал 1с → 2с → 4с ... 30с хүртэл хүлээгээд дахин холбогдоно. 4001 = нэвтрэлт дууссан → /login.
@@ -18,6 +18,7 @@ let retryMs = 1000
 let retryTimer = null
 let pingTimer = null
 let closeTimer = null
+let connections = 0 // хэдэн удаа холбогдсон — 1-ээс их бол дахин холбогдсон
 
 function url() {
   const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -29,7 +30,8 @@ function connect() {
 
   socket.onopen = () => {
     retryMs = 1000
-    listeners.forEach((fn) => fn({ type: 'connected' }))
+    connections += 1
+    listeners.forEach((fn) => fn({ type: 'connected', reconnect: connections > 1 }))
     pingTimer = setInterval(() => socket?.readyState === WebSocket.OPEN && socket.send('ping'), PING_MS)
   }
 
@@ -68,11 +70,6 @@ function disconnect() {
     socket.close()
     socket = null
   }
-}
-
-// Холболт нээлттэй бол илгээнэ, үгүй бол хаяна (typing, presence алдагдсан ч зүгээр)
-export function send(data) {
-  if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data))
 }
 
 export function subscribe(fn) {

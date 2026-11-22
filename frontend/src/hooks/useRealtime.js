@@ -1,20 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { subscribe } from '../api/realtime'
 
-// Realtime мессеж хүлээн авах — api/realtime.js-ийн нэг холболтод бүртгүүлнэ.
-//   useRealtime((msg) => { if (msg.type === 'notify') ... })
-// Хуудас гарахад өөрөө бүртгэлээ цуцална. handler-ийг ref-д хадгалдаг тул
-// render бүрт шинэ функц өгсөн ч дахин бүртгүүлэхгүй.
-export default function useRealtime(handler) {
-  const ref = useRef(handler)
-  useEffect(() => {
-    ref.current = handler
-  })
-
-  useEffect(() => subscribe((msg) => ref.current(msg)), [])
-}
-
 // Өгсөн хүснэгтүүдийн аль нэг өөрчлөгдөхөд onChange-ийг дуудна (300мс-д нэг удаа).
+// WebSocket тасраад дахин холбогдоход ч дуудна — тасарсан хооронд алдагдсан өөрчлөлтийг нөхнө.
 //   useTableChange(['requests'], reload)
 // tables хоосон / null бол юу ч хийхгүй (холболт ч нээхгүй).
 export function useTableChange(tables, onChange) {
@@ -30,7 +18,9 @@ export function useTableChange(tables, onChange) {
     let timer = null
 
     const off = subscribe((msg) => {
-      if (msg.type !== 'change' || !msg.tables.some((t) => watched.includes(t))) return
+      const reconnected = msg.type === 'connected' && msg.reconnect
+      const changed = msg.type === 'change' && msg.tables.some((t) => watched.includes(t))
+      if (!reconnected && !changed) return
       clearTimeout(timer)
       timer = setTimeout(() => ref.current(), 300)
     })

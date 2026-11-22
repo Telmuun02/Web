@@ -22,7 +22,7 @@ function shortTime(value) {
 }
 
 // Чат — оршин суугчдын СӨХ-д бичсэн хувийн чатууд (хариулна) ба орцны группүүд (уншина, нууна).
-// canvas: AdminPhoneChat (вэб хэлбэрт). Мессеж, "бичиж байна", онлайн байдал WebSocket-оор шууд.
+// canvas: AdminPhoneChat (вэб хэлбэрт). Шинэ мессеж ирэхэд WebSocket-оор шууд дахин татна.
 // URL: ?tab=groups — групп таб, ?room=soh:613 — нээлттэй чат
 export default function Chat() {
   const [params, setParams] = useSearchParams()
@@ -31,13 +31,12 @@ export default function Chat() {
 
   // GET /api/admin/messages — chat_messages өөрчлөгдөх бүрт (WebSocket) жагсаалт шинэчлэгдэнэ
   const { data, error } = useApi('/admin/messages', null, { fallback: null, live: ['chat_messages'] })
-  const chat = useChatRoom(room ? `/admin/messages/${encodeURIComponent(room)}` : null, room)
+  const chat = useChatRoom(room ? `/admin/messages/${encodeURIComponent(room)}` : null)
 
   const threads = data?.threads ?? []
   const groups = data?.groups ?? []
   const unreadTotal = threads.reduce((sum, t) => sum + t.unread, 0)
   const isGroup = room?.startsWith('entrance:')
-  const onlineResidents = chat.online.filter((p) => p.role === 'user')
 
   function select(next) {
     const p = {}
@@ -65,11 +64,10 @@ export default function Chat() {
   let sub = ''
   if (head?.kind === 'soh') {
     title = head.title
-    const online = onlineResidents.some((p) => p.name === head.title) // тоотын аль нэг утас онлайн
-    sub = [online ? 'Апп-д онлайн' : 'Офлайн', ...(head.phones ?? [])].join(' · ')
+    sub = (head.phones ?? []).join(' · ')
   } else if (head?.kind === 'entrance') {
     title = head.title
-    sub = `${onlineResidents.length} оршин суугч онлайн · ажилтан зөвхөн уншина, нууж болно`
+    sub = 'Ажилтан зөвхөн уншина, нууж болно'
   }
 
   return (

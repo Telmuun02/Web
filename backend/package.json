@@ -34,8 +34,8 @@
     "ws": "^8.23.0"
   },
   "devDependencies": {
-    "wrangler": "^4.166.0",
-    "mysql2": "^3.24.6"
+    "mysql2": "^3.24.6",
+    "wrangler": "^4.166.0"
   },
   "allowScripts": {
     "workerd@1.20261119.1": true,

@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
-import Notifications from '../UI/Notifications'
 import ChatWidget from '../Chat/ChatWidget'
 import './Layout.css'
 
@@ -16,7 +15,6 @@ export default function Layout({ user, onLogout, onUserChange }) {
       {/* Чатбот — бүх өгөгдлөөс асуух ажилтны туслах */}
       <ChatWidget userId={user.id} mode="admin" />
       {/* Realtime мэдэгдэл — шинэ хүсэлт, онлайн төлбөр */}
-      <Notifications />
     </div>
   )
 }

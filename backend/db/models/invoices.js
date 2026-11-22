@@ -5,7 +5,6 @@
  *
  * base: all, find, where, create, update, remove
  * paidPerInvoice() - (дотоод) нэхэмжлэл бүрийн төлөгдсөн дүн, join-д
- * lastPayment() - (дотоод) нэхэмжлэл бүрийн сүүлийн төлбөр
  * inScope(q, period, search) - (дотоод) list, counts-ын нийтлэг нөхцөл
  * thisMonth() - (дотоод) энэ сарын 1-ний өдөр
  *
@@ -15,7 +14,8 @@
  * debtors(limit, buildingId) - хугацаа хэтэрсэн өртэй тоотууд, өр ихээс нь
  * overdueTotal(buildingId) - нийт хэтэрсэн өр, хэдэн тоот
  * counts(period, search, buildingId) - таб бүрийн тоо { all, unpaid, partial, paid, overdue }
- * list(period, filters, buildingId) - нэхэмжлэлийн жагсаалт (таб, хайлттай)
+ * list(period, filters, buildingId) - нэхэмжлэлийн жагсаалт (таб, хайлттай). Төлсөн дүн, сүүлийн төлбөрийг
+ *   мөр бүрт index-ээр (payments.invoice_id) хайна — бүх төлбөрийг нэгтгэх join-оос хэдэн арав дахин цөөн мөр уншина
  * monthProgress(buildingId) - энэ сарын нэхэмжлэлээс хэд нь бүрэн төлөгдсөн
  * currentForUnit(unitId) - тоотын энэ сарын нэхэмжлэл, төлсөн дүн, задаргааны мөрүүдтэй (lines)
  * entranceMonth(entranceId) - орцны тоот бүр энэ сард төлсөн эсэх ("орцны гэрэл")
@@ -115,13 +115,6 @@ async function overdueTotal(buildingId) {
   return { debt: Number(row.debt), units: Number(row.units) };
 }
 
-function lastPayment() {
-  return db('payments as lp')
-    .select('lp.invoice_id', 'lp.method', 'lp.paid_at')
-    .whereIn('lp.id', db('payments').max('id').groupBy('invoice_id'))
-    .as('lp');
-}
-
 function inScope(q, period, search) {
   q.where(function () {
     this.where('i.period', period).orWhere(function () {
@@ -166,11 +159,10 @@ async function list(period, filters, buildingId) {
 
   var q = db('invoices as i')
     .join('units as u', 'u.id', 'i.unit_id')
-    .leftJoin(paidPerInvoice(), 'p.invoice_id', 'i.id')
-    .leftJoin(lastPayment(), 'lp.invoice_id', 'i.id')
     .select('i.id', 'i.unit_id', 'u.code as unit_code', 'i.period', 'i.amount', 'i.due_date', 'i.status')
-    .select(db.raw('COALESCE(p.paid, 0) AS paid'))
-    .select('lp.method as last_method', 'lp.paid_at as last_paid_at')
+    .select(db.raw('(SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payments.invoice_id = i.id) AS paid'))
+    .select(db.raw('(SELECT method FROM payments WHERE payments.invoice_id = i.id ORDER BY id DESC LIMIT 1) AS last_method'))
+    .select(db.raw('(SELECT paid_at FROM payments WHERE payments.invoice_id = i.id ORDER BY id DESC LIMIT 1) AS last_paid_at'))
     .select(db.raw('(SELECT name FROM users WHERE users.unit_id = i.unit_id ORDER BY id LIMIT 1) AS resident_name'))
     .select(db.raw("(i.status <> 'paid' AND i.due_date < datetime('now', '+8 hours')) AS overdue"))
     .orderBy([{ column: 'i.period' }, { column: 'u.code' }, { column: 'i.id' }]);

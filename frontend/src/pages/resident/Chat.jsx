@@ -3,7 +3,6 @@ import PushPinOutlined from '@mui/icons-material/PushPinOutlined'
 import ChatThread from '../../components/Chat/ChatThread'
 import useApi from '../../hooks/useApi'
 import useChatRoom from '../../hooks/useChatRoom'
-import useRealtime from '../../hooks/useRealtime'
 import useTabParam from '../../hooks/useTabParam'
 import './styles/Chat.css'
 
@@ -16,49 +15,33 @@ function preview(last) {
 }
 
 // Чат — орцны групп ба СӨХ-тэй хувийн чат (canvas: WebChat).
-// Мессеж, "бичиж байна", онлайн байдал WebSocket-оор шууд (hooks/useChatRoom).
+// Шинэ мессеж ирэхэд WebSocket-оор шууд дахин татна (hooks/useChatRoom).
 // Сонгосон өрөө URL-д: /chat (групп), /chat?tab=soh
 export default function Chat() {
   const { user } = useOutletContext()
   const [key, setKey] = useTabParam('entrance')
-  // GET /api/resident/messages — өрөөнүүд (уншаагүйтэй), тогтоосон зарлал, хөршүүд, ажилтнууд
-  const { data, error, reload } = useApi('/resident/messages', null, { fallback: null })
+  // GET /api/resident/messages — өрөөнүүд (уншаагүйтэй), тогтоосон зарлал, хөршүүд, ажилтнууд.
+  // chat_messages өөрчлөгдөхөд сүүлийн мессеж, уншаагүй шинэчлэгдэнэ
+  const { data, error } = useApi('/resident/messages', null, { fallback: null, live: ['chat_messages'] })
   const room = data?.rooms.find((r) => r.key === key) ?? data?.rooms[0]
-  const chat = useChatRoom(room ? `/resident/messages/${room.key}` : null, room?.room ?? null)
-
-  // Өөр өрөөнд мессеж ирвэл жагсаалтын сүүлийн мессеж, уншаагүйг шинэчилнэ
-  useRealtime((msg) => {
-    if (msg.type === 'chat' && data?.rooms.some((r) => r.room === msg.message.room)) reload()
-  })
+  const chat = useChatRoom(room ? `/resident/messages/${room.key}` : null)
 
   if (error) return <p className="res-chat-error">{error}</p>
   if (!data || !room) return null
 
   const isGroup = room.key === 'entrance'
-  const onlineIds = new Set(chat.online.map((p) => `${p.role}:${p.id}`))
-  // Нэг тоот = нэг бүртгэл: тоотын аль нэг утас онлайн бол тоот онлайн. Өөрийн тоотыг хасна
+  // Нэг тоот = нэг бүртгэл. Өөрийн тоотыг хасна
   const homes = Object.values(data.neighbors.reduce((map, n) => {
-    if (n.unitId === user.unit_id) return map
-    const home = map[n.unitId] ?? { key: n.unitId, name: n.name, online: false }
-    home.online = home.online || onlineIds.has(`user:${n.id}`)
-    map[n.unitId] = home
+    if (n.unitId !== user.unit_id && !map[n.unitId]) map[n.unitId] = { key: n.unitId, name: n.name }
     return map
   }, {}))
-  const neighborsOnline = homes.filter((h) => h.online)
-  const staffOnline = data.staff.filter((s) => onlineIds.has(`admin:${s.id}`))
 
-  // Баруун талын жагсаалт: групп бол хөрш тоотууд (эхэнд нь онлайн), СӨХ бол ажилтнууд
+  // Баруун талын жагсаалт: групп бол хөрш тоотууд, СӨХ бол ажилтнууд
   const people = isGroup
-    ? [...neighborsOnline, ...homes.filter((h) => !h.online)]
-        .slice(0, 8)
-        .map((h) => ({ ...h, sub: '' }))
-    : data.staff.map((s) => ({ key: s.id, name: s.name, sub: positionLabel[s.position] ?? 'Ажилтан', online: onlineIds.has(`admin:${s.id}`), admin: true }))
+    ? homes.slice(0, 8)
+    : data.staff.map((s) => ({ key: s.id, name: s.name, sub: positionLabel[s.position] ?? 'Ажилтан', admin: true }))
 
-  const subtitle = isGroup
-    ? `${data.homes} айл · ${neighborsOnline.length + 1} онлайн`
-    : staffOnline.length
-      ? `${staffOnline.map((s) => s.name).join(', ')} онлайн`
-      : 'Ажилтан онлайн болмогц хариулна'
+  const subtitle = isGroup ? `${data.homes} айл` : 'СӨХ-ийн ажилтан хариулна'
 
   return (
     <div className="res-chat">
@@ -111,17 +94,16 @@ export default function Chat() {
       <aside className="res-chat-side" aria-label="Чатын мэдээлэл">
         <section className="res-chat-people" aria-labelledby="res-chat-people-title">
           <h2 id="res-chat-people-title">
-            {isGroup ? `Онлайн хөршүүд · ${neighborsOnline.length}` : 'СӨХ-ийн ажилтан'}
+            {isGroup ? `Хөршүүд · ${homes.length}` : 'СӨХ-ийн ажилтан'}
           </h2>
           {people.map((p) => (
             <div key={p.key} className="res-chat-person">
               <span className={p.admin ? 'res-chat-person-av admin' : 'res-chat-person-av'} aria-hidden="true">
                 {p.name[0]}
-                <i className={p.online ? 'on' : ''} />
               </span>
               <span>
                 <strong>{p.name}</strong>
-                <small>{[p.sub, p.online && 'онлайн'].filter(Boolean).join(' · ') || 'офлайн'}</small>
+                {p.sub && <small>{p.sub}</small>}
               </span>
             </div>
           ))}

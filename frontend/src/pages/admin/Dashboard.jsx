@@ -14,7 +14,8 @@ import { sampleAlerts } from '../../samples/admin/dashboard'
 import './styles/Dashboard.css'
 
 // Шууд самбар — canvas "Удирдлагын самбар — ажилтан (шууд)".
-// GET /api/admin/dashboard: DB өөрчлөгдөхөд WebSocket-оор шууд, нөөцөөр 2 минут тутам шинэчлэгдэнэ.
+// GET /api/admin/dashboard: DB өөрчлөгдөхөд WebSocket-оор шууд (дахин холбогдоход ч) шинэчлэгдэнэ.
+// Цаг тутам давтан татахгүй — нээлттэй орхисон самбар D1-ийн өдрийн уншилтын хязгаарыг идэхгүй.
 // "Түр зогсоох" дарвал шинэчлэлт зогсоно (уншиж байхад тоо үсрэхгүй).
 
 const LIVE_TABLES = ['payments', 'invoices', 'requests', 'polls', 'poll_votes', 'admins']
@@ -61,7 +62,6 @@ export default function Dashboard() {
 
   const { data, error } = useApi('/admin/dashboard', null, {
     fallback: null,
-    refreshEvery: paused ? 0 : 120,
     live: paused ? null : LIVE_TABLES,
   })
 

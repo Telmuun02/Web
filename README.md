@@ -50,9 +50,9 @@
 | `morgan` | ~1.9.1 | Ирсэн request бүрийг терминалд хэвлэх |
 | `pino` | ^10.4.0 | Бүтэцтэй лог (`logs/app.log`) |
 | `pino-pretty` | ^13.2.0 | Терминал дахь логийг өнгөтэй, уншихад хялбар болгох |
+| `ws` | ^8.23.0 | WebSocket (realtime), компьютер дээр |
 | `debug` | ~2.6.9 | `bin/www`-ийн debug мэдээлэл (Express generator-оос) |
 | `@anthropic-ai/sdk` | ^1.8.0 | Чатбот: Claude API-тай харилцах |
-| `ws` | ^8.23.0 | WebSocket (realtime). **Хийгдэж байгаа** |
 
 Chimege (яриа → текст) нь тусдаа сан биш, түүний HTTP API-г `services/chimegeService.js` шууд дууддаг.
 

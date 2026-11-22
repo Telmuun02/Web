@@ -55,12 +55,6 @@ export default function ChatThread({ chat, me, canWrite = true, placeholder, ban
       {banner}
 
       <div className="chat-thread-list" aria-live="polite">
-        {chat.typing.length > 0 && (
-          <span className="chat-typing">
-            <span className="chat-typing-dots" aria-hidden="true"><i /><i /><i /></span>
-            {chat.typing.join(', ')} бичиж байна
-          </span>
-        )}
 
         {list.map((m, i) => {
           const mine = isMine(m)
@@ -109,7 +103,7 @@ export default function ChatThread({ chat, me, canWrite = true, placeholder, ban
         <form className="chat-compose" onSubmit={submit}>
           <label className="chat-compose-field">
             <span className="visually-hidden">Мессеж бичих</span>
-            <input name="text" placeholder={placeholder} autoComplete="off" maxLength={1000} onInput={chat.notifyTyping} />
+            <input name="text" placeholder={placeholder} autoComplete="off" maxLength={1000} />
           </label>
           <button type="submit" className="chat-send">
             <SendRounded sx={{ fontSize: 18 }} />

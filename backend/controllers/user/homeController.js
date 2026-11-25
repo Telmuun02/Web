@@ -20,7 +20,7 @@ async function show(req, res, next) {
       Invoices.currentForUnit(me.unit.id),
       Announcements.forEntrance(me.unit.entrance_id, 2),
       Requests.forUser(me.user.id, 20),
-      Meetings.next(),
+      Meetings.next(me.unit.entrance_id),
     ]);
 
     var latest = requests.find(function (r) { return r.stage !== 'done'; }) || requests[0] || null;

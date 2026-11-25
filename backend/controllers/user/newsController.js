@@ -22,7 +22,7 @@ async function index(req, res, next) {
       Announcements.forEntrance(me.unit.entrance_id, 30),
       Polls.list(),
       Polls.votesOfUnit(me.unit.id),
-      Meetings.next(),
+      Meetings.next(me.unit.entrance_id),
     ]);
 
     var active = await Promise.all(

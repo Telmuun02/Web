@@ -9,9 +9,13 @@
  * Hibernation: идэвхгүй үед Cloudflare DO-г унтраадаг, холболт тасрахгүй. Хэн бэ гэдэг нь
  *   холболт бүрт serializeAttachment-аар хадгалагдана. 'ping' → 'pong'-ийг DO сэрээлгүй хариулна.
  *
+ * Онлайн хурал: JSON мессежийг meeting.js боловсруулна (signaling). Холболт бүрийн { id, host, joined } attachment-д хадгалагдана.
+ *
  * fetch(request) - шинэ WebSocket холболт (x-realtime-client толгойд { role, unitId })
  * kick() - өгөгдөл өөрчлөгдлөө: холболт байвал alarm-ыг одоо ажиллуулна
  * alarm() - шалгалт (kick-ээр эсвэл 30 сек тутам)
+ * hub() - (дотоод) meeting.js-д өгөх холболтуудын жагсаалт ба attachment унших/бичих
+ * webSocketMessage(ws, message) - хурлын signaling мессеж
  * webSocketClose(ws, code) - client хаахад хариу хаалт (1005/1006 шиг хориотой кодыг 1000 болгоно)
  * run() - (дотоод) шинэ өөрчлөлтүүдийг уншиж client бүрт өөрт нь харагдах хүснэгтүүдийг илгээнэ
  * schedule() - (дотоод) холболт байвал дараагийн alarm-ыг тавина
@@ -19,6 +23,7 @@
 
 import { DurableObject } from 'cloudflare:workers';
 import changes from './changes.js';
+import meeting from './meeting.js';
 import logger from '../logger.js';
 
 var POLL_MS = 30000;
@@ -31,7 +36,7 @@ export class RealtimeHub extends DurableObject {
   }
 
   async fetch(request) {
-    var client = JSON.parse(request.headers.get('x-realtime-client'));
+    var client = Object.assign({ id: crypto.randomUUID() }, JSON.parse(request.headers.get('x-realtime-client')));
     if (!this.ctx.getWebSockets().length) {
       await this.ctx.storage.put('lastId', await changes.latestId());
     }
@@ -58,7 +63,24 @@ export class RealtimeHub extends DurableObject {
     await this.schedule();
   }
 
+  hub() {
+    return {
+      sockets: () => this.ctx.getWebSockets(),
+      info: (ws) => ws.deserializeAttachment(),
+      set: (ws, patch) => ws.serializeAttachment(Object.assign(ws.deserializeAttachment(), patch)),
+    };
+  }
+
+  webSocketMessage(ws, message) {
+    try {
+      meeting.handle(ws, JSON.parse(message), this.hub());
+    } catch (err) {
+      log.warn({ err: err }, 'Realtime: буруу мессеж');
+    }
+  }
+
   webSocketClose(ws, code) {
+    meeting.leave(ws, this.hub());
     var client = ws.deserializeAttachment();
     log.info({ role: client.role, unitId: client.unitId, code: code }, 'Realtime саллаа');
     try {

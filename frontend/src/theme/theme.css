@@ -14,6 +14,12 @@
   --link: #c9c4ec;
   --muted: #b3add0;
 
+  /* Онлайн хурлын дэлгэц (Zoom шиг хар) — theme-ээс үл хамаарна */
+  --call-bg: #0f0c26;
+  --call-tile: #1a1547;
+  --call-button: #2c2560;
+  --call-text: #fff;
+
   /* Хуудас, карт, бичиг — theme солигдоход эдгээр өөрчлөгдөнө */
   --page-bg: #f5f4fa;
   --surface: #fff;

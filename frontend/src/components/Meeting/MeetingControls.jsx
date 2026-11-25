@@ -1,21 +1,18 @@
 /**
- * MeetingControls — хурлын товчнууд (босоо багана)
- * Микрофон (хажууд нь MicLevel), камер дүрстэй товч, "Нэгдэх" / улаан "Гарах" товч.
- * Props: media (useLocalMedia-ийн утга), joined, onJoin, onLeave
+ * MeetingControls — микрофон (хажууд нь MicLevel), камерын дүрстэй товчнууд
+ * Props: media (useLocalMedia-ийн утга), className (байрлал: босоо багана эсвэл дуудлагын доод мөр), children (нэмэлт товч, жишээ нь "Дуусгах")
  */
 
 import VideocamOutlined from '@mui/icons-material/VideocamOutlined'
 import VideocamOffOutlined from '@mui/icons-material/VideocamOffOutlined'
 import MicOutlined from '@mui/icons-material/MicOutlined'
 import MicOffOutlined from '@mui/icons-material/MicOffOutlined'
-import CallEndOutlined from '@mui/icons-material/CallEndOutlined'
-import Button from '../UI/Button'
 import MicLevel from './MicLevel'
 import './Meeting.css'
 
-export default function MeetingControls({ media, joined, onJoin, onLeave }) {
+export default function MeetingControls({ media, className = '', children }) {
   return (
-    <div className="meeting-controls">
+    <div className={`meeting-controls ${className}`}>
       <div className="meeting-mic">
         <button
           type="button"
@@ -37,13 +34,7 @@ export default function MeetingControls({ media, joined, onJoin, onLeave }) {
       >
         {media.video ? <VideocamOutlined /> : <VideocamOffOutlined />}
       </button>
-      {joined ? (
-        <button type="button" className="meeting-icon meeting-leave" aria-label="Хурлаас гарах" onClick={onLeave}>
-          <CallEndOutlined />
-        </button>
-      ) : (
-        <Button variant="primary" onClick={onJoin}>Нэгдэх</Button>
-      )}
+      {children}
     </div>
   )
 }

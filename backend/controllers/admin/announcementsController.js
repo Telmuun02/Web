@@ -4,15 +4,15 @@
  *
  * index - нийтэлсэн зарлалууд, шинээс нь
  *   GET /api/admin/announcements
- * store - шинэ зарлал (бүх орц эсвэл нэг орцонд)
- *   POST /api/admin/announcements
+ * store - шинэ зарлал (бүх орц эсвэл нэг орцонд). meeting өгвөл зарлалтай ижил орцонд хурал (meetings) үүсгэж холбоно
+ *   POST /api/admin/announcements - { title, body, audience, sms, important, meeting: { starts_at, ends_at } | null }
  * update - зарлалын гарчиг, агуулгыг засах
  *   PATCH /api/admin/announcements/:id - { title, body }
  * destroy - зарлал устгах
  *   DELETE /api/admin/announcements/:id
  */
 
-var { Announcements, Entrances } = require('../../db/models');
+var { Announcements, Entrances, Meetings } = require('../../db/models');
 var log = require('../../lib/logger').child({ module: 'admin/announcements' });
 
 async function index(req, res, next) {
@@ -39,7 +39,23 @@ async function store(req, res, next) {
       if (!entrance) return res.status(400).json({ error: 'Ийм орц алга' });
     }
 
+    var meeting = req.body.meeting;
+    if (meeting && !(meeting.starts_at && meeting.ends_at && meeting.ends_at > meeting.starts_at)) {
+      return res.status(400).json({ error: 'Хурлын эхлэх, дуусах цагаа зөв оруулна уу' });
+    }
+    var meetingId = meeting
+      ? (await Meetings.create({
+        title: title,
+        description: body,
+        starts_at: String(meeting.starts_at),
+        ends_at: String(meeting.ends_at),
+        entrance_id: entrance ? entrance.id : null,
+        created_by: req.user.id,
+      })).id
+      : null;
+
     var post = await Announcements.create({
+      meeting_id: meetingId,
       created_by: req.user.id,
       title: title,
       body: body,
@@ -51,6 +67,7 @@ async function store(req, res, next) {
     log.info({
       by: req.user.id,
       announcementId: post.id,
+      meetingId: meetingId,
       entrance: entrance ? entrance.number : 'all',
       sms: Boolean(req.body.sms),
       important: Boolean(req.body.important),

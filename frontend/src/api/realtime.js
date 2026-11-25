@@ -7,6 +7,7 @@
  * Эхний subscribe холболтыг нээж, сүүлийнх нь гарснаас 1 сек хойш хаана (гарсан хэрэглэгчид холболт үлдэхгүй;
  * StrictMode-ийн давхар mount, хуудас солих үед холболт дэмий тасарч нээгдэхгүй).
  * Тасарвал 1с → 2с → 4с ... 30с хүртэл хүлээгээд дахин холбогдоно. 4001 = нэвтрэлт дууссан → /login.
+ * send(msg) - JSON мессеж илгээнэ (онлайн хурлын signaling). Холболт нээлттэй биш бол false.
  * 25 сек тутам 'ping' — холболт чимээгүй тасрахаас сэргийлнэ (сервер 'pong' хариулна).
  */
 
@@ -89,4 +90,10 @@ export function subscribe(fn) {
       retryTimer = null
     }, CLOSE_DELAY_MS)
   }
+}
+
+export function send(msg) {
+  if (socket?.readyState !== WebSocket.OPEN) return false
+  socket.send(JSON.stringify(msg))
+  return true
 }

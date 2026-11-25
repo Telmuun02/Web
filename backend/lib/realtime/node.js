@@ -4,6 +4,7 @@
  *
  * Холболт: ws://localhost:3000/api/realtime — нэвтрэлтийн cookie-гоор (эсвэл ?token=) танина.
  *   Token буруу / эрх хаагдсан → 4001 кодоор хаана (frontend нэвтрэх хуудас руу шилжүүлнэ). 'ping' → 'pong'.
+ *   JSON мессеж → онлайн хурлын signaling (meeting.js). Холболт бүр санамсаргүй id авна.
  *
  * Шалгалт: GET биш хүсэлт дууссаны дараа шууд (push), API-аар ороогүй өөрчлөлтөд 30 сек тутам нөөц.
  *
@@ -15,7 +16,9 @@
  */
 
 var { WebSocketServer } = require('ws');
+var { randomUUID } = require('crypto');
 var changes = require('./changes');
+var meeting = require('./meeting');
 var { tokenFrom, identify } = require('./identify');
 var log = require('../logger').child({ module: 'realtime' });
 
@@ -23,6 +26,11 @@ var PATH = '/api/realtime';
 var POLL_MS = 30000;
 
 var wss = new WebSocketServer({ noServer: true });
+var hub = {
+  sockets: function () { return Array.from(wss.clients).filter(function (ws) { return ws.client && ws.readyState === ws.OPEN; }); },
+  info: function (ws) { return ws.client; },
+  set: function (ws, patch) { Object.assign(ws.client, patch); },
+};
 var lastId = null;
 var busy = false;
 var again = false;
@@ -76,13 +84,19 @@ async function onUpgrade(req, socket, head) {
       log.warn({ ip: req.socket.remoteAddress }, 'Realtime: token буруу, 4001-ээр хаалаа');
       return ws.close(4001, 'unauthorized');
     }
-    ws.client = client;
+    ws.client = Object.assign({ id: randomUUID() }, client);
     tick();
     log.info({ role: client.role, unitId: client.unitId, online: wss.clients.size }, 'Realtime холбогдлоо');
     ws.on('message', function (data) {
-      if (String(data) === 'ping') ws.send('pong');
+      if (String(data) === 'ping') return ws.send('pong');
+      try {
+        meeting.handle(ws, JSON.parse(data), hub);
+      } catch (err) {
+        log.warn({ err: err }, 'Realtime: буруу мессеж');
+      }
     });
     ws.on('close', function (code) {
+      meeting.leave(ws, hub);
       log.info({ role: client.role, unitId: client.unitId, code: code, online: wss.clients.size }, 'Realtime саллаа');
     });
   });

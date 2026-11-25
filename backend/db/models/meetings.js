@@ -4,7 +4,7 @@
  *
  * base: all, find, where, create, update, remove
  * agendaOf(meetingId) - хурлын хэлэлцэх асуудлууд дарааллаар, холбогдсон санал хураалтын гарчигтай
- * next() - одоо явагдаж буй эсвэл хамгийн ойрын удахгүй болох хурал, хэлэлцэх асуудалтай нь (байхгүй бол null)
+ * next(entranceId) - одоо явагдаж буй эсвэл хамгийн ойрын удахгүй болох хурал (бүх байрных эсвэл тухайн орцных), хэлэлцэх асуудалтай нь (байхгүй бол null)
  */
 
 var db = require('..');
@@ -21,8 +21,15 @@ async function agendaOf(meetingId) {
     .orderBy('a.position');
 }
 
-async function next() {
-  var meeting = await db('meetings').where('ends_at', '>', now()).orderBy('starts_at').first();
+async function next(entranceId) {
+  var meeting = await db('meetings')
+    .where('ends_at', '>', now())
+    .where(function () {
+      this.whereNull('entrance_id');
+      if (entranceId) this.orWhere('entrance_id', entranceId);
+    })
+    .orderBy('starts_at')
+    .first();
   if (!meeting) return null;
   return { ...meeting, online: Boolean(meeting.online), agenda: await agendaOf(meeting.id) };
 }

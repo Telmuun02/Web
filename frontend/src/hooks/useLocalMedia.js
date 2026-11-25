@@ -1,7 +1,8 @@
 /**
  * useLocalMedia — өөрийн камер, микрофон
  * Нэг MediaStream-д track нэмж/хасна. toggle('audio' | 'video'): асаалттай бол track-ийг зогсоож хасна, үгүй бол getUserMedia-аар шинээр авна.
- * Буцаана: { stream, audio, video (track эсвэл null), error, toggle }. Компонент устахад бүх track унтарна.
+ * stop(): бүх track-ийг унтраана (урьдчилан харахаас буцахад).
+ * Буцаана: { stream, audio, video (track эсвэл null), error, toggle, stop }. Компонент устахад бүх track унтарна.
  * Хэрэглээ: const media = useLocalMedia(); <LocalVideo stream={media.stream} on={!!media.video} />
  */
 
@@ -36,7 +37,15 @@ export default function useLocalMedia() {
     }
   }
 
+  function stop() {
+    stream.getTracks().forEach((t) => {
+      t.stop()
+      stream.removeTrack(t)
+    })
+    setTracks({ audio: null, video: null })
+  }
+
   useEffect(() => () => stream.getTracks().forEach((t) => t.stop()), [stream])
 
-  return { stream, ...tracks, error, toggle }
+  return { stream, ...tracks, error, toggle, stop }
 }

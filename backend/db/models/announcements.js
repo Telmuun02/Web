@@ -7,7 +7,7 @@
  * list(limit) - зарлалууд шинээс нь, ажилтны нэр, орцны дугаар, сэтгэгдлийн тоотой (comment_count)
  * find(id) - нэг зарлал, list-тэй ижил хэлбэрээр
  * create(data) - шинэ зарлал нэмээд audience-тэй нь буцаана
- * forEntrance(entranceId, limit) - оршин суугчид харагдах: бүх орцынх + өөрийн орцных, сэтгэгдлийн тоотой
+ * forEntrance(entranceId, limit) - оршин суугчид харагдах: бүх орцынх + өөрийн орцных, сэтгэгдлийн тоо, зарласан хурал (meeting_id)-тай
  */
 
 var db = require('..');
@@ -50,7 +50,7 @@ async function create(data) {
 async function forEntrance(entranceId, limit) {
   var rows = await db('announcements as a')
     .leftJoin('entrances as e', 'e.id', 'a.entrance_id')
-    .select('a.id', 'a.title', 'a.body', 'a.important', 'a.created_at', 'e.number as entrance_number', commentCount)
+    .select('a.id', 'a.title', 'a.body', 'a.important', 'a.meeting_id', 'a.created_at', 'e.number as entrance_number', commentCount)
     .where(function () {
       this.whereNull('a.entrance_id').orWhere('a.entrance_id', entranceId);
     })

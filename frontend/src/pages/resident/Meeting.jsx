@@ -1,5 +1,6 @@
 /**
  * Хурал — /meeting
+ * Онлайн хурлын өрөө (CallRoom): ажилтан хурал нээсэн бол "Нэгдэх" дарж WebRTC-ээр орно.
  * Удахгүй болох хурал, хэлэлцэх асуудал, хуралд орох тохиргоо (камертай эсвэл аватараар нүүрээ нууцлах).
  * GET /api/resident/meeting
  */
@@ -7,9 +8,8 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
-import VideocamOutlined from '@mui/icons-material/VideocamOutlined'
 import Switch from '../../components/UI/Switch'
-import Toast from '../../components/UI/Toast'
+import CallRoom from '../../components/Meeting/CallRoom'
 import useApi from '../../hooks/useApi'
 import './styles/Meeting.css'
 
@@ -42,7 +42,6 @@ export default function Meeting() {
   const { data, error } = useApi('/resident/meeting', null, { fallback: null })
 
   const [look, setLook] = useState({ mode: 'avatar', avatar: 0, micOff: true })
-  const [toast, setToast] = useState('')
   const { mode, avatar, micOff } = look
 
   const set = (key) => (value) => setLook((l) => ({ ...l, [key]: value }))
@@ -53,7 +52,7 @@ export default function Meeting() {
 
   if (error) return <div className="res-meeting"><p role="alert">{error}</p></div>
   if (!data) return <div className="res-meeting"><p>Ачааллаж байна…</p></div>
-  if (!data.meeting) return <div className="res-meeting"><p>Удахгүй болох хурал алга. Хурал зарлагдахад энд харагдана.</p></div>
+  if (!data.meeting) return <div className="res-meeting"><CallRoom /></div>
 
   const meeting = data.meeting
   const startsAt = new Date(meeting.starts_at)
@@ -64,6 +63,7 @@ export default function Meeting() {
   return (
     <div className="res-meeting">
       <div className="mt-main">
+        <CallRoom />
 
         <section className="mt-hero" aria-labelledby="m-title">
           <span className="mt-date">
@@ -141,12 +141,6 @@ export default function Meeting() {
         )}
 
         <Switch label="Микрофон унтраалттай орох" checked={micOff} onChange={set('micOff')} />
-
-        <Toast>{toast}</Toast>
-
-        <button type="button" className="mt-join" onClick={() => setToast(started ? 'Хурлын өрөө (видео) хараахан холбогдоогүй байна' : `Хурал ${startsAt.getMonth() + 1}/${startsAt.getDate()}-нд ${hhmm(startsAt)} цагт нээгдэнэ`)}>
-          <VideocamOutlined sx={{ fontSize: 22 }} /> Хуралд нэгдэх
-        </button>
       </section>
     </div>
   )

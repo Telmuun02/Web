@@ -3,7 +3,7 @@
  * Ажилтан идэвхтэй (admins.active), оршин суугч тоотод бүртгэлтэй байх ёстой.
  *
  * tokenFrom(cookieHeader, url) - cookie-ийн token, байхгүй бол ?token= (mobile)
- * identify(token) - { role, unitId } эсвэл null (token буруу, эрх хаагдсан)
+ * identify(token) - { role, unitId, entrance (оршин суугчийн орцны дугаар) } эсвэл null (token буруу, эрх хаагдсан)
  */
 
 var jwt = require('jsonwebtoken');
@@ -31,9 +31,14 @@ async function identify(token) {
     return { role: 'admin', unitId: null };
   }
 
-  var user = await db('users').select('unit_id').where('id', payload.id).first();
-  if (!user || !user.unit_id) return null;
-  return { role: 'user', unitId: user.unit_id };
+  var user = await db('users')
+    .join('units', 'units.id', 'users.unit_id')
+    .join('entrances', 'entrances.id', 'units.entrance_id')
+    .select('users.unit_id', 'entrances.number')
+    .where('users.id', payload.id)
+    .first();
+  if (!user) return null;
+  return { role: 'user', unitId: user.unit_id, entrance: user.number };
 }
 
 module.exports = { tokenFrom, identify };

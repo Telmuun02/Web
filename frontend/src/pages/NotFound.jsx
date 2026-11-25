@@ -1,8 +1,11 @@
+/**
+ * 404 — байхгүй хаяг руу орход гарна.
+ * App.jsx-д Layout-ийн гадна байрладаг тул navbar гарахгүй
+ */
+
 import { Link } from 'react-router-dom'
 import './styles/NotFound.css'
 
-// 404 — байхгүй хаяг руу орход гарна.
-// App.jsx-д Layout-ийн гадна байрладаг тул navbar гарахгүй
 export default function NotFound() {
   return (
     <main className="notfound">

@@ -1,3 +1,8 @@
+/**
+ * Танилцуулга — нэвтрээгүй хүн сайт руу орход гарна. Layout-ийн гадна тул navbar-гүй.
+ * Нэвтэрсэн хүн "/" руу орвол App.jsx оршин суугчийн нүүр эсвэл /admin руу аваачна
+ */
+
 import { Link } from 'react-router-dom'
 import BuildOutlined from '@mui/icons-material/BuildOutlined'
 import CampaignOutlined from '@mui/icons-material/CampaignOutlined'
@@ -20,8 +25,6 @@ const steps = [
   'Нэхэмжлэл, хүсэлт, зарлалаа нэг дороос харна',
 ]
 
-// Танилцуулга — нэвтрээгүй хүн сайт руу орход гарна. Layout-ийн гадна тул navbar-гүй.
-// Нэвтэрсэн хүн "/" руу орвол App.jsx оршин суугчийн нүүр эсвэл /admin руу аваачна
 export default function Landing() {
   return (
     <div className="landing">
@@ -51,7 +54,6 @@ export default function Landing() {
           ))}
         </section>
 
-        {/* Эхлэх хэсэг — танилцуулгын доор */}
         <section className="landing-start" aria-labelledby="start-title">
           <div className="landing-start-text">
             <h2 id="start-title">Эхлэхэд бэлэн үү?</h2>

@@ -1,3 +1,11 @@
+/**
+ * Засварын хүсэлт — /admin/requests
+ * Табаар шүүх, хүсэлтийг хүлээж авах / ажилтанд томилох / шийдсэн болгох.
+ * Алхам (stage) нь backend-ийн status, assigned_to-оос гарна.
+ * GET /api/admin/requests (infinite scroll), /admin/requests/counts, /admin/staff
+ * PATCH /api/admin/requests/:id, useLive('requests')
+ */
+
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import ImageOutlined from '@mui/icons-material/ImageOutlined'
@@ -16,8 +24,6 @@ import usePagedList from '../../hooks/usePagedList'
 import useTabParam from '../../hooks/useTabParam'
 import './styles/Requests.css'
 
-// Төлөв бүрийн нэр, шошгоны өнгө, дараагийн алхмын товчны бичиг
-// stage-ийг backend status, assigned_to-оос гаргаж өгнө
 const statusInfo = {
   new: { label: 'Шинэ', tone: 'red', action: 'Засварчин томилох' },
   assigned: { label: 'Томилсон', tone: 'orange', action: 'Ажил эхэлсэн гэж тэмдэглэх' },
@@ -27,7 +33,7 @@ const statusInfo = {
 const order = ['new', 'assigned', 'progress', 'done']
 
 const tabs = [
-  { key: 'open', label: 'Нээлттэй' }, // done-оос бусад бүгд
+  { key: 'open', label: 'Нээлттэй' },
   { key: 'new', label: 'Шинэ' },
   { key: 'assigned', label: 'Томилсон' },
   { key: 'progress', label: 'Хийгдэж буй' },
@@ -44,27 +50,23 @@ const categoryLabels = {
   other: 'Бусад',
 }
 
-// Дараагийн алхам руу шилжихэд backend-д илгээх өөрчлөлт (PATCH /api/admin/requests/:id).
-// assigned — status 'open' хэвээр, засварчин томилогдсон
 const nextPatch = {
   assigned: (r) => ({ assigned_to: Number(r.tech) }),
   progress: () => ({ status: 'in_progress' }),
   done: () => ({ status: 'resolved' }),
 }
 
-// '2026-11-14T08:20:00' → '11/14 08:20'
 function timeLabel(value) {
   const d = new Date(value)
   const pad = (n) => String(n).padStart(2, '0')
   return `${d.getMonth() + 1}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-// /api/requests-ийн мөр → жагсаалтын мөр
 function toRow(r) {
   return {
     id: r.id,
     unit: r.unit_code ?? '—',
-    // "Нэрээ нууцлах" — нэрийг зөвхөн дарга харна, бусдад backend нэргүй ирүүлнэ
+
     name: r.anonymous ? (r.created_by_name ? `${r.created_by_name} (нэрээ нууцалсан)` : 'Нэрээ нууцалсан') : (r.created_by_name ?? '—'),
     cat: categoryLabels[r.category] ?? r.category,
     title: r.title,
@@ -72,26 +74,22 @@ function toRow(r) {
     time: timeLabel(r.created_at),
     status: r.stage,
     tech: r.assigned_to ? String(r.assigned_to) : '',
-    techName: r.assigned_name, // DB-д томилогдсон засварчны нэр
+    techName: r.assigned_name,
   }
 }
 
 export default function Requests() {
-  const live = useLive('requests') // "ШУУД" мөр — /api/admin/live/requests
+  const live = useLive('requests')
   const { user } = useOutletContext()
-  const isAdmin = user.role === 'admin' // оршин суугч зөвхөн харна, томилох/хаах товч admin-д л
-  const [tab, setTab] = useTabParam('open') // /admin/requests?tab=new
-  const [selId, setSelId] = useState(null) // дарж сонгосон хүсэлт
+  const isAdmin = user.role === 'admin'
+  const [tab, setTab] = useTabParam('open')
+  const [selId, setSelId] = useState(null)
   const [toast, setToast] = useState('')
 
-  // ---------- Server state ----------
-  // Таб солигдоход эхний хуудаснаас дахин татна, доош гүйлгэхэд дараагийн хуудас
   const { rows: items, loading, error, setRows, sentinelRef } = usePagedList('/admin/requests', { stage: tab }, toRow, { live: ['requests'] })
-  const { data: counts, reload: reloadCounts } = useApi('/admin/requests/counts', null, { fallback: {}, live: ['requests'] }) // табуудын тоо
-  const { data: staff } = useApi('/admin/staff', null, { fallback: [], live: ['admins'] }) // хариуцагч сонгох жагсаалт
+  const { data: counts, reload: reloadCounts } = useApi('/admin/requests/counts', null, { fallback: {}, live: ['requests'] })
+  const { data: staff } = useApi('/admin/staff', null, { fallback: [], live: ['admins'] })
 
-  // Derived — сонгосон нь энэ табд байхгүй (эсвэл юу ч сонгоогүй) бол эхнийх нь.
-  // Тэгэхээр таб солиход "эхнийхийг сонгох" state шинэчлэл хэрэггүй
   const sel = items.find((r) => r.id === selId) ?? items[0]
   const step = sel ? order.indexOf(sel.status) : 0
   const techOptions = staff.map((s) => ({ id: String(s.id), name: s.name }))
@@ -105,15 +103,12 @@ export default function Requests() {
     setToast('')
   }
 
-  // PATCH /api/admin/requests/:id — хадгалаад дэлгэц дээрх мөрийг серверийн хариугаар шинэчилнэ
   async function save(r, body) {
     const updated = await api.patch(`/admin/requests/${r.id}`, body)
     change(r.id, { status: updated.stage, tech: updated.assigned_to ? String(updated.assigned_to) : '' })
-    reloadCounts() // табуудын тоо өөрчлөгдсөн
+    reloadCounts()
   }
 
-  // Засварчин сонгох. Шинэ хүсэлтэд зөвхөн дэлгэц дээр сонгоно ("Засварчин томилох" дарахад хадгална),
-  // аль хэдийн томилсон бол шууд солино
   async function pickTech(value) {
     change(sel.id, { tech: value })
     if (sel.status === 'new' || !value) return
@@ -125,7 +120,6 @@ export default function Requests() {
     }
   }
 
-  // Дараагийн төлөв рүү — Шинэ → Томилсон бол засварчин сонгосон байх ёстой
   async function advance() {
     if (sel.status === 'new' && !sel.tech) {
       setToast('Эхлээд хариуцах засварчнаа сонгоно уу')
@@ -146,7 +140,7 @@ export default function Requests() {
 
   return (
     <div className="requests">
-      {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
+
       <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub={`${counts.open ?? 0} нээлттэй`} title="Засварын хүсэлт">
@@ -183,7 +177,6 @@ export default function Requests() {
           {!loading && !error && items.length === 0 && <p className="requests-empty">Энэ төлөвт хүсэлт алга</p>}
           {loading && <p className="requests-empty">Ачаалж байна…</p>}
 
-          {/* Энэ div харагдахад дараагийн хуудас татагдана */}
           <div ref={sentinelRef} aria-hidden="true" />
         </section>
 

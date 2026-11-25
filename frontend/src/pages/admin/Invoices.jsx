@@ -1,3 +1,11 @@
+/**
+ * Төлбөр, нэхэмжлэл — /admin/invoices
+ * Табууд: бүгд / төлөөгүй / хэсэгчилсэн / төлсөн / хугацаа хэтэрсэн / өр ихтэй (?tab=).
+ * Хайлт, таб бүгд backend дээр шүүгдэнэ (300мс хүлээгээд ?q= илгээнэ), жагсаалт infinite scroll.
+ * GET /api/admin/invoices, /admin/invoices/counts, /admin/dashboard/debtors
+ * POST /api/admin/invoices/:id/payments — төлбөр бүртгэх (PayDrawer)
+ */
+
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
@@ -18,7 +26,6 @@ import usePagedList from '../../hooks/usePagedList'
 import useTabParam from '../../hooks/useTabParam'
 import './styles/Invoices.css'
 
-// Төлөв бүрийн нэр ба шошгоны өнгө
 const statusInfo = {
   unpaid: { label: 'Төлөгдөөгүй', tone: 'gray' },
   partial: { label: 'Хэсэгчилсэн', tone: 'orange' },
@@ -54,26 +61,22 @@ const debtorColumns = [
   { label: 'Хэтэрсэн' },
 ]
 
-// 85000 → '85,000₮'
 function money(n) {
   return `${n.toLocaleString('en-US')}₮`
 }
 
 const methodLabels = { cash: 'Бэлэн', bank: 'Данс', qpay: 'QPay', card: 'Карт' }
 
-// '2026-09-01' → '9-р сар'
 function monthLabel(period) {
   return `${Number(period.split('-')[1])}-р сар`
 }
 
-// { method: 'cash', paid_at: '2026-10-08 ...' } → 'Бэлэн · 10/08'
 function lastLabel(p) {
   if (!p) return '—'
   const d = new Date(p.paid_at)
   return `${methodLabels[p.method] ?? p.method} · ${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`
 }
 
-// /api/invoices-ийн мөр → хүснэгтийн мөр
 function toRow(inv) {
   return {
     id: inv.id,
@@ -82,56 +85,46 @@ function toRow(inv) {
     period: monthLabel(inv.period),
     total: inv.amount,
     paid: inv.paid,
-    status: inv.status, // backend хугацаа хэтэрснийг 'overdue' гэж тооцоод өгнө
+    status: inv.status,
     last: lastLabel(inv.last_payment),
   }
 }
 
 export default function Invoices() {
-  const live = useLive('invoices') // "ШУУД" мөр — /api/admin/live/invoices
-  // /admin/invoices?tab=debtors гэж ирвэл тэр табаар нээгдэнэ (Dashboard-ийн "Бүгдийг харах")
+  const live = useLive('invoices')
+
   const [tab, setTab] = useTabParam('all')
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState(null) // төлбөр бүртгэж буй нэхэмжлэл
+  const [selected, setSelected] = useState(null)
   const [toast, setToast] = useState('')
 
-  // ---------- Server state ----------
-  // undefined утгатай param-ыг axios илгээдэггүй
   const q = query.trim() || undefined
   const status = tab === 'all' ? undefined : tab
 
-  // Нэхэмжлэлийн жагсаалт. "Өр ихтэй" таб өөр API-тай тул тэр үед татахгүй (url = null).
-  // Хайлтыг 300мс хүлээгээд илгээнэ
   const { rows, loading, error, next: nextOffset, setRows, sentinelRef } = usePagedList(
     tab === 'debtors' ? null : '/admin/invoices',
     { status, q },
     toRow,
     { delay: 300, live: ['invoices', 'payments'] },
   )
-  // Табуудын тоо — таб солиход өөрчлөгдөхгүй, зөвхөн хайлтаас хамаарна
+
   const { data: counts, reload: reloadCounts } = useApi('/admin/invoices/counts', { q }, { fallback: {}, delay: 300, live: ['invoices', 'payments'] })
-  // Өр ихтэй бүх тоот — backend өр ихээс нь эрэмбэлж, өргүй тоотыг оруулдаггүй
-  const { data: debtors } = useApi('/admin/dashboard/debtors', { limit: 1000 }, { fallback: [], live: ['invoices', 'payments'] })
+
+  const { data: debtors } = useApi('/admin/dashboard/debtors', { limit: 1000, q }, { fallback: [], delay: 300, live: ['invoices', 'payments'] })
 
   const now = new Date()
-  // Төлөх хугацаа — дараа сарын 10 (12-р сард 1-р сар болно)
+
   const due = new Date(now.getFullYear(), now.getMonth() + 1, 10)
 
-  // Таб бүрийн тоо: нэхэмжлэлийнх backend-ээс, "Өр ихтэй"-нх debtors-оос
   const tabCounts = { ...counts, debtors: debtors.length }
 
-  // Өр ихтэй таб — тоотын дугаараар хайна
-  const search = query.trim().toLowerCase()
-  const visibleDebtors = debtors.filter((d) => !search || d.code.toLowerCase().includes(search))
-  const totalDebt = visibleDebtors.reduce((sum, d) => sum + d.debt, 0)
+  const totalDebt = debtors.reduce((sum, d) => sum + d.debt, 0)
 
   function openPay(r) {
     setSelected(r)
     setToast('')
   }
 
-  // PayDrawer-ийн "Бүртгэх" — { amount, method, note } ирнэ.
-  // POST /api/admin/invoices/:id/payments — DB-д хадгалаад, дэлгэц дээрх мөрийг шинэчилнэ
   async function applyPayment({ amount, method, note }) {
     const invoice = selected
     try {
@@ -142,17 +135,17 @@ export default function Invoices() {
         const status = paid >= r.total ? 'paid' : r.status === 'overdue' ? 'overdue' : 'partial'
         return { ...r, paid, status, last: lastLabel(payment) }
       }))
-      reloadCounts() // табуудын тоо өөрчлөгдсөн
+      reloadCounts()
       setToast(`${invoice.unit} тоотод ${money(payment.amount)} бүртгэгдлээ`)
     } catch (err) {
-      setToast(err.message) // backend-ийн мессеж: "Үлдэгдлээс их дүн..." гэх мэт
+      setToast(err.message)
     }
     setSelected(null)
   }
 
   return (
     <div className="invoices">
-      {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
+
       <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader
@@ -178,14 +171,13 @@ export default function Invoices() {
 
       <Toast>{toast}</Toast>
 
-      {/* "Өр ихтэй" таб — нэхэмжлэл биш, тоот бүрийн нийт өрийг харуулна */}
       {tab === 'debtors' ? (
         <Card aria-label="Өр ихтэй тоотууд">
           <p className="inv-debtors-total">
-            {visibleDebtors.length} тоот · нийт өр <strong>{money(totalDebt)}</strong>
+            {debtors.length} тоот · нийт өр <strong>{money(totalDebt)}</strong>
           </p>
           <Table columns={debtorColumns} minWidth={460}>
-            {visibleDebtors.map((d) => (
+            {debtors.map((d) => (
               <tr key={d.unit_id}>
                 <td className="bold">{d.code}</td>
                 <td>{d.entrance}-р орц, {d.floor} давхар</td>
@@ -194,7 +186,7 @@ export default function Invoices() {
               </tr>
             ))}
           </Table>
-          {visibleDebtors.length === 0 && <p className="inv-empty">Өртэй тоот алга</p>}
+          {debtors.length === 0 && <p className="inv-empty">Өртэй тоот алга</p>}
         </Card>
       ) : (
         <Card aria-label="Нэхэмжлэлийн жагсаалт">
@@ -219,13 +211,12 @@ export default function Invoices() {
           </Table>
           {error && <p className="inv-empty">{error}</p>}
           {!error && loading && <p className="inv-empty">{rows.length ? 'Цааш ачааллаж байна…' : 'Ачааллаж байна…'}</p>}
-          {/* Энэ div дэлгэцэнд орж ирэхэд дараагийн хуудас татагдана */}
+
           {nextOffset != null && <div ref={sentinelRef} aria-hidden="true" />}
           {!error && !loading && rows.length === 0 && <p className="inv-empty">Тохирох нэхэмжлэл олдсонгүй</p>}
         </Card>
       )}
 
-      {/* Төлбөр бүртгэх цонх — хаагдахад (selected = null) component устана */}
       {selected && <PayDrawer invoice={selected} onClose={() => setSelected(null)} onSave={applyPayment} />}
     </div>
   )

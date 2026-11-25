@@ -1,26 +1,29 @@
+/**
+ * Оршин суугчийн нүүр — /
+ * Таны орцны шөнийн зураг (энэ сард төлсөн айл гэрэлтэй), энэ сарын төлбөр, сүүлийн зарлал, миний хүсэлтийн явц, камер.
+ * GET /api/resident/home. Камерууд түр жишээ өгөгдөл (samples/resident/home.js)
+ */
+
 import { Link, useOutletContext } from 'react-router-dom'
 import LightbulbOutlined from '@mui/icons-material/LightbulbOutlined'
 import CameraThumb from '../../components/resident/CameraThumb'
 import ProgressBar from '../../components/UI/ProgressBar'
 import useApi from '../../hooks/useApi'
 import { money, monthDay, monthOf, relativeDay } from '../../utils/format'
-// Камерын систем холбогдоогүй тул түр жишээ файлаас (бусад нь GET /api/resident/home)
+
 import { sampleCameras, totalCameras } from '../../samples/resident/home'
 import './styles/Home.css'
 
 const weekdays = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба']
 
-// Шөнийн тэнгэрийн одод — байрлал (px) нь тогтмол, анивчих хугацаа нь ялгаатай
 const stars = [
   [24, 300], [60, 250], [380, 30], [440, 70], [520, 110], [600, 40], [660, 150], [720, 90],
   [300, 20], [480, 200], [560, 260], [640, 300], [400, 160], [350, 280], [700, 230], [20, 220],
 ]
 
-// Хүсэлтийн явц — backend-ийн stage → хэд дэх алхам (ирсэн → томилсон → хийгдэж буй → шийдсэн)
 const stageStep = { new: 0, assigned: 1, progress: 2, done: 3 }
 const requestSteps = 4
 
-// Хүсэлтийн доорх тайлбар мөр
 function requestNote(r) {
   if (r.stage === 'new') return 'СӨХ хүлээн авахыг хүлээж байна'
   if (r.stage === 'assigned') return `${r.assigned_name ?? 'Ажилтан'} хариуцлаа`
@@ -41,13 +44,12 @@ export default function Home() {
   const { unit, entrance, bill, news, request, meeting } = data
   const meetingAt = meeting ? new Date(meeting.starts_at) : null
 
-  // Орцны цонхнууд — энэ сарын төлбөрөө бүрэн төлсөн айл гэрэлтэй, төлөөгүй нь харанхуй
   const windows = entrance.units
   const units = windows.length
   const paidCount = windows.filter((w) => w.paid).length
   const paidPercent = units ? Math.round((paidCount / units) * 100) : 0
   const myDark = !windows.find((w) => w.id === unit.id)?.paid
-  // Нэг давхарт хэдэн айл байгаагаар баганын тоог тааруулна
+
   const perFloor = Math.max(1, ...Object.values(Object.groupBy(windows, (w) => w.floor ?? 0)).map((f) => f.length))
   const entranceName = `${unit.entrance}-р орц`
 
@@ -58,7 +60,7 @@ export default function Home() {
   return (
     <div className="res-home">
       <div className="home-top">
-        {/* Таны орц — шөнийн байрны зураг */}
+
         <section className="home-hero" aria-label="Таны орц">
           {stars.map(([x, y], i) => (
             <span
@@ -96,7 +98,6 @@ export default function Home() {
           <div className="home-ground" aria-hidden="true" />
         </section>
 
-        {/* Энэ сарын төлбөр */}
         <section className="home-bill" aria-labelledby="bill-title">
           {bill ? (
             <>
@@ -125,7 +126,7 @@ export default function Home() {
       </div>
 
       <div className="home-cards">
-        {/* Удахгүй болох хурал — meetings хүснэгтээс */}
+
         <Link to="/meeting" className="home-meeting">
           {meeting ? (
             <>
@@ -149,7 +150,6 @@ export default function Home() {
           )}
         </Link>
 
-        {/* Сүүлийн зарлал */}
         <section className="home-card" aria-labelledby="news-title">
           <div className="home-card-head">
             <h2 id="news-title">Сүүлийн зарлал</h2>
@@ -166,7 +166,6 @@ export default function Home() {
           ))}
         </section>
 
-        {/* Миний хүсэлт */}
         <section className="home-card" aria-labelledby="req-title">
           <div className="home-card-head">
             <h2 id="req-title">Миний хүсэлт</h2>
@@ -175,7 +174,7 @@ export default function Home() {
           {latest ? (
             <div className="home-request">
               <span className="home-request-title">{latest.title}</span>
-              {/* Явц — 4 алхам, хийгдсэн нь тод */}
+
               <span className="home-steps" aria-hidden="true">
                 {Array.from({ length: requestSteps }, (_, i) => (
                   <span key={i} className={i <= stageStep[latest.stage] ? 'home-step done' : 'home-step'} />
@@ -190,7 +189,6 @@ export default function Home() {
         </section>
       </div>
 
-      {/* Камер — камерын систем холбогдоогүй, түр жишээ */}
       <section className="home-cams" aria-labelledby="cam-title">
         <div className="home-card-head">
           <h2 id="cam-title">Камер</h2>

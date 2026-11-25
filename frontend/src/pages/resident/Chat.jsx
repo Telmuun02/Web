@@ -1,3 +1,9 @@
+/**
+ * Чат — орцны групп ба СӨХ-тэй хувийн чат (canvas: WebChat).
+ * Шинэ мессеж ирэхэд WebSocket-оор шууд дахин татна (hooks/useChatRoom).
+ * Сонгосон өрөө URL-д: /chat (групп), /chat?tab=soh
+ */
+
 import { Link, useOutletContext } from 'react-router-dom'
 import PushPinOutlined from '@mui/icons-material/PushPinOutlined'
 import ChatThread from '../../components/Chat/ChatThread'
@@ -8,20 +14,15 @@ import './styles/Chat.css'
 
 const positionLabel = { chairman: 'СӨХ-ийн дарга', accountant: 'Нягтлан', technician: 'Засварчин', staff: 'Ажилтан' }
 
-// Өрөөний жагсаалтад сүүлийн мессеж: 'Мөнхбат: Өглөөний мэнд'
 function preview(last) {
   if (!last) return 'Мессеж алга'
   return `${last.sender.name}: ${last.body}`
 }
 
-// Чат — орцны групп ба СӨХ-тэй хувийн чат (canvas: WebChat).
-// Шинэ мессеж ирэхэд WebSocket-оор шууд дахин татна (hooks/useChatRoom).
-// Сонгосон өрөө URL-д: /chat (групп), /chat?tab=soh
 export default function Chat() {
   const { user } = useOutletContext()
   const [key, setKey] = useTabParam('entrance')
-  // GET /api/resident/messages — өрөөнүүд (уншаагүйтэй), тогтоосон зарлал, хөршүүд, ажилтнууд.
-  // chat_messages өөрчлөгдөхөд сүүлийн мессеж, уншаагүй шинэчлэгдэнэ
+
   const { data, error } = useApi('/resident/messages', null, { fallback: null, live: ['chat_messages'] })
   const room = data?.rooms.find((r) => r.key === key) ?? data?.rooms[0]
   const chat = useChatRoom(room ? `/resident/messages/${room.key}` : null)
@@ -30,13 +31,12 @@ export default function Chat() {
   if (!data || !room) return null
 
   const isGroup = room.key === 'entrance'
-  // Нэг тоот = нэг бүртгэл. Өөрийн тоотыг хасна
+
   const homes = Object.values(data.neighbors.reduce((map, n) => {
     if (n.unitId !== user.unit_id && !map[n.unitId]) map[n.unitId] = { key: n.unitId, name: n.name }
     return map
   }, {}))
 
-  // Баруун талын жагсаалт: групп бол хөрш тоотууд, СӨХ бол ажилтнууд
   const people = isGroup
     ? homes.slice(0, 8)
     : data.staff.map((s) => ({ key: s.id, name: s.name, sub: positionLabel[s.position] ?? 'Ажилтан', admin: true }))

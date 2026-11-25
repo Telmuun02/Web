@@ -1,9 +1,12 @@
+/**
+ * Хүснэгт: толгой мөрийг columns-оос үүсгэнэ, мөрүүдийг (<tr>) children-ээр авна.
+ * columns: [{ label: 'Тоот' }, { label: 'Талбай', align: 'right' }, { label: 'Уншсан', width: 200 }]
+ * minWidth — нарийн дэлгэцэнд хүснэгт шахагдахгүй, хажуу тийш гүйлгэгдэнэ
+ * Нүдэнд өгч болох класс: num — баруун тийш (тоо, мөнгө), dim — саарал, bold — тод
+ */
+
 import './Table.css'
 
-// Хүснэгт: толгой мөрийг columns-оос үүсгэнэ, мөрүүдийг (<tr>) children-ээр авна.
-// columns: [{ label: 'Тоот' }, { label: 'Талбай', align: 'right' }, { label: 'Уншсан', width: 200 }]
-// minWidth — нарийн дэлгэцэнд хүснэгт шахагдахгүй, хажуу тийш гүйлгэгдэнэ
-// Нүдэнд өгч болох класс: num — баруун тийш (тоо, мөнгө), dim — саарал, bold — тод
 export default function Table({ columns, minWidth = 640, children }) {
   return (
     <div className="ui-table-wrap">

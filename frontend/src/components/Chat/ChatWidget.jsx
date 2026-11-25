@@ -1,3 +1,10 @@
+/**
+ * Чатбот — баруун доод буланд бөөрөнхий товч, дарахад чатын цонх гарна. Дуугаар асууж болно (useRecorder).
+ * mode: 'resident' (ResidentLayout) | 'admin' (Layout) — өөр API, мэндчилгээтэй.
+ * Ажилтны бот өмнөх 10 мессежийг хамт авч үргэлжилсэн асуултыг ойлгоно,
+ * оршин суугчийнх зардал хэмнэхийн тулд зөвхөн одоогийн мессежийг авна
+ */
+
 import { useEffect, useRef, useState } from 'react'
 import ChatBubbleOutlineOutlined from '@mui/icons-material/ChatBubbleOutlineOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
@@ -9,9 +16,6 @@ import api from '../../api/client'
 import { useRecorder } from '../../hooks/useRecorder'
 import './ChatWidget.css'
 
-// Оршин суугч, ажилтан хоёрт өөр API, мэндчилгээ.
-// history — ажилтны бот өмнөх мессежүүдийг (сүүлийн 10) хамт авч "тэр тоот" гэх мэт үргэлжлүүлсэн асуултыг ойлгоно.
-// Оршин суугчийнх зардал хэмнэхийн тулд зөвхөн одоогийн мессежийг авна
 const MODES = {
   resident: {
     chat: '/resident/chat',
@@ -30,8 +34,6 @@ const MODES = {
 }
 const HISTORY = 10
 
-// Чатыг зөвхөн энэ tab-ын sessionStorage-д хадгална — хуудас солих, refresh хийхэд үлдэнэ,
-// tab хаахад устна. Хэрэглэгч бүрт тусдаа түлхүүр — нэг tab-д өөр хүн нэвтэрвэл холилдохгүй
 function storageKey(mode, userId) {
   return `chat:${mode}:${userId}`
 }
@@ -40,50 +42,40 @@ function loadMessages(mode, userId) {
   try {
     const saved = JSON.parse(sessionStorage.getItem(storageKey(mode, userId)))
     if (Array.isArray(saved) && saved.length) {
-      // Хариулт ирэхээс өмнө refresh хийсэн бол "хүлээж байна" төлөвт гацахгүй
       if (saved[saved.length - 1].from === 'user') {
         return [...saved, { from: 'bot', text: 'Хариулт тасарсан. Дахин илгээнэ үү.', error: true }]
       }
       return saved
     }
   } catch {
-    // Хадгалсан зүйл эвдэрсэн эсвэл sessionStorage хаалттай — шинээр эхэлнэ
   }
   return [{ from: 'bot', text: MODES[mode].greeting }]
 }
 
-// Чатбот — баруун доод буланд бөөрөнхий товч, дарахад чатын цонх гарна.
-// mode: 'resident' (ResidentLayout) | 'admin' (Layout)
-// messages: [{ from: 'user' | 'bot', text, error? }]
 export default function ChatWidget({ userId, mode = 'resident' }) {
   const config = MODES[mode]
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState(() => loadMessages(mode, userId))
-  const [transcribing, setTranscribing] = useState(false) // дууг текст болгож байгаа эсэх
+  const [transcribing, setTranscribing] = useState(false)
   const listRef = useRef(null)
   const inputRef = useRef(null)
-  // Chimege 15 секундээс урт дуу авахгүй — хугацаа дуусмагц автоматаар зогсоож текст болгоно
-  const recorder = useRecorder({ maxSeconds: 15, onLimit: () => finishVoice() })
-  const left = recorder.maxSeconds - recorder.seconds // үлдсэн секунд
 
-  // Сүүлийн мессеж хэрэглэгчийнх бол бот хариулж байна гэсэн үг — тусдаа state хэрэггүй
+  const recorder = useRecorder({ maxSeconds: 15, onLimit: () => finishVoice() })
+  const left = recorder.maxSeconds - recorder.seconds
+
   const waiting = messages[messages.length - 1].from === 'user'
 
-  // Өөрчлөгдөх бүрт sessionStorage-д хадгална
   useEffect(() => {
     try {
       sessionStorage.setItem(storageKey(mode, userId), JSON.stringify(messages))
     } catch {
-      // Хадгалж чадахгүй бол зүгээр — зөвхөн refresh хийхэд чат алга болно
     }
   }, [messages, mode, userId])
 
-  // Шинэ мессеж нэмэгдэх бүрт хамгийн доод руу гүйлгэнэ
   useEffect(() => {
     if (open) listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
   }, [messages, open])
 
-  // Цонх нээлттэй үед Esc дарахад хаагдана
   useEffect(() => {
     if (!open) return
     function onKey(e) {
@@ -93,7 +85,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  // Бичиж байхад цонхыг хаавал бичлэгийг хаяж, микрофоныг чөлөөлнө
   useEffect(() => {
     if (!open) recorder.cancel()
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -102,7 +93,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
     setMessages((m) => [...m, { from: 'bot', text, error: true }])
   }
 
-  // Микрофон товч: 1-р дарахад бичиж эхэлнэ, 2-р дарахад (эсвэл 15 сек болоход) зогсоож текст болгоно
   async function toggleVoice() {
     if (!recorder.recording) {
       try {
@@ -121,7 +111,7 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
       const wav = await recorder.stop()
       if (!wav) return
       const text = await transcribe(wav)
-      // Шууд илгээхгүй — хэрэглэгч шалгаж, засаад өөрөө илгээнэ
+
       if (text && inputRef.current) {
         inputRef.current.value = text
         autoGrow()
@@ -134,8 +124,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
     }
   }
 
-  // Дууг текст болгоно — backend-ээр дамжуулж Chimege руу
-  // (Chimege токен frontend-д байж болохгүй тул шууд хандахгүй)
   async function transcribe(wav) {
     const { text } = await api.post(config.transcribe, wav, {
       headers: { 'Content-Type': 'audio/wav' },
@@ -143,7 +131,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
     return text
   }
 
-  // Textarea-г агуулгынх нь өндөрт тааруулна — CSS-ийн max-height-аас хэтэрвэл доторх scroll гарна
   function autoGrow() {
     const el = inputRef.current
     if (!el) return
@@ -151,7 +138,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
     el.style.height = `${el.scrollHeight}px`
   }
 
-  // Enter — илгээнэ, Shift+Enter — шинэ мөр
   function onKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
@@ -159,7 +145,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
     }
   }
 
-  // Input-ийн утгыг state-д хадгалахгүй — илгээх мөчид FormData-аас уншина (PayDrawer шиг)
   async function send(e) {
     e.preventDefault()
     const form = e.target
@@ -168,7 +153,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
     form.reset()
     autoGrow()
 
-    // Ажилтны бот: өмнөх мессежүүдийг (мэндчилгээ, алдаагүй) хамт илгээнэ. Оршин суугчийнх: зөвхөн одоогийнхыг
     const history = config.history
       ? messages.slice(1).filter((m) => !m.error).slice(-HISTORY).map(({ from, text: t }) => ({ from, text: t }))
       : undefined
@@ -223,13 +207,13 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
               maxLength={1000}
               autoFocus
             />
-            {/* Үлдсэн хугацаа — 5 сек үлдэхэд улаан болно */}
+
             {recorder.recording && (
               <span className={`chat-timer${left <= 5 ? ' chat-timer-low' : ''}`} aria-live="polite">
                 0:{String(left).padStart(2, '0')}
               </span>
             )}
-            {/* Микрофон — бичиж байхад улаан, зогсоох дүрс */}
+
             <button
               type="button"
               className={`chat-mic${recorder.recording ? ' chat-mic-on' : ''}`}
@@ -247,7 +231,6 @@ export default function ChatWidget({ userId, mode = 'resident' }) {
         </section>
       )}
 
-      {/* Бөөрөнхий товч — нээлттэй үед X болж хувирна */}
       <button
         type="button"
         className="chat-fab"

@@ -1,10 +1,13 @@
+/**
+ * Үзүүлэлтийн карт — нэр, том тоо, доор нь тайлбар.
+ * suffix — тооны ард жижиг саарал бичиг (жишээ нь '/ 120')
+ * tone: 'dark' — хар хөх карт, 'bad' — улаан тоо (өр гэх мэт)
+ * noteTone: 'good' — тайлбар ногоон
+ * children — тоо ба тайлбарын хооронд (жишээ нь ProgressBar)
+ */
+
 import './StatCard.css'
 
-// Үзүүлэлтийн карт — нэр, том тоо, доор нь тайлбар.
-// suffix — тооны ард жижиг саарал бичиг (жишээ нь '/ 120')
-// tone: 'dark' — хар хөх карт, 'bad' — улаан тоо (өр гэх мэт)
-// noteTone: 'good' — тайлбар ногоон
-// children — тоо ба тайлбарын хооронд (жишээ нь ProgressBar)
 export default function StatCard({ label, value, suffix, note, tone, noteTone, children }) {
   return (
     <div className={tone ? `ui-stat ${tone}` : 'ui-stat'}>

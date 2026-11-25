@@ -1,10 +1,19 @@
+/**
+ * Бүх замууд (routes) ба нэвтэрсэн хэрэглэгч.
+ * Эхлэхэд GET /api/auth/me — нэвтэрсэн эсэхийг шалгана.
+ * Нэвтрээгүй: / (Landing), /login, /forgot-password, /register.
+ * Ажилтан: /admin/... (Layout + RequireRole role="admin").
+ * Оршин суугч: /... (ResidentLayout + RequireRole).
+ * admin болон resident хуудсууд тус тусдаа өөр хуудас, layout-тай.
+ * logout() - POST /api/auth/logout, хэрэглэгчийг цэвэрлэнэ
+ */
+
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import api from './api/client'
 import { homePath } from './utils/home'
 import RequireRole from './components/RequireRole'
 
-// Ажилтан
 import Layout from './components/admin/Layout'
 import Dashboard from './pages/admin/Dashboard'
 import Invoices from './pages/admin/Invoices'
@@ -17,7 +26,6 @@ import Reports from './pages/admin/Reports'
 import Settings from './pages/admin/Settings'
 import AdminChat from './pages/admin/Chat'
 
-// Оршин суугч
 import ResidentLayout from './components/resident/ResidentLayout'
 import Home from './pages/resident/Home'
 import ResidentPay from './pages/resident/Pay'
@@ -28,14 +36,10 @@ import ResidentCameras from './pages/resident/Cameras'
 import ResidentProfile from './pages/resident/Profile'
 import ResidentChat from './pages/resident/Chat'
 
-// Хоёулаа
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import NotFound from './pages/NotFound'
 import Landing from './pages/Landing'
-
-// admin болон resident хуудсууд тус тусад нь үүсгэсэн.
-// тус тусдаа өөр өөр хуудас болон layout ууд тай
 
 function App() {
   const [user, setUser] = useState(null)
@@ -72,12 +76,10 @@ function App() {
 
   return (
     <Routes>
-      {/**login huudas */}
-      {/* Нэвтэрсэн оршин суугч ч нууц үгээ SMS-ээр солино (Профайл → Нууц үг солих) */}
+
       <Route path="/forgot-password" element={<ForgotPassword mode="reset" onLogin={setUser} />} />
       <Route path="/login" element={<Navigate to={homePath(user)} replace />} />
 
-      {/**admin huudas */}
       <Route path="admin" element={<RequireRole user={user} role="admin" />}>
         <Route element={<Layout user={user} onLogout={logout} onUserChange={setUser} />}>
           <Route index element={<Dashboard />} />
@@ -94,7 +96,6 @@ function App() {
         </Route>
       </Route>
 
-      {/**orshin suugchiin huudas */}
       <Route element={<RequireRole user={user} role="user" />}>
         <Route element={<ResidentLayout user={user} onLogout={logout} onUserChange={setUser} />}>
           <Route index element={<Home />} />
@@ -108,7 +109,6 @@ function App() {
         </Route>
       </Route>
 
-      {/** Not Found huudas */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   )

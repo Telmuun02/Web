@@ -1,3 +1,9 @@
+/**
+ * Ажилтны профайл — /admin/profile
+ * Хувийн мэдээлэл засах, нууцлал, мэдэгдлийн тохиргоо, эрх, сүүлийн үйлдлүүд.
+ * GET /api/admin/activity, PUT /api/profile, useLive('profile')
+ */
+
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
@@ -18,14 +24,12 @@ import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import './styles/Profile.css'
 
-// Дээд талын 3 тоо — GET /api/admin/activity-ийн counts-ын түлхүүр ба нэр
 const statItems = [
   { key: 'payments', label: 'Энэ сард бүртгэсэн төлбөр' },
   { key: 'announcements', label: 'Энэ сард нийтэлсэн зарлал' },
   { key: 'polls', label: 'Энэ сард үүсгэсэн санал хураалт' },
 ]
 
-// Нэвтэрсэн төхөөрөмжүүд — DB-д session хадгалагддаггүй тул түр жишээ
 const sampleSessions = [
   { id: 1, name: 'Chrome · Windows', where: 'Улаанбаатар · одоо идэвхтэй', current: true, phone: false },
   { id: 2, name: 'СӨХ Hub апп · iPhone', where: 'Улаанбаатар · 2 цагийн өмнө', current: false, phone: true },
@@ -39,7 +43,6 @@ const notificationItems = [
   { key: 'request', label: 'Шинэ засварын хүсэлт', hint: 'Засварчдад очдог; нягтланд заавал биш' },
 ]
 
-// Эрхүүд — admin бүгдийг, оршин суугч зөвхөн эхний хэдийг нь харна
 const permissions = [
   { label: 'Нэхэмжлэл үүсгэх, засах', roles: ['admin'] },
   { label: 'Бэлэн төлбөр бүртгэх', roles: ['admin'] },
@@ -50,19 +53,18 @@ const permissions = [
 ]
 
 export default function Profile() {
-  const live = useLive('profile') // "ШУУД" мөр — /api/admin/live/profile
-  // GET /api/admin/activity — энэ сарын тоо, сүүлийн үйлдлүүд
+  const live = useLive('profile')
+
   const { data: activity } = useApi('/admin/activity', null, { fallback: { counts: {}, recent: [] }, live: ['payments', 'announcements', 'polls'] })
   const { user, onLogout, onUserChange } = useOutletContext()
-  // Хувийн мэдээллийн form — 4 талбар хамт хадгалагдана. password — өөрчлөлтөө баталгаажуулах нууц үг.
-  // Нэрийг дээд хэсэгт бичих зуур харуулдаг тул FormData биш state
+
   const [form, setForm] = useState({
     name: user.name ?? '',
     phone: user.phone ?? '',
     email: user.email ?? '',
     password: '',
   })
-  // Тохиргооны бүх унтраалга нэг object-д: 2 алхамт баталгаажуулалт + мэдэгдлүүд
+
   const [prefs, setPrefs] = useState({ twofa: true, pay: true, debt: true, poll: true, request: false })
   const [sessions, setSessions] = useState(sampleSessions)
   const [error, setError] = useState('')
@@ -70,18 +72,16 @@ export default function Profile() {
 
   const roleLabel = user.role === 'admin' ? 'Админ' : 'Оршин суугч'
 
-  // <input onChange={edit('phone')} /> — form-ын нэг талбарыг солино
   const edit = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
-  // <Switch onChange={toggle('twofa')} /> — нэг унтраалгыг солино
+
   const toggle = (key) => (value) => setPrefs((p) => ({ ...p, [key]: value }))
 
-  // PUT /api/profile — нууц үг буруу (401), утас/имэйл давхардсан (409) бол backend-ийн мессежийг харуулна
   async function saveInfo() {
     setError('')
     try {
       const updated = await api.put('/profile', form)
-      onUserChange?.({ ...user, ...updated }) // sidebar дээрх нэр шууд солигдоно
-      setForm((f) => ({ ...f, password: '' })) // нууц үгийг талбарт үлдээхгүй
+      onUserChange?.({ ...user, ...updated })
+      setForm((f) => ({ ...f, password: '' }))
       setToast('Хувийн мэдээлэл хадгалагдлаа')
     } catch (err) {
       setError(err.message)
@@ -95,12 +95,12 @@ export default function Profile() {
 
   return (
     <div className="profile">
-      {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
+
       <LiveBar stats={live.stats} events={live.events} />
 
       <section className="profile-hero" aria-label="Профайлын тойм">
         <span className="profile-avatar">
-          {/* Зураг байхгүй тул нэрийн эхний үсэг */}
+
           {form.name[0]?.toUpperCase()}
           <button className="profile-photo" aria-label="Зураг солих">
             <PhotoCameraOutlined sx={{ fontSize: 16 }} />
@@ -162,7 +162,7 @@ export default function Profile() {
           </Card>
 
           <Card title="Нууцлал ба нэвтрэлт">
-            {/* Мөрүүдийг нэг div-д — хооронд нь картын зай биш, зураас байна */}
+
             <div>
               <ListItem title="Нууц үг" hint="Сүүлд 64 хоногийн өмнө сольсон">
                 <Button size="small">Солих</Button>

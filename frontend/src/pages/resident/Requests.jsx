@@ -1,3 +1,9 @@
+/**
+ * Санал хүсэлт — /requests
+ * Засвар, гомдол, санал илгээх (төрөл сонгоно), өөрийн хүсэлтүүдийн явц.
+ * GET/POST /api/resident/requests
+ */
+
 import { useState } from 'react'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
 import Field from '../../components/UI/Field'
@@ -9,7 +15,6 @@ import useApi from '../../hooks/useApi'
 import { monthDay } from '../../utils/format'
 import './styles/Requests.css'
 
-// Хүсэлтийн төрөл — id нь DB-ийн requests.category-той ижил, tint: үсгийн дэвсгэр
 const requestTypes = [
   { id: 'plumbing', label: 'Сантехник', tint: 'var(--tint-navy)' },
   { id: 'electrical', label: 'Цахилгаан', tint: 'var(--tint-yellow)' },
@@ -20,10 +25,8 @@ const requestTypes = [
 
 const requestSteps = ['Илгээсэн', 'Хүлээн авсан', 'Хийгдэж байна', 'Шийдсэн']
 
-// Backend-ийн stage → хэд дэх алхам хүртэл явсан (1–4)
 const stageStep = { new: 1, assigned: 2, progress: 3, done: 4 }
 
-// Хүсэлтийн доорх тайлбар мөр
 function requestNote(r) {
   if (r.stage === 'new') return 'СӨХ хүлээн авахыг хүлээж байна'
   if (r.stage === 'assigned') return `${r.assigned_name ?? 'Ажилтан'} хариуцлаа`
@@ -31,29 +34,25 @@ function requestNote(r) {
   return r.status === 'rejected' ? 'Татгалзсан' : 'Шийдэгдсэн'
 }
 
-// Шинэ хүсэлтийн анхны утгууд
 const emptyForm = { type: 'plumbing', title: '', body: '', anonymous: false }
 
 export default function Requests() {
-  // Шинэ хүсэлтийн form — "Илгээх" товч гарчгийн уртаас хамаарч идэвхжих тул FormData биш state
   const [form, setForm] = useState(emptyForm)
   const [status, setStatus] = useState({ sending: false, toast: '', freshId: null })
-  // GET /api/resident/requests — илгээсний дараа reload хийнэ
+
   const { data: list, loading, error, reload } = useApi('/resident/requests', null, { fallback: [], live: ['requests'] })
   const { type, title, body, anonymous } = form
 
-  // Нэг талбарыг солино: set('type')('electrical')
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
 
   const cantSend = title.trim().length < 3 || status.sending
 
-  // POST /api/resident/requests — тоот, хэрэглэгчийг backend token-оос авна
   async function send() {
     if (cantSend) return
     setStatus({ sending: true, toast: '', freshId: null })
     try {
       const created = await api.post('/resident/requests', { category: type, title: title.trim(), description: body.trim(), anonymous })
-      setForm((f) => ({ ...f, title: '', body: '' })) // төрөл хэвээр үлдэнэ
+      setForm((f) => ({ ...f, title: '', body: '' }))
       setStatus({ sending: false, toast: 'Хүсэлт илгээгдлээ. Явцыг энд харна.', freshId: created.id })
       reload()
     } catch (err) {
@@ -66,7 +65,7 @@ export default function Requests() {
       <PageHeader sub="Засвар, гомдол, санал — СӨХ-д шууд хүрнэ" title="Санал хүсэлт" />
 
       <div className="rq-columns">
-        {/* Шинэ хүсэлт */}
+
         <section className="rq-form" aria-labelledby="form-title">
           <h2 id="form-title">Шинэ хүсэлт</h2>
 
@@ -107,11 +106,10 @@ export default function Requests() {
             />
           </Field>
 
-          {/* Нэрээ нууцлах — ажилтнуудад тоот л харагдана, нэрийг зөвхөн дарга харна */}
           <Switch label="Нэрээ нууцлах" hint="Зөвхөн СӨХ-ийн дарга харна" checked={anonymous} onChange={set('anonymous')} />
 
           <div className="rq-extras">
-            {/* Түр — зураг хадгалах API нэмэгдэх хүртэл ажиллахгүй */}
+
             <button type="button" className="rq-photo">
               <AddPhotoAlternateOutlined sx={{ fontSize: 22 }} /> Зураг нэмэх · 3 хүртэл
             </button>
@@ -124,7 +122,6 @@ export default function Requests() {
           </button>
         </section>
 
-        {/* Миний хүсэлтүүд */}
         <section className="rq-mine" aria-labelledby="mine-title">
           <h2 id="mine-title">Миний хүсэлт ({list.length})</h2>
           {error && <p role="alert">{error}</p>}
@@ -138,7 +135,7 @@ export default function Requests() {
               <article key={r.id} className={r.id === status.freshId ? 'rq-item fresh' : 'rq-item'}>
                 <span className="rq-meta">{label} · {monthDay(r.created_at)}</span>
                 <span className="rq-title">{r.title}</span>
-                {/* Явц — хийгдсэн алхмууд тод, бүрэн шийдсэн бол ногоон */}
+
                 <ol className={done ? 'rq-steps done' : 'rq-steps'} aria-label={`Явц: ${requestSteps[step - 1]}`}>
                   {requestSteps.map((s, i) => (
                     <li key={s} className={`${i < step ? 'reached' : ''}${i === step - 1 ? ' current' : ''}`.trim() || undefined}>

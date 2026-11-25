@@ -1,9 +1,12 @@
+/**
+ * Хэд хэдэн сонголтоос нэгийг сонгох (radio).
+ * options: [{ value: 'all', label: 'Бүх орц', note: '120 тоот' }], value, onChange(value)
+ * label — бүлгийн нэр (дэлгэц уншигчид)
+ * variant: 'fill' — саарал дэвсгэр дээр тэнцүү өргөнтэй, 'pills' — тус тусдаа хүрээтэй товчнууд
+ */
+
 import './Segmented.css'
 
-// Хэд хэдэн сонголтоос нэгийг сонгох (radio).
-// options: [{ value: 'all', label: 'Бүх орц', note: '120 тоот' }], value, onChange(value)
-// label — бүлгийн нэр (дэлгэц уншигчид)
-// variant: 'fill' — саарал дэвсгэр дээр тэнцүү өргөнтэй, 'pills' — тус тусдаа хүрээтэй товчнууд
 export default function Segmented({ options, value, onChange, label, variant = 'fill' }) {
   return (
     <div className={`ui-segmented ${variant}`} role="radiogroup" aria-label={label}>

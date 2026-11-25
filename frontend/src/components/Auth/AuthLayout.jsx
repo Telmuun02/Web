@@ -1,10 +1,13 @@
+/**
+ * Нэвтрэх, нууц үг сэргээх хуудсуудын нийтлэг хүрээ — зүүн талд navy хэсэг, баруун талд form
+ */
+
 import BuildOutlined from '@mui/icons-material/BuildOutlined'
 import HowToVoteOutlined from '@mui/icons-material/HowToVoteOutlined'
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import Brand from '../App/Brand'
 import './AuthLayout.css'
 
-// Нэвтрэх, нууц үг сэргээх хуудсуудын нийтлэг хүрээ — зүүн талд navy хэсэг, баруун талд form
 const features = [
   { icon: ReceiptLongOutlined, text: 'Нэхэмжлэл, төлбөрөө шалгах' },
   { icon: BuildOutlined, text: 'Засварын хүсэлт илгээх' },

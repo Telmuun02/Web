@@ -1,10 +1,13 @@
+/**
+ * СӨХ Hub лого — Navbar, AuthLayout, Landing-д ашиглана.
+ * Дарахад танилцуулга (/) руу шилжинэ.
+ * showSub={false} — хотхоны нэрийг нуух (танилцуулга нь нэг хотхонд хамааралгүй)
+ */
+
 import { Link } from 'react-router-dom'
 import ApartmentOutlined from '@mui/icons-material/ApartmentOutlined'
 import './Brand.css'
 
-// СӨХ Hub лого — Navbar, AuthLayout, Landing-д ашиглана.
-// Дарахад танилцуулга (/) руу шилжинэ.
-// showSub={false} — хотхоны нэрийг нуух (танилцуулга нь нэг хотхонд хамааралгүй)
 export default function Brand({ showSub = true }) {
   return (
     <Link to="/" className="brand" aria-label="СӨХ Hub — танилцуулга руу">

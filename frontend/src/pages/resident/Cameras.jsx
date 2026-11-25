@@ -1,21 +1,26 @@
+/**
+ * Камер — /cameras
+ * Нийтийн талбайн камерууд: том дэлгэц (бүтэн дэлгэцээр харж болно), доор нь жагсаалт.
+ * Backend-тэй түр холбоогүй — бүх өгөгдөл samples/resident/cameras.js-ээс
+ */
+
 import { useRef, useState } from 'react'
 import FullscreenOutlined from '@mui/icons-material/FullscreenOutlined'
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined'
 import Button from '../../components/UI/Button'
 import PageHeader from '../../components/UI/PageHeader'
 import useNow from '../../hooks/useNow'
-// Backend-тэй түр холбоогүй — бүх өгөгдөл жишээ файлаас
+
 import { sampleCameraList } from '../../samples/resident/cameras'
 import './styles/Cameras.css'
 
 export default function Cameras() {
   const [selectedId, setSelectedId] = useState(sampleCameraList[0].id)
-  const now = useNow() // дүрсний баруун дээд буланд секунд тутам явах цаг
-  const viewRef = useRef(null) // том дэлгэц — бүтэн дэлгэцээр харуулахад
+  const now = useNow()
+  const viewRef = useRef(null)
 
   const cam = sampleCameraList.find((c) => c.id === selectedId)
 
-  // Browser-ийн Fullscreen API — том дүрсийг бүтэн дэлгэцээр
   function fullscreen() {
     viewRef.current?.requestFullscreen?.()
   }
@@ -26,7 +31,7 @@ export default function Cameras() {
 
       <div className="cm-columns">
         <section className="cm-main" aria-label="Сонгосон камер">
-          {/* key — камер солигдоход бүдгэрч гарч ирэх хөдөлгөөн дахин тоглоно */}
+
           <div key={cam.id} ref={viewRef} className="cm-view" role="img" aria-label={`${cam.name} камерын шууд дүрс`}>
             <svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice">
               <rect width="640" height="360" fill={cam.bg} />
@@ -48,7 +53,7 @@ export default function Cameras() {
             <Button variant="dark" onClick={fullscreen}>
               <FullscreenOutlined sx={{ fontSize: 18 }} /> Бүтэн дэлгэцээр
             </Button>
-            {/* Түр — бичлэгийн API нэмэгдэх хүртэл ажиллахгүй */}
+
             <Button>
               <HistoryOutlined sx={{ fontSize: 18 }} /> Өмнөх бичлэг
             </Button>
@@ -56,7 +61,6 @@ export default function Cameras() {
           <span className="cm-note">Зөвхөн нийтийн талбайн камер харагдана. Бичлэг 7 хоног хадгалагдаж, хэн үзсэн нь бүртгэгдэнэ.</span>
         </section>
 
-        {/* Камерын жагсаалт — дарахад том дэлгэцэнд гарна */}
         <section className="cm-list" aria-label="Камерын жагсаалт">
           {sampleCameraList.map((c) => (
             <button

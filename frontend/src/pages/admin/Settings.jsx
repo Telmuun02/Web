@@ -1,3 +1,10 @@
+/**
+ * Тохиргоо — /admin/settings (ба /admin/invoices/settings)
+ * Хураамж (тогтмол эсвэл м²-ээр), төлбөр хүлээн авах арга, ажилтан ба эрх, автомат үйлдэл.
+ * Зөвхөн СӨХ-ийн дарга ба нягтлан өөрчилнө.
+ * GET /api/admin/staff, useLive('settings')
+ */
+
 import { useState } from 'react'
 import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined'
 import QrCode2Outlined from '@mui/icons-material/QrCode2Outlined'
@@ -21,7 +28,6 @@ const feeModes = [
   { value: 'area', label: 'Талбайгаар (м²)' },
 ]
 
-// admins.position → албан тушаалын нэр, эрхийн шошго ба өнгө
 const positionInfo = {
   chairman: { role: 'СӨХ-ийн дарга', label: 'Бүх эрх', tone: 'yellow' },
   accountant: { role: 'Нягтлан', label: 'Санхүү', tone: 'green' },
@@ -36,24 +42,22 @@ const automationItems = [
   { key: 'record', label: 'Хурлыг бичлэгжүүлэх', hint: 'Оролцогч бүрт мэдэгдэл харагдана' },
 ]
 
-// '1,370' → 1370
 function toNumber(text) {
   return Number(text.replace(/\D/g, '')) || 0
 }
 
-// Талбайгаар тооцоход гарах жишээ дүн — мянгат хүртэл тоймлоно. 62, 1370 → '85,000'
 function example(area, rate) {
   return (Math.round((area * rate) / 1000) * 1000).toLocaleString('en-US')
 }
 
 export default function Settings() {
-  const live = useLive('settings') // "ШУУД" мөр — /api/admin/live/settings
-  // GET /api/admin/staff — идэвхтэй ажилтнууд
+  const live = useLive('settings')
+
   const { data: staff, error: staffError } = useApi('/admin/staff', null, { fallback: [], live: ['admins'] })
   const [form, setForm] = useState({
     mode: 'fixed',
-    fixedRate: '85,000', // тоот бүрийн сарын хураамж
-    areaRate: '1,370', // 1 м²-ийн үнэ
+    fixedRate: '85,000',
+    areaRate: '1,370',
     due: '25',
     penalty: '0.5%',
   })
@@ -61,13 +65,12 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
 
   const fixed = form.mode === 'fixed'
-  const rateField = fixed ? 'fixedRate' : 'areaRate' // аль аргаар тооцож байгаагаас хамаарна
+  const rateField = fixed ? 'fixedRate' : 'areaRate'
   const areaRate = toNumber(form.areaRate)
   const feeHint = fixed
     ? 'Бүх тоот ижил дүн төлнө. Том тоотод тусгай дүн тоот тус бүрийн карт дээрээс тавина.'
     : `Жишээ: 62 м² ≈ ${example(62, areaRate)}₮ · 74 м² ≈ ${example(74, areaRate)}₮. Өөрчлөлтийг ерөнхий хурлаар батлуулах шаардлагатай.`
 
-  // Аливаа талбар өөрчлөгдөхөд "хадгалагдлаа" мэдэгдлийг нууна
   function change(field, value) {
     setForm({ ...form, [field]: value })
     setSaved(false)
@@ -78,14 +81,13 @@ export default function Settings() {
     setSaved(false)
   }
 
-  // Түр — тохиргооны API нэмэгдэх хүртэл зөвхөн мэдэгдэл харуулна (DB-д хадгалагдахгүй)
   function save() {
     setSaved(true)
   }
 
   return (
     <div className="settings">
-      {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
+
       <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub="Зөвхөн СӨХ-ийн дарга ба нягтлан өөрчилнө" title="Тохиргоо">
@@ -134,7 +136,7 @@ export default function Settings() {
                 title="Банкны данс"
                 hint="[БАНК] · [ДАНСНЫ ДУГААР] · гүйлгээг өдөр бүр тулгана"
               >
-                {/* Түр — дансны мэдээлэл засах API нэмэгдэх хүртэл ажиллахгүй */}
+
                 <Button size="small">Засах</Button>
               </ListItem>
             </div>
@@ -142,7 +144,7 @@ export default function Settings() {
         </div>
 
         <div className="settings-col">
-          {/* Түр — ажилтан нэмэх API нэмэгдэх хүртэл ажиллахгүй */}
+
           <Card title="Ажилтан ба эрх" action={<Button size="small">+ Ажилтан нэмэх</Button>}>
             <div>
               {staffError && <p role="alert">{staffError}</p>}

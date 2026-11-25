@@ -1,3 +1,11 @@
+/**
+ * Ажилтны бэлэн хариултууд — дарахад шууд илгээнэ
+ *
+ * Чат — оршин суугчдын СӨХ-д бичсэн хувийн чатууд (хариулна) ба орцны группүүд (уншина, нууна).
+ * canvas: AdminPhoneChat (вэб хэлбэрт). Шинэ мессеж ирэхэд WebSocket-оор шууд дахин татна.
+ * URL: ?tab=groups — групп таб, ?room=soh:613 — нээлттэй чат
+ */
+
 import { useSearchParams } from 'react-router-dom'
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded'
 import ChatThread from '../../components/Chat/ChatThread'
@@ -9,10 +17,8 @@ import useChatRoom from '../../hooks/useChatRoom'
 import { monthDay } from '../../utils/format'
 import './styles/Chat.css'
 
-// Ажилтны бэлэн хариултууд — дарахад шууд илгээнэ
 const quickReplies = ['Шалгаад хариу өгье', 'Засварчин өнөөдөр очно', 'Баримт имэйлээр очно', 'Баярлалаа!']
 
-// Жагсаалтын цаг: өнөөдөр '14:31', бусад '11/19'
 function shortTime(value) {
   if (!value) return ''
   const d = new Date(value)
@@ -21,15 +27,11 @@ function shortTime(value) {
     : monthDay(d)
 }
 
-// Чат — оршин суугчдын СӨХ-д бичсэн хувийн чатууд (хариулна) ба орцны группүүд (уншина, нууна).
-// canvas: AdminPhoneChat (вэб хэлбэрт). Шинэ мессеж ирэхэд WebSocket-оор шууд дахин татна.
-// URL: ?tab=groups — групп таб, ?room=soh:613 — нээлттэй чат
 export default function Chat() {
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') === 'groups' ? 'groups' : 'inbox'
   const room = params.get('room')
 
-  // GET /api/admin/messages — chat_messages өөрчлөгдөх бүрт (WebSocket) жагсаалт шинэчлэгдэнэ
   const { data, error } = useApi('/admin/messages', null, { fallback: null, live: ['chat_messages'] })
   const chat = useChatRoom(room ? `/admin/messages/${encodeURIComponent(room)}` : null)
 
@@ -49,7 +51,6 @@ export default function Chat() {
     setParams(key === 'groups' ? { tab: 'groups' } : {}, { replace: true })
   }
 
-  // Зүй бус мессежийг нуух / буцааж харуулах — бусдад WebSocket-оор шууд очно
   async function toggleHidden(m) {
     try {
       await api.patch(`/admin/messages/item/${m.id}`, { hidden: !m.hidden })
@@ -58,7 +59,6 @@ export default function Chat() {
     }
   }
 
-  // Нээлттэй чатын толгой (оршин суугчийн утас, тоот) — мессежүүдтэй хамт ирдэг
   const head = chat.info?.header
   let title = ''
   let sub = ''

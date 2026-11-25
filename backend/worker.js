@@ -2,7 +2,7 @@
  * Cloudflare Workers-ийн эхлэлийн цэг — компьютер дээрх bin/www-ийн оронд ажиллана.
  * Express app-ыг өөрчлөлтгүйгээр node:http серверт залгаж, Cloudflare-ийн хүсэлтийг түүн рүү дамжуулна.
  *   /api/realtime → WebSocket: хүнийг таньж Durable Object (RealtimeHub) руу дамжуулна
- *   /api/*        → энэ Worker (Express)
+ *   /api/*        → энэ Worker (Express). GET биш хүсэлтийн дараа hub-д kick() — шинэ өөрчлөлтийг шууд илгээнэ
  *   бусад бүх зам → frontend/dist (wrangler.jsonc → assets), Worker ажиллахгүй
  *
  * hub() - (дотоод) бүх хүнд ганц RealtimeHub ('hub' нэртэй)
@@ -51,6 +51,8 @@ var express = httpServerHandler({ port: PORT });
 export default {
   async fetch(request, env, ctx) {
     if (new URL(request.url).pathname === '/api/realtime') return connectRealtime(request);
-    return express.fetch(request, env, ctx);
+    var response = await express.fetch(request, env, ctx);
+    if (request.method !== 'GET' && request.method !== 'HEAD') ctx.waitUntil(hub().kick());
+    return response;
   },
 };

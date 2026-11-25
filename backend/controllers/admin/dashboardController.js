@@ -4,8 +4,8 @@
  *
  * show - самбарын бүх өгөгдөл нэг дор
  *   GET /api/admin/dashboard
- * topDebtors - өр ихтэй тоотууд
- *   GET /api/admin/dashboard/debtors?limit=
+ * topDebtors - өр ихтэй тоотууд (q: тоот эсвэл оршин суугчийн нэрээр хайх)
+ *   GET /api/admin/dashboard/debtors?limit=&q=
  *
  * Дотоод туслах (show дуудна):
  *   (огноо: lib/time.js — Монголын цагаар)
@@ -116,7 +116,8 @@ async function show(req, res, next) {
 
 async function topDebtors(req, res, next) {
   try {
-    res.json(await Invoices.debtors(Number(req.query.limit) || 6));
+    var q = String(req.query.q || '').trim();
+    res.json(await Invoices.debtors(Number(req.query.limit) || 6, null, q));
   } catch (err) {
     next(err);
   }

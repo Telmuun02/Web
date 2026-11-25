@@ -1,3 +1,10 @@
+/**
+ * Төлбөр — /pay
+ * Энэ сарын нэхэмжлэл, задаргаа, төлбөрийн түүх, баримт хэвлэх (шинэ цонхонд, PDF болгож болно).
+ * QR код, банкны товчнууд нь жишээ — QPay холбогдох хүртэл ажиллахгүй.
+ * GET /api/resident/pay, POST /api/resident/pay — жишээ төлбөр (QPay-ийн оронд түр)
+ */
+
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import LightbulbOutlined from '@mui/icons-material/LightbulbOutlined'
@@ -18,20 +25,16 @@ const historyColumns = [
   { label: 'Баримт', align: 'right' },
 ]
 
-// payments.method → дэлгэцийн нэр
 const methodNames = { qpay: 'QPay', bank: 'Дансаар', cash: 'Бэлнээр', card: 'Картаар' }
 
-// QPay-ийн банкны товчнууд — QPay холбогдох хүртэл юу ч хийхгүй
 const banks = ['Хаан', 'Голомт', 'ХХБ', 'Бусад']
 
-const qrSize = 21 // QR код 21 × 21 нүдтэй
+const qrSize = 21
 
-// HTML-д аюулгүй болгоно (нэр, тоот зэргийг баримтад оруулахад)
 function escapeHtml(text) {
   return String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 }
 
-// Төлбөрийн баримт — шинэ цонхонд нээж хэвлэх цонхыг гаргана ("Save as PDF" сонгож PDF болгоно)
 function printReceipt(payment, unit, user) {
   const win = window.open('', '_blank', 'width=480,height=640')
   if (!win) return
@@ -57,8 +60,6 @@ table{width:100%;border-collapse:collapse;font-size:14px}td{padding:8px 0;border
   win.print()
 }
 
-// Жишээ QR кодын нүднүүд — гурван буланд "харах дөрвөлжин", бусад нь хээ.
-// Жинхэнэ QR биш, QPay-ийн API холбогдоход серверээс ирсэн зургаар солигдоно
 function buildQr() {
   const corners = [[0, 0], [0, 14], [14, 0]]
   const cells = []
@@ -86,9 +87,9 @@ const qrCells = buildQr()
 
 export default function Pay() {
   const { user } = useOutletContext()
-  // GET /api/resident/pay — төлсний дараа POST-ын хариугаар шууд солигдоно
+
   const { data: loaded, error } = useApi('/resident/pay', null, { fallback: null, live: ['invoices', 'payments'] })
-  const [fresh, setFresh] = useState(null) // демо төлбөрийн дараах шинэ өгөгдөл
+  const [fresh, setFresh] = useState(null)
   const [state, setState] = useState({ sending: false, message: '' })
   const data = fresh ?? loaded
 
@@ -101,7 +102,6 @@ export default function Pay() {
   const litPercent = light.units ? Math.round((light.paid / light.units) * 100) : 0
   const month = invoice ? monthOf(invoice.period) : new Date().getMonth() + 1
 
-  // Демо — QPay-ийн оронд үлдэгдлийг "qpay" хэлбэрээр DB-д бичнэ
   async function payDemo() {
     setState({ sending: true, message: '' })
     try {
@@ -120,7 +120,7 @@ export default function Pay() {
       />
 
       <div className="pay-top">
-        {/* Задаргаа — invoice_lines хүснэгтээс */}
+
         <section className="pay-breakdown" aria-labelledby="bd-title">
           <h2 id="bd-title">Задаргаа</h2>
           {invoice ? (
@@ -157,7 +157,6 @@ export default function Pay() {
           </div>
         </section>
 
-        {/* QR эсвэл "гэрэл асаалаа" */}
         <section className="pay-qpay" aria-labelledby="qr-title">
           {paid ? (
             <div className="pay-done" role="status">
@@ -191,13 +190,13 @@ export default function Pay() {
               <div className="pay-banks">
                 <span className="pay-qr-hint">эсвэл банкаа сонгоно уу</span>
                 <div className="pay-banks-grid">
-                  {/* Түр — QPay-ийн банкны линк нэмэгдэх хүртэл юу ч хийхгүй */}
+
                   {banks.map((b) => <button key={b} type="button" className="pay-bank">{b}</button>)}
                 </div>
               </div>
 
               <Toast>{state.message}</Toast>
-              {/* Демо — POST /api/resident/pay үлдэгдлийг QPay-ээр төлсөн гэж DB-д бичнэ */}
+
               <button type="button" className="pay-demo" onClick={payDemo} disabled={state.sending}>
                 {state.sending ? 'Бүртгэж байна…' : `Төлсөн гэж дуурайх (демо) · ${money(left)}`}
               </button>

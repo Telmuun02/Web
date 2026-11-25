@@ -1,22 +1,24 @@
+/**
+ * Төлбөр бүртгэх цонх — баруун талаас гарна.
+ * invoice: { unit, name, period, total, paid }
+ * onSave({ amount, method, note }) — "Бүртгэх" дарахад, onClose — хаахад.
+ * State байхгүй — талбаруудын утгыг "Бүртгэх" дарах мөчид form-оос (FormData) уншина
+ */
+
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import Button from '../UI/Button'
 import Field from '../UI/Field'
 import './PayDrawer.css'
 
-// 85000 → '85,000₮'
 function money(n) {
   return `${n.toLocaleString('en-US')}₮`
 }
 
-// Төлбөр бүртгэх цонх — баруун талаас гарна.
-// invoice: { unit, name, period, total, paid }
-// onSave({ amount, method, note }) — "Бүртгэх" дарахад, onClose — хаахад.
-// State байхгүй — талбаруудын утгыг "Бүртгэх" дарах мөчид form-оос (FormData) уншина
 export default function PayDrawer({ invoice, onClose, onSave }) {
-  const left = invoice.total - invoice.paid // үлдэгдэл
+  const left = invoice.total - invoice.paid
 
   function save(e) {
-    e.preventDefault() // хуудас дахин ачааллахгүй
+    e.preventDefault()
     const data = new FormData(e.target)
     onSave({
       amount: Number(data.get('amount')),
@@ -27,7 +29,7 @@ export default function PayDrawer({ invoice, onClose, onSave }) {
 
   return (
     <div className="pay-overlay" onClick={onClose}>
-      {/* stopPropagation — цонхны дотор дарахад хаагдахгүй */}
+
       <form
         className="pay-drawer"
         role="dialog"
@@ -51,7 +53,6 @@ export default function PayDrawer({ invoice, onClose, onSave }) {
           <span className="pay-left-value">{money(left)}</span>
         </div>
 
-        {/* min/max — 0 эсвэл үлдэгдлээс их дүнг браузер өөрөө зогсооно */}
         <Field label="Төлсөн дүн (₮)">
           <input name="amount" type="number" min="1" max={left} step="1" defaultValue={left} required />
         </Field>

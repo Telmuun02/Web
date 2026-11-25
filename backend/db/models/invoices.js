@@ -6,12 +6,13 @@
  * base: all, find, where, create, update, remove
  * paidPerInvoice() - (дотоод) нэхэмжлэл бүрийн төлөгдсөн дүн, join-д
  * inScope(q, period, search) - (дотоод) list, counts-ын нийтлэг нөхцөл
+ * searchUnit(q, search) - (дотоод) тоотын дугаар эсвэл оршин суугчийн нэрээр хайх (inScope, debtors)
  * thisMonth() - (дотоод) энэ сарын 1-ний өдөр
  *
  * forUnit(unitId) - нэг тоотын нэхэмжлэлүүд, шинээс нь
  * monthlySummary(fromPeriod, buildingId) - сар бүрийн нэхэмжилсэн / цугларсан дүн (Dashboard)
  * entranceSummary(fromPeriod, buildingId) - сар, орц бүрээр нэхэмжлэлийн тоо ба бүрэн төлөгдсөн нь (Reports "Төлөлт орцоор")
- * debtors(limit, buildingId) - хугацаа хэтэрсэн өртэй тоотууд, өр ихээс нь
+ * debtors(limit, buildingId, search) - хугацаа хэтэрсэн өртэй тоотууд, өр ихээс нь (search: тоот эсвэл нэр)
  * overdueTotal(buildingId) - нийт хэтэрсэн өр, хэдэн тоот
  * counts(period, search, buildingId) - таб бүрийн тоо { all, unpaid, partial, paid, overdue }
  * list(period, filters, buildingId) - нэхэмжлэлийн жагсаалт (таб, хайлттай). Төлсөн дүн, сүүлийн төлбөрийг
@@ -82,7 +83,7 @@ async function entranceSummary(fromPeriod, buildingId) {
   });
 }
 
-async function debtors(limit, buildingId) {
+async function debtors(limit, buildingId, search) {
   var q = db('invoices as i')
     .join('units as u', 'u.id', 'i.unit_id')
     .join('entrances as e', 'e.id', 'u.entrance_id')
@@ -95,6 +96,7 @@ async function debtors(limit, buildingId) {
     .groupBy('u.id', 'u.code', 'e.number', 'u.floor', 'u.area_m2')
     .orderBy([{ column: 'debt', order: 'desc' }, { column: 'u.id' }])
     .limit(limit || 10);
+  searchUnit(q, search);
   var rows = await Units.inBuilding(q, buildingId, 'i.unit_id');
 
   return rows.map(function (r) {
@@ -122,15 +124,17 @@ function inScope(q, period, search) {
     });
   });
 
-  if (search) {
-    var like = '%' + search + '%';
-    q.where(function () {
-      this.where('u.code', 'like', like).orWhereExists(
-        db('users').whereRaw('users.unit_id = i.unit_id').where('users.name', 'like', like)
-      );
-    });
-  }
-  return q;
+  return searchUnit(q, search);
+}
+
+function searchUnit(q, search) {
+  if (!search) return q;
+  var like = '%' + search + '%';
+  return q.where(function () {
+    this.where('u.code', 'like', like).orWhereExists(
+      db('users').whereRaw('users.unit_id = u.id').where('users.name', 'like', like)
+    );
+  });
 }
 
 async function counts(period, search, buildingId) {

@@ -1,3 +1,10 @@
+/**
+ * Шууд самбар — canvas "Удирдлагын самбар — ажилтан (шууд)".
+ * GET /api/admin/dashboard: DB өөрчлөгдөхөд WebSocket-оор шууд (дахин холбогдоход ч) шинэчлэгдэнэ.
+ * Цаг тутам давтан татахгүй — нээлттэй орхисон самбар D1-ийн өдрийн уншилтын хязгаарыг идэхгүй.
+ * "Түр зогсоох" дарвал шинэчлэлт зогсоно (уншиж байхад тоо үсрэхгүй).
+ */
+
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
@@ -14,27 +21,19 @@ import useNow from '../../hooks/useNow'
 import { sampleAlerts } from '../../samples/admin/dashboard'
 import './styles/Dashboard.css'
 
-// Шууд самбар — canvas "Удирдлагын самбар — ажилтан (шууд)".
-// GET /api/admin/dashboard: DB өөрчлөгдөхөд WebSocket-оор шууд (дахин холбогдоход ч) шинэчлэгдэнэ.
-// Цаг тутам давтан татахгүй — нээлттэй орхисон самбар D1-ийн өдрийн уншилтын хязгаарыг идэхгүй.
-// "Түр зогсоох" дарвал шинэчлэлт зогсоно (уншиж байхад тоо үсрэхгүй).
-
 const LIVE_TABLES = ['payments', 'invoices', 'requests', 'polls', 'poll_votes', 'admins']
 
 const categoryLabels = { plumbing: 'Сантехник', electrical: 'Цахилгаан', cleaning: 'Цэвэрлэгээ', elevator: 'Лифт', other: 'Бусад' }
 const alertIcons = { lift: ElevatorOutlined, cam: VideocamOffOutlined, heat: ThermostatOutlined }
 
-// 170000 → '170,000₮'
 function money(n) {
   return `${Number(n || 0).toLocaleString('en-US')}₮`
 }
 
-// 10200000 → '10.2'
 function million(n) {
   return (Number(n || 0) / 1000000).toFixed(1)
 }
 
-// '40 сек өмнө', '7 мин өмнө', '3 цагийн өмнө'
 function timeAgo(date, now) {
   const sec = Math.max(0, Math.floor((now - new Date(date)) / 1000))
   if (sec < 5) return 'дөнгөж сая'
@@ -44,7 +43,6 @@ function timeAgo(date, now) {
   return `${Math.floor(sec / 86400)} өдрийн өмнө`
 }
 
-// Хариугүй хүлээсэн хугацаа: '45 сек', '7 мин', '3 цаг', '2 өдөр'
 function waitTime(date, now) {
   const sec = Math.max(0, Math.floor((now - new Date(date)) / 1000))
   if (sec < 60) return `${sec} сек`
@@ -57,8 +55,8 @@ export default function Dashboard() {
   const { user } = useOutletContext()
   const now = useNow()
   const [paused, setPaused] = useState(false)
-  const [ackedAlerts, setAckedAlerts] = useState({}) // "Хүлээж авлаа" дарсан анхааруулга: { lift: true }
-  const [reminded, setReminded] = useState({}) // SMS сануулга: { '1-05': 'sending' | 'sent' }
+  const [ackedAlerts, setAckedAlerts] = useState({})
+  const [reminded, setReminded] = useState({})
   const [actionError, setActionError] = useState('')
 
   const { data, error } = useApi('/admin/dashboard', null, {
@@ -83,7 +81,6 @@ export default function Dashboard() {
   const daysLeft = poll ? Math.max(0, Math.ceil((new Date(poll.endsAt) - now) / 86400000)) : 0
   const clock = new Date(now).toLocaleTimeString('en-GB')
 
-  // "Хүлээж авах" — хүсэлтийг өөр дээрээ авна (хариуцагч = би). Бусад ажилтанд шууд харагдана
   async function acknowledge(request) {
     setActionError('')
     try {
@@ -93,7 +90,6 @@ export default function Dashboard() {
     }
   }
 
-  // SMS сануулга — SMS үйлчилгээ холбогдоогүй тул одоохондоо зөвхөн дэлгэц дээр тэмдэглэнэ
   function remind(code) {
     setReminded((m) => ({ ...m, [code]: 'sending' }))
     setTimeout(() => setReminded((m) => ({ ...m, [code]: 'sent' })), 900)
@@ -123,7 +119,6 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Энэ сарын төлөлт — байрны цонх бүр нэг айл, төлсөн бол шар гэрэлтэй */}
       <section className="dash-hero" aria-label="Энэ сарын төлөлт ба өнөөдрийн орлого">
         {[4, 18, 31, 63, 72, 93].map((left, i) => (
           <span key={left} className="dash-star" aria-hidden="true" style={{ left: `${left}%`, top: `${[14, 82, 10, 8, 88, 22][i]}%`, animationDelay: `${i * 0.4}s` }} />
@@ -167,7 +162,6 @@ export default function Dashboard() {
         </Link>
       </section>
 
-      {/* Анхааруулга — лифт, камер, дулаан (одоохондоо жишээ өгөгдөл) */}
       {alerts.length > 0 ? (
         <section className="dash-alerts" aria-labelledby="alert-title">
           <h2 id="alert-title"><i aria-hidden="true" />Анхааруулга · {alerts.length}</h2>
@@ -200,7 +194,7 @@ export default function Dashboard() {
       {actionError && <p className="dash-error" role="alert">{actionError}</p>}
 
       <div className="dash-grid">
-        {/* Хүсэлт — хариугүй нь эхэндээ */}
+
         <section className="dash-card" aria-labelledby="req-title">
           <div className="dash-card-head">
             <div>
@@ -231,7 +225,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Сүүлийн төлбөр */}
         <section className="dash-card" aria-labelledby="feed-title">
           <div className="dash-card-head">
             <h2 id="feed-title"><i className="dash-dot" aria-hidden="true" />Сүүлийн төлбөр</h2>
@@ -253,7 +246,7 @@ export default function Dashboard() {
       </div>
 
       <div className="dash-grid">
-        {/* Өр ихтэй тоот */}
+
         <section className="dash-card" aria-labelledby="debt-title">
           <div className="dash-card-head">
             <h2 id="debt-title">Өр ихтэй тоот</h2>
@@ -283,7 +276,6 @@ export default function Dashboard() {
           {!debtors.length && <p className="dash-empty">Өртэй тоот алга</p>}
         </section>
 
-        {/* Санал хураалт · шууд ирц */}
         {poll ? (
           <Link to="/admin/polls" className={votePercent >= poll.threshold ? 'dash-poll reached' : 'dash-poll'}>
             <span className="dash-poll-tag"><i aria-hidden="true" />Санал хураалт · шууд ирц</span>

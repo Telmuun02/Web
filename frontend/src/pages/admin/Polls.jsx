@@ -1,3 +1,10 @@
+/**
+ * Санал хураалт — /admin/polls
+ * Шинэ санал хураалт үүсгэх (зөвхөн admin), идэвхтэй ба өмнөх санал хураалтууд: ирц, «Тийм» %, хүчинтэй эсэх.
+ * Ирц босгод хүрээгүй бол хүчингүй, хүрсэн бол олонхи «Тийм» гэсэн эсэхээр шийднэ.
+ * GET/POST /api/admin/polls, useLive('polls')
+ */
+
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
@@ -15,9 +22,8 @@ import useApi from '../../hooks/useApi'
 import useLive from '../../hooks/useLive'
 import './styles/Polls.css'
 
-const defaultThreshold = 50 // ирцийн босго (%) — санал хураалт сонгоогүй үед харуулах
+const defaultThreshold = 50
 
-// Шинэ санал хураалтын сонголтууд — эхнийх нь «Тийм» (өмнөх санал хураалтын "Тийм %" үүгээр бодогдоно)
 const pollOptions = ['Тийм', 'Үгүй', 'Түдгэлзсэн']
 const optionColors = ['var(--accent)', '#b42318', '#9aa3b5']
 
@@ -32,12 +38,10 @@ const columns = [
 
 const emptyForm = { question: '', endDate: '', voters: 'owners', quorum: '50' }
 
-// 20, 40 → 50. Нийт нь 0 бол 0-д хуваахгүй
 function percent(part, total) {
   return total ? Math.round((part / total) * 100) : 0
 }
 
-// '2026-11-20T11:00:00.000Z' → '11/20 19:00'
 function dateLabel(value, withTime) {
   const d = new Date(value)
   const pad = (n) => String(n).padStart(2, '0')
@@ -45,33 +49,30 @@ function dateLabel(value, withTime) {
   return withTime ? `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}` : date
 }
 
-// Ирц босгод хүрээгүй бол хүчингүй, хүрсэн бол олонхи «Тийм» гэсэн эсэхээр
 function decision(p) {
   if (p.turnout < p.threshold) return { label: 'Босго хүрээгүй', tone: 'gray' }
   return p.yes > 50 ? { label: 'Батлагдсан', tone: 'green' } : { label: 'Татгалзсан', tone: 'red' }
 }
 
 export default function Polls() {
-  const live = useLive('polls') // "ШУУД" мөр — /api/admin/live/polls
+  const live = useLive('polls')
   const { user } = useOutletContext()
-  const isAdmin = user.role === 'admin' // санал хураалт үүсгэх, сануулах товч зөвхөн admin-д
+  const isAdmin = user.role === 'admin'
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [toast, setToast] = useState('')
 
-  // ---------- Server state ----------
   const { data: list, reload } = useApi('/admin/polls', null, { fallback: [], live: ['polls', 'poll_votes'] })
   const activeItem = list.find((p) => p.status === 'active')
-  // Идэвхтэй санал хураалтын дэлгэрэнгүй — сонголт бүрийн санал
+
   const { data: active } = useApi(activeItem ? `/admin/polls/${activeItem.id}` : null, null, { fallback: null, live: ['polls', 'poll_votes'] })
   const poll = active?.id === activeItem?.id ? active : null
 
-  // Derived
   const threshold = poll?.threshold_percent ?? defaultThreshold
   const voted = poll?.voted_units ?? 0
   const units = poll?.total_units ?? 0
   const turnout = percent(voted, units)
-  const need = Math.ceil((units * threshold) / 100) - voted // босгод хүрэхэд дутуу тоот
+  const need = Math.ceil((units * threshold) / 100) - voted
   const notVoted = units - voted
 
   const past = list
@@ -94,8 +95,6 @@ export default function Polls() {
     setForm(emptyForm)
   }
 
-  // POST /api/admin/polls — сонгосон өдрийн 23:59-д хаагдана.
-  // "Хэн санал өгөх" сонголтыг backend одоохондоо хадгалахгүй (1 тоот = 1 санал)
   async function start() {
     try {
       await api.post('/admin/polls', {
@@ -172,7 +171,7 @@ export default function Polls() {
             </div>
             {isAdmin && (
               <div className="polls-actions">
-                {/* Түр — хугацаа сунгах, сануулга илгээх API нэмэгдэх хүртэл ажиллахгүй */}
+
                 <Button>Хугацаа сунгах</Button>
                 <Button variant="dark" onClick={() => setToast(`${notVoted} тоотод апп ба SMS сануулга явлаа`)}>
                   Өгөөгүй {notVoted} тоотод сануулах
@@ -229,7 +228,7 @@ export default function Polls() {
                 <td className="num">{p.yes}%</td>
                 <td><Badge tone={d.tone}>{d.label}</Badge></td>
                 <td className="num">
-                  {/* Түр — протокол татах API нэмэгдэх хүртэл ажиллахгүй */}
+
                   <Button size="small">PDF татах</Button>
                 </td>
               </tr>

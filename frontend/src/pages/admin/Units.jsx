@@ -1,3 +1,12 @@
+/**
+ * Тоот ба оршин суугч — /admin/units
+ * Орцоор таб (?tab=), тоот бүрийн үлдэгдэл, баруун талд сонгосон тоотын дэлгэрэнгүй.
+ * Тоотод утас нэмэх / хасах, өөрөө бүртгүүлсэн хүнийг тоотод холбох / татгалзах.
+ * Бүх тоотыг нэг удаа татаад (120 орчим) таб, хайлтыг frontend дээр шүүнэ.
+ * GET /api/admin/units, /admin/units/pending
+ * POST/DELETE /api/admin/units/:id/phones, POST/DELETE /api/admin/units/pending/:id, useLive('units')
+ */
+
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AddOutlined from '@mui/icons-material/AddOutlined'
@@ -34,39 +43,33 @@ const columns = [
   { label: 'Үлдэгдэл', align: 'right' },
 ]
 
-const bigDebt = 170000 // үүнээс их өрийг улаанаар — ойролцоогоор 2 сарын хураамж
+const bigDebt = 170000
 
-// 85000 → '85,000₮'
 function money(n) {
   return `${n.toLocaleString('en-US')}₮`
 }
 
-// Үлдэгдлийн өнгө: их өр — улаан, өргүй — ногоон
 function debtTone(debt) {
   if (debt >= bigDebt) return 'bad'
   return debt ? '' : 'ok'
 }
 
 export default function Units() {
-  const live = useLive('units') // "ШУУД" мөр — /api/admin/live/units
-  const [tab, setTab] = useTabParam('all') // /admin/units?tab=2
+  const live = useLive('units')
+  const [tab, setTab] = useTabParam('all')
   const [query, setQuery] = useState('')
-  const [selId, setSelId] = useState(null) // баруун талд дэлгэрэнгүйг нь харуулах тоот
+  const [selId, setSelId] = useState(null)
 
-  // ---------- Server state ----------
-  // Бүх тоотыг нэг удаа татаад (120 орчим) таб, хайлтыг энд шүүнэ — статистик бүх тоотоос бодогдоно
   const { data: units, loading, error } = useApi('/admin/units', null, { fallback: [], live: ['units', 'users', 'invoices', 'payments'] })
 
-  // Derived
   const q = query.trim().toLowerCase()
   const rows = units.filter((u) =>
     (tab === 'all' || String(u.entrance) === tab) &&
     (!q || `${u.code} ${u.name ?? ''}`.toLowerCase().includes(q)))
   const sel = rows.find((u) => u.id === selId) ?? rows[0]
 
-  // Сонгосон тоотын гишүүд — /api/admin/units/:id
   const { data: detail, reload: reloadDetail } = useApi(sel ? `/admin/units/${sel.id}` : null, null, { fallback: null, live: ['units', 'users', 'invoices', 'payments'] })
-  // Өөрөө бүртгүүлсэн, тоотод холбогдоогүй бүртгэлүүд — шинэ бүртгэл WebSocket-оор шууд нэмэгдэнэ
+
   const { data: pending, reload: reloadPending } = useApi('/admin/units/pending', null, { fallback: [], live: ['users'] })
   const [linkState, setLinkState] = useState({ error: '', busy: false })
 
@@ -95,7 +98,6 @@ export default function Units() {
     }
   }
 
-  // Утас бүртгэх / хасах — оршин суугч тэр утсаараа /register-ээр баталгаажуулж нэвтэрнэ
   const [phoneState, setPhoneState] = useState({ error: '', busy: false })
 
   async function addPhone(e) {
@@ -141,13 +143,12 @@ export default function Units() {
       <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub={`${entrances} орц · ${units.length} тоот`} title="Тоот ба оршин суугч">
-        {/* Түр — Excel оруулах, оршин суугч нэмэх API нэмэгдэх хүртэл ажиллахгүй */}
+
         <Button>
           <FileUploadOutlined sx={{ fontSize: 18 }} /> Excel-ээс оруулах
         </Button>
       </PageHeader>
 
-      {/* Өөрөө бүртгүүлсэн, тоотод холбогдоогүй бүртгэл — холбосны дараа оршин суугч нэвтэрнэ */}
       {pending.length > 0 && (
         <Card as="section" className="units-pending" aria-labelledby="pending-title">
           <h2 id="pending-title">Холбогдоогүй бүртгэл · {pending.length}</h2>
@@ -236,7 +237,6 @@ export default function Units() {
               ))}
               {people.length === 0 && <p className="units-muted">Утас бүртгээгүй — оршин суугч нэвтэрч чадахгүй</p>}
 
-              {/* Шинэ утас — оршин суугч энэ дугаараараа "Бүртгүүлэх"-ээр SMS баталгаажуулна */}
               <form className="units-phone-add" onSubmit={addPhone}>
                 <label className="visually-hidden" htmlFor="new-phone">Шинэ утасны дугаар</label>
                 <input id="new-phone" name="phone" inputMode="tel" placeholder="99112233" maxLength={15} required />

@@ -1,24 +1,26 @@
+/**
+ * Нэг өрөөний мессежүүд + бичих хэсэг. Оршин суугч, ажилтны чат хоёулаа хэрэглэнэ.
+ * chat        — useChatRoom()-ийн үр дүн
+ * me          — { type: 'user' | 'admin', id } — өөрийн мессежийг баруун талд
+ * canWrite    — false бол бичих хэсэг гарахгүй (ажилтан группт зөвхөн уншина)
+ * placeholder — бичих талбарын тайлбар
+ * banner      — мессежийн дээрх мөр (тогтоосон зарлал)
+ * quick       — бэлэн хариултууд — дарахад шууд илгээнэ
+ * actions     — (message) => JSX: мессеж бүрийн доорх товч (ажилтны "Нуух")
+ * adminSide   — true бол ажилтны мессежийг "өөрийн" гэж үзнэ (СӨХ-ийн бүх ажилтан нэг тал)
+ */
+
 import { useState } from 'react'
 import SendRounded from '@mui/icons-material/SendRounded'
 import { monthDay } from '../../utils/format'
 import './ChatThread.css'
 
-// Мессежийн цаг: өнөөдрийнх бол '14:31', бусад '11/12 14:31'
 function timeOf(value) {
   const d = new Date(value)
   const hm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   return d.toDateString() === new Date().toDateString() ? hm : `${monthDay(d)} ${hm}`
 }
 
-// Нэг өрөөний мессежүүд + бичих хэсэг. Оршин суугч, ажилтны чат хоёулаа хэрэглэнэ.
-// chat        — useChatRoom()-ийн үр дүн
-// me          — { type: 'user' | 'admin', id } — өөрийн мессежийг баруун талд
-// canWrite    — false бол бичих хэсэг гарахгүй (ажилтан группт зөвхөн уншина)
-// placeholder — бичих талбарын тайлбар
-// banner      — мессежийн дээрх мөр (тогтоосон зарлал)
-// quick       — бэлэн хариултууд ['Шалгаад хариу өгье', ...] — дарахад шууд илгээнэ
-// actions     — (message) => JSX: мессеж бүрийн доорх товч (ажилтны "Нуух")
-// adminSide   — true бол ажилтны мессежийг "өөрийн" гэж үзнэ (СӨХ-ийн бүх ажилтан нэг тал)
 export default function ChatThread({ chat, me, canWrite = true, placeholder, banner, quick, actions, adminSide = false }) {
   const [sendError, setSendError] = useState('')
   const isMine = (m) => (adminSide ? m.sender.type === 'admin' : m.sender.type === me.type && m.sender.id === me.id)
@@ -33,7 +35,7 @@ export default function ChatThread({ chat, me, canWrite = true, placeholder, ban
     try {
       await chat.send(text)
     } catch (err) {
-      form.elements.text.value = text // алдаа гарвал бичсэнийг буцааж тавина
+      form.elements.text.value = text
       setSendError(err.message)
     }
   }
@@ -47,7 +49,6 @@ export default function ChatThread({ chat, me, canWrite = true, placeholder, ban
     }
   }
 
-  // column-reverse — шинэ мессеж доор, scroll өөрөө доод талд байна
   const list = chat.messages.slice().reverse()
 
   return (
@@ -58,7 +59,7 @@ export default function ChatThread({ chat, me, canWrite = true, placeholder, ban
 
         {list.map((m, i) => {
           const mine = isMine(m)
-          const older = list[i + 1] // reverse тул өмнөх мессеж нь дараагийн индекс
+          const older = list[i + 1]
           const showName = !mine && (!older || older.sender.type !== m.sender.type || older.sender.id !== m.sender.id)
           return (
             <div key={m.id} className={mine ? 'chat-row mine' : 'chat-row'}>

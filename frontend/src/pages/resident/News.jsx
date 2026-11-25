@@ -1,3 +1,9 @@
+/**
+ * Зарлал ба санал хураалт — /news
+ * СӨХ-ийн зарлалууд, идэвхтэй санал хураалтад санал өгөх.
+ * GET /api/resident/news, POST /api/resident/polls/:id/vote
+ */
+
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Badge from '../../components/UI/Badge'
@@ -9,14 +15,12 @@ import useApi from '../../hooks/useApi'
 import { monthDay, relativeDay } from '../../utils/format'
 import './styles/News.css'
 
-// Нэг идэвхтэй санал хураалт — сонголтууд, ирц, өөрийн санал
 function PollCard({ poll, onVoted }) {
   const [state, setState] = useState({ sending: false, message: '', changing: false })
-  // Санал өгсөн бол дүнг харуулна. "Саналаа өөрчлөх" дарвал сонголтууд дахин гарна
+
   const voted = poll.my_option_id != null && !state.changing
   const total = poll.options.reduce((sum, o) => sum + o.votes, 0)
 
-  // POST /api/resident/polls/:id/vote — нэг тоот нэг санал. Дахин илгээвэл саналыг солино (дуусахаас өмнө)
   async function vote(optionId) {
     setState({ sending: true, message: '', changing: false })
     try {
@@ -77,9 +81,8 @@ function PollCard({ poll, onVoted }) {
 }
 
 export default function News() {
-  // GET /api/resident/news — санал өгсний дараа тухайн санал хураалтыг хариугаар нь солино
   const { data, error } = useApi('/resident/news', null, { fallback: null, live: ['announcements', 'polls', 'poll_votes'] })
-  const [votedPolls, setVotedPolls] = useState({}) // { [poll_id]: санал өгсний дараах дүн }
+  const [votedPolls, setVotedPolls] = useState({})
 
   if (error) return <div className="res-news"><p role="alert">{error}</p></div>
   if (!data) return <div className="res-news"><p>Ачааллаж байна…</p></div>
@@ -92,7 +95,7 @@ export default function News() {
       <PageHeader sub="СӨХ-ийн мэдээлэл ба орцны шийдвэрүүд" title="Зарлал ба санал хураалт" />
 
       <div className="nw-columns">
-        {/* Зарлалууд */}
+
         <section className="nw-posts" aria-labelledby="ann-title">
           <h2 id="ann-title">Зарлал ({posts.length})</h2>
           {posts.length === 0 && <p>Зарлал алга</p>}
@@ -109,7 +112,7 @@ export default function News() {
         </section>
 
         <aside className="nw-side">
-          {/* Идэвхтэй онлайн санал хураалтууд */}
+
           {activePolls.length === 0 && (
             <section className="nw-poll" aria-label="Санал хураалт">
               <span className="nw-poll-info">Одоогоор явагдаж буй санал хураалт алга</span>
@@ -123,7 +126,6 @@ export default function News() {
             />
           ))}
 
-          {/* Удахгүй болох хурал дээр хураах саналууд — meeting_agenda.poll_id */}
           {meetingVotes.map((v) => (
             <Link key={v.title} to="/meeting" className="nw-meeting">
               <span className="nw-meeting-tag">Хурал дээр хураана · {monthDay(v.starts_at)}</span>
@@ -132,7 +134,6 @@ export default function News() {
             </Link>
           ))}
 
-          {/* Өмнөх дүнгүүд */}
           <section className="nw-past" aria-labelledby="past-title">
             <h2 id="past-title">Өмнөх дүнгүүд</h2>
             {pastPolls.length === 0 && <span className="nw-muted">Дууссан санал хураалт алга</span>}

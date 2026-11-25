@@ -1,3 +1,10 @@
+/**
+ * Нэвтрэх хуудас — /login
+ * Утас (оршин суугч) эсвэл и-мэйл (ажилтан) + нууц үг, аль эрхээр нэвтрэхийг сонгоно —
+ * нэг хүн хоёулаа байж болно (байрандаа амьдардаг дарга). Сүүлд сонгосныг localStorage-д санана.
+ * POST /api/auth/login (cookie тавигдана) → GET /api/auth/me → өөрийн нүүр рүү
+ */
+
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/Auth/AuthLayout'
@@ -7,12 +14,11 @@ import api from '../api/client'
 import { homePath } from '../utils/home'
 import './styles/Auth.css'
 
-// Аль эрхээр нэвтрэх — нэг хүн хоёулаа байж болно (байрандаа амьдардаг дарга)
 const roles = [
   { value: 'user', label: 'Оршин суугч' },
   { value: 'admin', label: 'Ажилтан' },
 ]
-const roleKey = 'login-as' // сүүлд сонгосныг санана
+const roleKey = 'login-as'
 
 function savedRole() {
   try {
@@ -31,7 +37,6 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Нууц үг сэргээсний дараа ирсэн бол амжилтын мессеж харуулна
   const notice = location.state?.notice
 
   async function handleSubmit(e) {
@@ -39,11 +44,11 @@ export default function Login({ onLogin }) {
     setError('')
     setSubmitting(true)
     try {
-      await api.post('/auth/login', { login: login.trim(), password, as }) // cookie тавигдана
-      try { localStorage.setItem(roleKey, as) } catch { /* хадгалж чадахгүй бол дараа дахин сонгоно */ }
+      await api.post('/auth/login', { login: login.trim(), password, as })
+      try { localStorage.setItem(roleKey, as) } catch {}
       const me = await api.get('/auth/me')
-      onLogin(me)                                                       // App руу хэрэглэгчийг дамжуулна
-      navigate(homePath(me), { replace: true })                         // admin → /admin, оршин суугч → /
+      onLogin(me)
+      navigate(homePath(me), { replace: true })
     } catch (err) {
       setError(err.message || 'Нэвтрэх нэр эсвэл нууц үг буруу байна')
       setSubmitting(false)
@@ -90,7 +95,6 @@ export default function Login({ onLogin }) {
           />
         </label>
 
-        {/* Оршин суугч: нууц үг сэргээх, анх бүртгүүлэх нь утсаар (SMS). Ажилтан даргадаа хандана */}
         {as === 'user' ? (
           <Link to="/forgot-password" state={{ login: login.trim() }} className="auth-link auth-forgot">
             Нууц үгээ мартсан?

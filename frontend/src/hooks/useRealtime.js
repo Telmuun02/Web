@@ -1,10 +1,13 @@
+/**
+ * Өгсөн хүснэгтүүдийн аль нэг өөрчлөгдөхөд onChange-ийг дуудна (300мс-д нэг удаа).
+ * WebSocket тасраад дахин холбогдоход ч дуудна — тасарсан хооронд алдагдсан өөрчлөлтийг нөхнө.
+ *   useTableChange(['requests'], reload)
+ * tables хоосон / null бол юу ч хийхгүй (холболт ч нээхгүй).
+ */
+
 import { useEffect, useRef } from 'react'
 import { subscribe } from '../api/realtime'
 
-// Өгсөн хүснэгтүүдийн аль нэг өөрчлөгдөхөд onChange-ийг дуудна (300мс-д нэг удаа).
-// WebSocket тасраад дахин холбогдоход ч дуудна — тасарсан хооронд алдагдсан өөрчлөлтийг нөхнө.
-//   useTableChange(['requests'], reload)
-// tables хоосон / null бол юу ч хийхгүй (холболт ч нээхгүй).
 export function useTableChange(tables, onChange) {
   const ref = useRef(onChange)
   useEffect(() => {

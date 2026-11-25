@@ -1,3 +1,12 @@
+/**
+ * Утсаар бүртгүүлэх / нууц үг сэргээх — verify.mn (reverse SMS):
+ *   1) утас → POST /api/auth/verify → код ба 144773 дугаар
+ *   2) хэрэглэгч өөрийн утаснаас кодоо 144773 руу SMS-ээр илгээнэ, бид 3 сек тутам шалгана
+ *   3) баталгаажмагц нууц үг тохируулна → POST /api/auth/verify/:id/complete
+ *      тоотод холбогдсон бол шууд нэвтэрнэ, үгүй бол СӨХ тоотод холбохыг хүлээнэ (pending)
+ * mode: 'register' (/register) | 'reset' (/forgot-password) — урсгал нь адилхан, бичиг нь өөр
+ */
+
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
@@ -16,26 +25,19 @@ const texts = {
   reset: { title: 'Нууц үг сэргээх', lead: 'Бүртгэлтэй утасны дугаараа оруулна уу. Утсаа баталгаажуулаад шинэ нууц үг тохируулна.' },
 }
 
-// Утсаар бүртгүүлэх / нууц үг сэргээх — verify.mn (reverse SMS):
-//   1) утас → POST /api/auth/verify → код ба 144773 дугаар
-//   2) хэрэглэгч өөрийн утаснаас кодоо 144773 руу SMS-ээр илгээнэ, бид 3 сек тутам шалгана
-//   3) баталгаажмагц нууц үг тохируулна → POST /api/auth/verify/:id/complete
-//      тоотод холбогдсон бол шууд нэвтэрнэ, үгүй бол СӨХ тоотод холбохыг хүлээнэ (pending)
-// mode: 'register' (/register) | 'reset' (/forgot-password) — урсгал нь адилхан, бичиг нь өөр
 export default function ForgotPassword({ mode = 'reset', onLogin }) {
   const navigate = useNavigate()
   const location = useLocation()
   const t = texts[mode]
-  const [step, setStep] = useState('phone') // phone → sms → password → (pending)
+  const [step, setStep] = useState('phone')
   const [phone, setPhone] = useState(location.state?.login ?? '')
-  const [session, setSession] = useState(null) // { id, shortcode, code, smsUri, instruction, expiresAt, activated? }
+  const [session, setSession] = useState(null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [now, setNow] = useState(() => Date.now())
 
-  // SMS хүлээж байх үед: 3 сек тутам баталгаажсан эсэхийг асууна, секунд тоолуур явна
   useEffect(() => {
     if (step !== 'sms' || !session) return
     const tick = setInterval(() => setNow(Date.now()), 1000)
@@ -43,7 +45,7 @@ export default function ForgotPassword({ mode = 'reset', onLogin }) {
       try {
         const { status, activated } = await api.get(`/auth/verify/${session.id}`)
         if (status === 'verified') {
-          setSession((s) => ({ ...s, activated })) // шинэ бүртгэл үү, нууц үг сэргээх үү — баталгаажсаны дараа л мэднэ
+          setSession((s) => ({ ...s, activated }))
           setStep('password')
           setError('')
         } else if (status === 'expired') {
@@ -51,7 +53,6 @@ export default function ForgotPassword({ mode = 'reset', onLogin }) {
           setError('Хугацаа дууссан. Дахин код авна уу.')
         }
       } catch {
-        // сүлжээ түр тасарвал дараагийн удаа дахин асууна
       }
     }, POLL_MS)
     return () => {
@@ -84,7 +85,7 @@ export default function ForgotPassword({ mode = 'reset', onLogin }) {
 
     setSubmitting(true)
     try {
-      const result = await api.post(`/auth/verify/${session.id}/complete`, { password }) // холбогдсон бол cookie тавигдана
+      const result = await api.post(`/auth/verify/${session.id}/complete`, { password })
       if (result.pending) {
         setStep('pending')
         setSubmitting(false)

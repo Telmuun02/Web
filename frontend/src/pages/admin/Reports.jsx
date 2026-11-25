@@ -1,3 +1,9 @@
+/**
+ * Тайлан — /admin/reports
+ * Хаагдсан сарын санхүү: орлого, зарлагын бүтэц, төлөлт орцоор, татаж авах тайлан.
+ * GET /api/admin/reports, useLive('reports')
+ */
+
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
@@ -14,7 +20,6 @@ import useLive from '../../hooks/useLive'
 import useApi from '../../hooks/useApi'
 import './styles/Reports.css'
 
-// expenses.category → дэлгэцийн нэр
 const expenseNames = {
   salary: 'Ажилчдын цалин',
   utilities: 'Нийтийн дулаан, ус',
@@ -25,13 +30,11 @@ const expenseNames = {
   other: 'Бусад',
 }
 
-// '2026-10-01' → '2026 оны 10-р сар'
 function monthLabel(period) {
   const [year, month] = period.split('-')
   return `${year} оны ${Number(month)}-р сар`
 }
 
-// adminOnly — оршин суугчид харагдахгүй
 const sampleDocs = [
   { name: 'Сарын санхүүгийн тайлан', hint: 'Орлого, зарлага, нөөц сан', period: '10-р сар', format: 'PDF' },
   { name: 'Төлбөрийн бүртгэл', hint: 'Тоот бүрийн гүйлгээ', period: '10-р сар', format: 'Excel' },
@@ -47,28 +50,23 @@ const columns = [
   { label: 'Үйлдэл', align: 'right' },
 ]
 
-// 3200000 → '3.2'
 function million(n) {
   return (n / 1000000).toFixed(1)
 }
 
 export default function Reports() {
-  const live = useLive('reports') // "ШУУД" мөр — /api/admin/live/reports
+  const live = useLive('reports')
   const { user } = useOutletContext()
   const isAdmin = user.role === 'admin'
-  const [shared, setShared] = useState(true) // тайланг оршин суугчдад нийтлэх эсэх
-  const [period, setPeriod] = useState(null) // сонгосон сар, null бол хамгийн сүүлийн хаагдсан сар
+  const [shared, setShared] = useState(true)
+  const [period, setPeriod] = useState(null)
 
-  // ---------- Server state ----------
-  // Сүүлийн 4 сар — явагдаж буй сар + хаагдсан 3 сар
   const { data: report } = useApi('/admin/reports', { months: 4 }, { fallback: null, live: ['payments', 'invoices', 'expenses', 'requests'] })
 
-  // Derived — зөвхөн хаагдсан саруудыг сонгоно (явагдаж буй сар дуусаагүй), шинээс нь
   const thisMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`
   const closed = (report?.months ?? []).filter((m) => m.period !== thisMonth).reverse()
   const month = closed.find((m) => m.period === period) ?? closed[0]
 
-  // Сонгосон сарын орц бүрийн төлөлт — GET /api/admin/reports-ийн entrances
   const entrances = (report?.entrances ?? [])
     .filter((e) => e.period === month?.period)
     .map((e) => ({
@@ -76,13 +74,12 @@ export default function Reports() {
       percent: e.units ? Math.round((e.paid_units / e.units) * 100) : 0,
     }))
 
-  // Сонгосон сарын зарлага ангиллаар, ихээс нь — GET /api/admin/reports-ийн expenses
   const expenses = (report?.expenses ?? [])
     .filter((x) => x.period === month?.period)
     .map((x) => ({ name: expenseNames[x.category] ?? x.category, amount: x.amount }))
     .sort((a, b) => b.amount - a.amount)
   const total = expenses.reduce((sum, x) => sum + x.amount, 0)
-  // Хамгийн том зарлага — зурвасын уртыг үүнтэй харьцуулна (= 100%)
+
   const largest = expenses[0]
 
   const stats = [
@@ -104,7 +101,7 @@ export default function Reports() {
 
   return (
     <div className="reports">
-      {/* Шууд мөр — GET /api/admin/live/reports */}
+
       <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader sub="Хаагдсан сарын санхүү" title="Тайлан">
@@ -114,7 +111,7 @@ export default function Reports() {
             {closed.map((m) => <option key={m.period} value={m.period}>{monthLabel(m.period)}</option>)}
           </select>
         </label>
-        {/* Түр — PDF үүсгэх API нэмэгдэх хүртэл ажиллахгүй */}
+
         <Button variant="dark">
           <FileDownloadOutlined sx={{ fontSize: 18 }} /> PDF татах
         </Button>
@@ -175,7 +172,7 @@ export default function Reports() {
               <td className="dim">{d.period}</td>
               <td><Badge>{d.format}</Badge></td>
               <td className="num">
-                {/* Түр — татах API нэмэгдэх хүртэл ажиллахгүй */}
+
                 <Button size="small">Татах</Button>
               </td>
             </tr>

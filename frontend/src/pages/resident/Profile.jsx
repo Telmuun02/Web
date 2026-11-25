@@ -1,3 +1,10 @@
+/**
+ * Профайл — /profile
+ * Тоот, бүртгэлтэй утаснууд, цагтаа төлсөн сар, мэдэгдлийн тохиргоо, үсгийн хэмжээ, нууц үг солих.
+ * Мэдэгдлийн тохиргоо DB-д хадгалагдахгүй (хүснэгт алга), зөвхөн дэлгэц дээр.
+ * GET /api/resident/profile
+ */
+
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined'
@@ -9,7 +16,6 @@ import Switch from '../../components/UI/Switch'
 import useApi from '../../hooks/useApi'
 import './styles/Profile.css'
 
-// Мэдэгдлийн тохиргоо — on: анхдагч утга. DB-д хадгалах хүснэгт алга тул одоогоор зөвхөн дэлгэц дээр
 const notifySettings = [
   { key: 'avatar', label: 'Хуралд аватартай орох', hint: 'Нүүр тань анхдагчаар нууцлагдана', on: true },
   { key: 'pay', label: 'Төлбөрийн сануулга', hint: 'Хугацаанаас 3 хоногийн өмнө · SMS', on: true },
@@ -23,17 +29,15 @@ const fontSizes = [
   { value: 'l', label: 'Том', px: 19 },
 ]
 
-// [{ key: 'pay', on: true }, …] → { pay: true, … }
 const initialNotify = Object.fromEntries(notifySettings.map((s) => [s.key, s.on]))
 
 export default function Profile() {
   const { user, onLogout } = useOutletContext()
-  // GET /api/resident/profile — тоот, тоотод бүртгэлтэй утаснууд, цагтаа төлсөн сар
+
   const { data, error } = useApi('/resident/profile', null, { fallback: null, live: ['users', 'payments', 'invoices'] })
-  // Бүх тохиргоо нэг object-д: мэдэгдлийн унтраалгууд + үсгийн хэмжээ
+
   const [prefs, setPrefs] = useState({ ...initialNotify, fontSize: 'm' })
 
-  // Нэг тохиргоог солино: set('pay')(false), set('fontSize')('l')
   const set = (key) => (value) => setPrefs((p) => ({ ...p, [key]: value }))
 
   const previewPx = fontSizes.find((f) => f.value === prefs.fontSize).px
@@ -44,7 +48,6 @@ export default function Profile() {
     <div className="res-profile-page">
       {error && <p role="alert">{error}</p>}
 
-      {/* Тойм — нэг тоот = нэг бүртгэл, тоотоор нэрлэгдэнэ */}
       <section className="pf-hero" aria-label="Профайлын тойм">
         <span className="pf-avatar" aria-hidden="true">
           <DarkModeOutlined sx={{ fontSize: 40 }} />
@@ -63,7 +66,7 @@ export default function Profile() {
             <span className="pf-tile-value">{data ? `${phones.length} утас` : '—'}</span>
           </div>
         </div>
-        {/* Нууц үг солих — утсаараа SMS баталгаажуулна (verify.mn). Утсаа СӨХ солино */}
+
         <Button as={Link} to="/forgot-password" state={{ login: user.phone ?? '' }}>
           <LockResetOutlined sx={{ fontSize: 18 }} /> Нууц үг солих
         </Button>
@@ -71,7 +74,7 @@ export default function Profile() {
 
       <div className="pf-columns">
         <div className="pf-col">
-          {/* Тоотод бүртгэлтэй утаснууд — СӨХ нэмж, хасна. Утас бүр өөрийн нууц үгээр нэвтэрнэ */}
+
           <section className="pf-card" aria-labelledby="fam-title">
             <div className="pf-card-head">
               <h2 id="fam-title">Бүртгэлтэй утас</h2>
@@ -90,7 +93,6 @@ export default function Profile() {
             <span className="pf-muted small">Утас нэмэх, хасах бол СӨХ-д хандана уу.</span>
           </section>
 
-          {/* Үсгийн хэмжээ */}
           <section className="pf-card" aria-labelledby="size-title">
             <h2 id="size-title">Үсгийн хэмжээ</h2>
             <Segmented label="Үсгийн хэмжээ" options={fontSizes} value={prefs.fontSize} onChange={set('fontSize')} />
@@ -99,7 +101,7 @@ export default function Profile() {
         </div>
 
         <div className="pf-col">
-          {/* Хурал ба мэдэгдэл */}
+
           <section className="pf-card pf-settings" aria-labelledby="set-title">
             <h2 id="set-title">Хурал ба мэдэгдэл</h2>
             {notifySettings.map((s) => (

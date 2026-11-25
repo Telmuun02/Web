@@ -1,8 +1,11 @@
+/**
+ * Хайлтын талбар — томруулдаг шилний дүрстэй.
+ * onChange(текст) — event биш, шууд бичсэн текстийг өгнө. placeholder нь дэлгэц уншигчид нэр болно
+ */
+
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import './SearchInput.css'
 
-// Хайлтын талбар — томруулдаг шилний дүрстэй.
-// onChange(текст) — event биш, шууд бичсэн текстийг өгнө. placeholder нь дэлгэц уншигчид нэр болно
 export default function SearchInput({ value, onChange, placeholder }) {
   return (
     <label className="ui-search">

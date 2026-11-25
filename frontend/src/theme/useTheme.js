@@ -1,21 +1,23 @@
+/**
+ * Цайвар / бараан горим — <html data-theme>-д тавьж, localStorage-д санана.
+ * Эхний утгыг index.html-ийн script аль хэдийн тавьсан байгаа (анивчихгүй).
+ *   const { theme, toggle } = useTheme()   // theme: 'light' | 'dark'
+ */
+
 import { useEffect, useState } from 'react'
 
-// Эхний утга — index.html-ийн script <html data-theme>-ийг аль хэдийн тавьсан байгаа
 function initialTheme() {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
 }
 
-// theme: 'light' | 'dark', toggle() — солих
 export function useTheme() {
   const [theme, setTheme] = useState(initialTheme)
 
-  // theme солигдоход <html data-theme="..."> болгож, дараа нээхэд санахаар хадгална
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     try {
       localStorage.setItem('theme', theme)
     } catch {
-      // Нууц цонх (private mode) зэрэгт хадгалж чадахгүй — зүгээр, зөвхөн санахгүй
     }
   }, [theme])
 

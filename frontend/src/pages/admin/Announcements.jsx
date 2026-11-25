@@ -1,3 +1,9 @@
+/**
+ * Зарлал — /admin/announcements
+ * Шинэ зарлал бичих (бүх орц эсвэл нэг орцонд), нийтэлсэн зарлалын жагсаалт.
+ * GET/POST /api/admin/announcements, GET /api/admin/units (орцны тоо), useLive('announcements')
+ */
+
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import Badge from '../../components/UI/Badge'
@@ -16,11 +22,8 @@ import useLive from '../../hooks/useLive'
 import useApi from '../../hooks/useApi'
 import './styles/Announcements.css'
 
-// Хэнд илгээх — backend-ийн audience утга: 'all' эсвэл орцны дугаар
 const audienceLabels = { all: 'Бүх орц', 1: '1-р орц', 2: '2-р орц', 3: '3-р орц' }
 
-// /api/admin/announcements-ийн мөр → хүснэгтийн мөр.
-// read — уншсан хувь: уншсаныг хадгалах хүснэгт DB-д одоохондоо алга тул null
 function toPost(a) {
   const d = new Date(a.created_at)
   return {
@@ -42,55 +45,46 @@ const columns = [
   { label: 'Уншсан', width: 200 },
 ]
 
-const smsLimit = 160 // нэг SMS-д багтах тэмдэгт
+const smsLimit = 160
 
-// SMS-ийн текст — 160 тэмдэгтээс урт бол тайраад '...' залгана
 function smsText(title, body) {
   const text = `СӨХ: ${title}. ${body}`
   return text.length > smsLimit ? `${text.slice(0, smsLimit - 3)}...` : text
 }
 
-// Шинэ зарлалын анхны утгууд
 const emptyForm = { title: '', body: '', audience: 'all', sms: true, important: false }
 
 export default function Announcements() {
-  const live = useLive('announcements') // "ШУУД" мөр — /api/admin/live/announcements
+  const live = useLive('announcements')
   const { user } = useOutletContext()
-  const isAdmin = user.role === 'admin' // оршин суугч зөвхөн нийтэлсэн зарлалыг харна
-  // Шинэ зарлалын form — 5 талбар хамт хадгалагдана.
-  // Урьдчилан харах хэсэг бичих зуур шинэчлэгддэг тул FormData биш state
+  const isAdmin = user.role === 'admin'
+
   const [form, setForm] = useState(emptyForm)
   const [toast, setToast] = useState('')
   const { title, body, audience, sms, important } = form
 
-  // ---------- Server state ----------
   const { data: list, reload } = useApi('/admin/announcements', null, { fallback: [], live: ['announcements'] })
-  const { data: units } = useApi('/admin/units', null, { fallback: [], live: ['units', 'users'] }) // орц бүрийн тоотын тоонд
+  const { data: units } = useApi('/admin/units', null, { fallback: [], live: ['units', 'users'] })
   const posts = list.map(toPost)
 
-  // Derived — "Хэнд" сонголт бүрийн тоотын тоо
   const unitCount = (value) => (value === 'all' ? units.length : units.filter((u) => String(u.entrance) === value).length)
   const audienceOptions = Object.entries(audienceLabels).map(([value, label]) => ({
     value, label, note: `${unitCount(value)} тоот`,
   }))
   const target = { label: audienceLabels[audience], units: unitCount(audience) }
 
-  // Нэг талбарыг солино: field('sms')(true)
   const field = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
 
-  // Урьдчилан харахад хоосон бол жишээ бичиг харуулна
   const previewTitle = title.trim() || 'Гарчиг энд харагдана'
   const previewBody = body.trim() || 'Агуулга энд харагдана'
   const cantPublish = !title.trim() || !body.trim()
 
-  // POST /api/admin/announcements — хадгалаад жагсаалтыг дахин татна.
-  // SMS-ийг backend одоохондоо илгээхгүй, зөвхөн тэмдэглэнэ
   async function publish() {
     if (cantPublish) return
     try {
       await api.post('/admin/announcements', form)
       reload()
-      setForm((f) => ({ ...f, title: '', body: '' })) // хэнд, SMS сонголт хэвээр үлдэнэ
+      setForm((f) => ({ ...f, title: '', body: '' }))
       setToast(`${target.units} тоотод зарлал илгээгдлээ`)
     } catch (err) {
       setToast(err.message)
@@ -99,7 +93,7 @@ export default function Announcements() {
 
   return (
     <div className="announcements">
-      {/* Шууд мөр — түр жишээ өгөгдөлтэй */}
+
       <LiveBar stats={live.stats} events={live.events} />
 
       <PageHeader
@@ -150,14 +144,13 @@ export default function Announcements() {
                 {sms ? `${target.units} SMS · ойролцоогоор [SMS ҮНЭ]₮` : 'Зөвхөн апп-аар · үнэгүй'}
               </span>
               <div className="ann-buttons">
-                {/* Түр — ноорог хадгалах API нэмэгдэх хүртэл ажиллахгүй */}
+
                 <Button>Ноорог хадгалах</Button>
                 <Button variant="primary" onClick={publish} disabled={cantPublish}>Нийтлэх</Button>
               </div>
             </div>
           </Card>
 
-          {/* Бичих зуур оршин суугчийн утсан дээр яг ямар харагдахыг харуулна */}
           <aside className="ann-preview" aria-label="Урьдчилан харах">
             <span className="ann-preview-label">Оршин суугчийн утсан дээр</span>
             <div className="ann-phone">
@@ -194,7 +187,7 @@ export default function Announcements() {
               <td className="dim">{p.date}</td>
               <td className="dim">{p.channel}</td>
               <td>
-                {/* read — уншсаныг хадгалах хүснэгт нэмэгдэх хүртэл null */}
+
                 {p.read == null ? <span className="dim">—</span> : (
                   <span className="ann-read">
                     <ProgressBar value={p.read} size={8} />

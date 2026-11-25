@@ -1,12 +1,15 @@
+/**
+ * Цагаан карт.
+ * title — h2 гарчиг, sub — гарчгийн доорх саарал тайлбар, action — баруун дээд буланд (товч гэх мэт)
+ * as — HTML таг: анхдагч нь <section>, хажуугийн самбарт as="aside"
+ * Бусад prop (aria-label, aria-labelledby…) шууд таг руу дамжина
+ */
+
 import { useId } from 'react'
 import './Card.css'
 
-// Цагаан карт.
-// title — h2 гарчиг, sub — гарчгийн доорх саарал тайлбар, action — баруун дээд буланд (товч гэх мэт)
-// as — HTML таг: анхдагч нь <section>, хажуугийн самбарт as="aside"
-// Бусад prop (aria-label, aria-labelledby…) шууд таг руу дамжина
 export default function Card({ as: Tag = 'section', title, sub, action, className = '', children, ...props }) {
-  const titleId = useId() // гарчгийн id — дэлгэц уншигч картыг гарчгаар нь нэрлэнэ
+  const titleId = useId()
 
   return (
     <Tag className={`ui-card ${className}`.trim()} aria-labelledby={title ? titleId : undefined} {...props}>

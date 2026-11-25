@@ -1,8 +1,11 @@
+/**
+ * Камерын жижиг зураг — жинхэнэ дүрс байхгүй тул SVG-ээр энгийн дүрслэл зурна.
+ * camera: { name, bg, ground, obj, x1, x2 }. Нүүр болон Камер хуудсанд ашиглана
+ */
+
 import { Link } from 'react-router-dom'
 import './CameraThumb.css'
 
-// Камерын жижиг зураг — жинхэнэ дүрс байхгүй тул SVG-ээр энгийн дүрслэл зурна.
-// camera: { name, bg, ground, obj, x1, x2 }. Нүүр болон Камер хуудсанд ашиглана
 export default function CameraThumb({ camera, to = '/cameras' }) {
   return (
     <Link to={to} className="cam-thumb" aria-label={`${camera.name} камер, шууд`}>

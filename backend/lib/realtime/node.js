@@ -5,8 +5,11 @@
  * Холболт: ws://localhost:3000/api/realtime — нэвтрэлтийн cookie-гоор (эсвэл ?token=) танина.
  *   Token буруу / эрх хаагдсан → 4001 кодоор хаана (frontend нэвтрэх хуудас руу шилжүүлнэ). 'ping' → 'pong'.
  *
- * attach(server) - http сервер дээр /api/realtime замыг WebSocket болгож, 1 сек тутмын шалгалтыг эхлүүлнэ
- * tick() - (дотоод) өмнөх шалгалт дуусаагүй бол алгасна — нэг өөрчлөлтийг хоёр удаа илгээхгүй
+ * Шалгалт: GET биш хүсэлт дууссаны дараа шууд (push), API-аар ороогүй өөрчлөлтөд 30 сек тутам нөөц.
+ *
+ * attach(server) - http сервер дээр /api/realtime замыг WebSocket болгож, push болон 30 сек тутмын шалгалтыг эхлүүлнэ
+ * tick() - (дотоод) өмнөх шалгалт дуусаагүй бол дууссаны дараа дахин нэг удаа ажиллана —
+ *   нэг өөрчлөлт хоёр удаа илгээгдэхгүй, алгасагдахгүй
  * run() - (дотоод) change_log-ийн шинэ мөрүүдийг уншиж client бүрт өөрт нь харагдах хүснэгтүүдийг илгээнэ
  * onUpgrade(req, socket, head) - (дотоод) холболтыг таньж, хүлээн авна
  */
@@ -17,11 +20,12 @@ var { tokenFrom, identify } = require('./identify');
 var log = require('../logger').child({ module: 'realtime' });
 
 var PATH = '/api/realtime';
-var POLL_MS = 1000;
+var POLL_MS = 30000;
 
 var wss = new WebSocketServer({ noServer: true });
 var lastId = null;
 var busy = false;
+var again = false;
 
 async function run() {
   if (lastId === null || !wss.clients.size) {
@@ -44,7 +48,10 @@ async function run() {
 }
 
 function tick() {
-  if (busy) return;
+  if (busy) {
+    again = true;
+    return;
+  }
   busy = true;
   run()
     .catch(function (err) {
@@ -52,6 +59,10 @@ function tick() {
     })
     .finally(function () {
       busy = false;
+      if (again) {
+        again = false;
+        tick();
+      }
     });
 }
 
@@ -66,6 +77,7 @@ async function onUpgrade(req, socket, head) {
       return ws.close(4001, 'unauthorized');
     }
     ws.client = client;
+    tick();
     log.info({ role: client.role, unitId: client.unitId, online: wss.clients.size }, 'Realtime холбогдлоо');
     ws.on('message', function (data) {
       if (String(data) === 'ping') ws.send('pong');
@@ -78,6 +90,9 @@ async function onUpgrade(req, socket, head) {
 
 function attach(server) {
   server.on('upgrade', onUpgrade);
+  server.on('request', function (req, res) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') res.on('finish', tick);
+  });
   setInterval(tick, POLL_MS).unref();
   log.info({ path: PATH }, 'Realtime бэлэн');
 }

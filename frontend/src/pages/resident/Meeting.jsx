@@ -1,3 +1,9 @@
+/**
+ * Хурал — /meeting
+ * Удахгүй болох хурал, хэлэлцэх асуудал, хуралд орох тохиргоо (камертай эсвэл аватараар нүүрээ нууцлах).
+ * GET /api/resident/meeting
+ */
+
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
@@ -9,7 +15,6 @@ import './styles/Meeting.css'
 
 const weekdays = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба']
 
-// Нүүрээ нууцлахад сонгох аватарууд — d: SVG дүрсний зам
 const meetingAvatars = [
   { name: 'Сар', bg: '#1a1547', fg: '#ffc24b', d: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z' },
   { name: 'Од', bg: '#ffc24b', fg: '#1a1547', d: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z' },
@@ -19,12 +24,10 @@ const meetingAvatars = [
   { name: 'Нар', bg: '#ffe7b0', fg: '#7a4300', d: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5' },
 ]
 
-// Date → '19:00'
 function hhmm(d) {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Аватарын дүрс — SVG замаас
 function AvatarIcon({ d, size }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -35,15 +38,13 @@ function AvatarIcon({ d, size }) {
 
 export default function Meeting() {
   const { user } = useOutletContext()
-  // GET /api/resident/meeting — удахгүй болох хурал, хэлэлцэх асуудалтай нь
+
   const { data, error } = useApi('/resident/meeting', null, { fallback: null, live: ['meetings', 'polls', 'poll_votes'] })
-  // Хуралд хэрхэн орох тохиргоо — 3 утга хамт.
-  // mode: 'avatar' — нүүрээ нууцлах, 'cam' — камертай; avatar — сонгосон аватарын дугаар
+
   const [look, setLook] = useState({ mode: 'avatar', avatar: 0, micOff: true })
   const [toast, setToast] = useState('')
   const { mode, avatar, micOff } = look
 
-  // Нэг утгыг солино: set('mode')('cam')
   const set = (key) => (value) => setLook((l) => ({ ...l, [key]: value }))
 
   const current = meetingAvatars[avatar]
@@ -63,7 +64,7 @@ export default function Meeting() {
   return (
     <div className="res-meeting">
       <div className="mt-main">
-        {/* Хурлын товч мэдээлэл */}
+
         <section className="mt-hero" aria-labelledby="m-title">
           <span className="mt-date">
             <span className="mt-date-month">{startsAt.getMonth() + 1}-р сар</span>
@@ -74,13 +75,12 @@ export default function Meeting() {
             <h1 id="m-title">{meeting.title}</h1>
             <span className="mt-when">{when}</span>
           </div>
-          {/* Түр — хуанлийн файл (.ics) үүсгэх хүртэл ажиллахгүй */}
+
           <button type="button" className="mt-calendar">
             <CalendarMonthOutlined sx={{ fontSize: 18 }} /> Хуанлид нэмэх
           </button>
         </section>
 
-        {/* Хэлэлцэх асуудал */}
         <section className="mt-agenda" aria-labelledby="ag-title">
           <h2 id="ag-title">Хэлэлцэх асуудал</h2>
           {meeting.agenda.map((a) => (
@@ -96,13 +96,11 @@ export default function Meeting() {
         </section>
       </div>
 
-      {/* Хуралд хэрхэн харагдах */}
       <section className="mt-look" aria-labelledby="look-title">
         <h2 id="look-title">Хуралд хэрхэн харагдах вэ?</h2>
 
         <div className="mt-preview" role="img" aria-label={modeText}>
           {avatarMode ? (
-            // key — аватар солигдоход "үсрэх" хөдөлгөөн дахин тоглоно
             <span key={avatar} className="mt-preview-avatar" style={{ background: current.bg, color: current.fg }}>
               <AvatarIcon d={current.d} size={52} />
             </span>
@@ -146,7 +144,6 @@ export default function Meeting() {
 
         <Toast>{toast}</Toast>
 
-        {/* Түр — хурлын өрөө (видео) хийгдэх хүртэл зөвхөн мэдэгдэл харуулна */}
         <button type="button" className="mt-join" onClick={() => setToast(started ? 'Хурлын өрөө (видео) хараахан холбогдоогүй байна' : `Хурал ${startsAt.getMonth() + 1}/${startsAt.getDate()}-нд ${hhmm(startsAt)} цагт нээгдэнэ`)}>
           <VideocamOutlined sx={{ fontSize: 22 }} /> Хуралд нэгдэх
         </button>

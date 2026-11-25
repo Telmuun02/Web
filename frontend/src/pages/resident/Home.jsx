@@ -33,7 +33,7 @@ function requestNote(r) {
 
 export default function Home() {
   const { user } = useOutletContext()
-  const { data, error } = useApi('/resident/home', null, { fallback: null, live: ['invoices', 'payments', 'requests', 'announcements', 'polls', 'meetings'] })
+  const { data, error } = useApi('/resident/home', null, { fallback: null })
 
   const today = new Date()
   const dateText = `${weekdays[today.getDay()]}, ${today.getMonth() + 1}-р сарын ${today.getDate()}`

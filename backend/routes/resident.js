@@ -7,7 +7,6 @@ var profileController = require('../controllers/user/profileController');
 var chatController = require('../controllers/user/chatController');
 var voiceController = require('../controllers/user/voiceController');
 var meetingController = require('../controllers/user/meetingController');
-var messagesController = require('../controllers/user/messagesController');
 
 /**
  * resident хуудастай холбоотой api ууд ба доор байдлаар харагдана.
@@ -34,9 +33,5 @@ router.post('/chat', chatController.send);
 
 router.post('/transcribe', voiceController.transcribe);
 
-router.get('/messages', messagesController.rooms);
-router.get('/messages/:key(entrance|soh)', messagesController.show);
-router.post('/messages/:key(entrance|soh)', messagesController.send);
-router.post('/messages/:key(entrance|soh)/read', messagesController.read);
 
 module.exports = router;

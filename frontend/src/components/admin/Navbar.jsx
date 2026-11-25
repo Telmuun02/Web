@@ -24,6 +24,7 @@ import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
 import PeopleOutlined from '@mui/icons-material/PeopleOutlined'
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined'
+import VideocamOutlined from '@mui/icons-material/VideocamOutlined'
 
 const menuItems = [
   { path: '/admin',               label: 'Самбар',             roles: ['admin', 'user'], icon: DashboardOutlined },
@@ -31,6 +32,7 @@ const menuItems = [
   { path: '/admin/requests',      label: 'Засварын хүсэлт',     roles: ['admin', 'user'], icon: BuildOutlined },
   { path: '/admin/announcements', label: 'Зарлал',              roles: ['admin', 'user'], icon: CampaignOutlined },
   { path: '/admin/polls',         label: 'Санал хураалт',       roles: ['admin', 'user'], icon: HowToVoteOutlined },
+  { path: '/admin/meeting',       label: 'Хурал',               roles: ['admin'],         icon: VideocamOutlined },
   { path: '/admin/chat',          label: 'Чат',                 roles: ['admin', 'user'], icon: ForumOutlined },
   { path: '/admin/units',         label: 'Тоот ба оршин суугч', roles: ['admin'],         icon: PeopleOutlined },
   { path: '/admin/reports',       label: 'Тайлан',              roles: ['admin', 'user'],         icon: BarChartOutlined },

@@ -126,18 +126,43 @@
   color: var(--link);
 }
 
-/* Нийтэлсэн зарлалын хүснэгт */
-.ann-post-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.ann-meeting {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
-.ann-read {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px;
-  align-items: center;
-  gap: 10px;
+.ann-notice-meeting {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 13px;
-  text-align: right;
+  font-weight: 600;
+}
+
+.ann-meeting-link {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--tint-navy);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ann-feed {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ann-feed h2 {
+  margin: 0;
+  font-size: 18px;
 }

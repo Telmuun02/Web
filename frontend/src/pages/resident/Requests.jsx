@@ -40,7 +40,7 @@ export default function Requests() {
   const [form, setForm] = useState(emptyForm)
   const [status, setStatus] = useState({ sending: false, toast: '', freshId: null })
 
-  const { data: list, loading, error, reload } = useApi('/resident/requests', null, { fallback: [], live: ['requests'] })
+  const { data: list, loading, error, reload } = useApi('/resident/requests', null, { fallback: [] })
   const { type, title, body, anonymous } = form
 
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))

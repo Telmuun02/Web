@@ -34,7 +34,7 @@ const initialNotify = Object.fromEntries(notifySettings.map((s) => [s.key, s.on]
 export default function Profile() {
   const { user, onLogout } = useOutletContext()
 
-  const { data, error } = useApi('/resident/profile', null, { fallback: null, live: ['users', 'payments', 'invoices'] })
+  const { data, error } = useApi('/resident/profile', null, { fallback: null })
 
   const [prefs, setPrefs] = useState({ ...initialNotify, fontSize: 'm' })
 

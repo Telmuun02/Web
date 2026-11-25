@@ -6,6 +6,8 @@
  *   GET /api/admin/announcements
  * store - шинэ зарлал (бүх орц эсвэл нэг орцонд)
  *   POST /api/admin/announcements
+ * update - зарлалын гарчиг, агуулгыг засах
+ *   PATCH /api/admin/announcements/:id - { title, body }
  * destroy - зарлал устгах
  *   DELETE /api/admin/announcements/:id
  */
@@ -60,6 +62,24 @@ async function store(req, res, next) {
   }
 }
 
+async function update(req, res, next) {
+  try {
+    var title = String(req.body.title || '').trim();
+    var body = String(req.body.body || '').trim();
+    if (!title) return res.status(400).json({ error: 'Гарчгаа оруулна уу' });
+    if (!body) return res.status(400).json({ error: 'Агуулгаа оруулна уу' });
+    if (title.length > 150) return res.status(400).json({ error: 'Гарчиг 150 тэмдэгтээс ихгүй' });
+
+    if (!(await Announcements.find(req.params.id))) return res.status(404).json({ error: 'Зарлал олдсонгүй' });
+    await Announcements.update(req.params.id, { title: title, body: body });
+
+    log.info({ by: req.user.id, announcementId: Number(req.params.id) }, 'Зарлал засав');
+    res.json(await Announcements.find(req.params.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function destroy(req, res, next) {
   try {
     var removed = await Announcements.remove(req.params.id);
@@ -72,4 +92,4 @@ async function destroy(req, res, next) {
   }
 }
 
-module.exports = { index, store, destroy };
+module.exports = { index, store, update, destroy };

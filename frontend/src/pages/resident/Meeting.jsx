@@ -39,7 +39,7 @@ function AvatarIcon({ d, size }) {
 export default function Meeting() {
   const { user } = useOutletContext()
 
-  const { data, error } = useApi('/resident/meeting', null, { fallback: null, live: ['meetings', 'polls', 'poll_votes'] })
+  const { data, error } = useApi('/resident/meeting', null, { fallback: null })
 
   const [look, setLook] = useState({ mode: 'avatar', avatar: 0, micOff: true })
   const [toast, setToast] = useState('')

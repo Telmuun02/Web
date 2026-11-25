@@ -1,0 +1,22 @@
+.poll-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--page-bg);
+}
+
+.poll-sum-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted-text);
+}
+
+.poll-sum-row b {
+  font-size: 15px;
+  color: var(--text);
+}

@@ -23,9 +23,9 @@ export default function Chat() {
   const { user } = useOutletContext()
   const [key, setKey] = useTabParam('entrance')
 
-  const { data, error } = useApi('/resident/messages', null, { fallback: null, live: ['chat_messages'] })
+  const { data, error } = useApi('/messages', null, { fallback: null, live: ['chat_messages'] })
   const room = data?.rooms.find((r) => r.key === key) ?? data?.rooms[0]
-  const chat = useChatRoom(room ? `/resident/messages/${room.key}` : null)
+  const chat = useChatRoom(room ? `/messages/${encodeURIComponent(room.room)}` : null)
 
   if (error) return <p className="res-chat-error">{error}</p>
   if (!data || !room) return null

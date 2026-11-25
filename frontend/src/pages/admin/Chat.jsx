@@ -1,16 +1,19 @@
 /**
- * Ажилтны бэлэн хариултууд — дарахад шууд илгээнэ
+ * Чат (ажилтан) — /admin/chat. API: /api/messages (оршин суугчтай нэг controller)
  *
- * Чат — оршин суугчдын СӨХ-д бичсэн хувийн чатууд (хариулна) ба орцны группүүд (уншина, нууна).
+ * Оршин суугчдын СӨХ-тэй хувийн чатууд ба орцны группүүд — хоёуланд нь бичнэ, группт мессеж нууна.
+ * Тоот хайж (/api/admin/units?q=) шинэ чат эхлүүлнэ. Бэлэн хариултууд дарахад шууд илгээгдэнэ.
  * canvas: AdminPhoneChat (вэб хэлбэрт). Шинэ мессеж ирэхэд WebSocket-оор шууд дахин татна.
  * URL: ?tab=groups — групп таб, ?room=soh:613 — нээлттэй чат
  */
 
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded'
 import ChatThread from '../../components/Chat/ChatThread'
 import PageHeader from '../../components/UI/PageHeader'
 import Tabs from '../../components/UI/Tabs'
+import SearchInput from '../../components/UI/SearchInput'
 import api from '../../api/client'
 import useApi from '../../hooks/useApi'
 import useChatRoom from '../../hooks/useChatRoom'
@@ -32,8 +35,11 @@ export default function Chat() {
   const tab = params.get('tab') === 'groups' ? 'groups' : 'inbox'
   const room = params.get('room')
 
-  const { data, error } = useApi('/admin/messages', null, { fallback: null, live: ['chat_messages'] })
-  const chat = useChatRoom(room ? `/admin/messages/${encodeURIComponent(room)}` : null)
+  const { data, error } = useApi('/messages', null, { fallback: null, live: ['chat_messages'] })
+  const chat = useChatRoom(room ? `/messages/${encodeURIComponent(room)}` : null)
+
+  const [q, setQ] = useState('')
+  const { data: found } = useApi(q.trim() ? '/admin/units' : null, { q: q.trim() }, { fallback: [], delay: 300 })
 
   const threads = data?.threads ?? []
   const groups = data?.groups ?? []
@@ -53,7 +59,7 @@ export default function Chat() {
 
   async function toggleHidden(m) {
     try {
-      await api.patch(`/admin/messages/item/${m.id}`, { hidden: !m.hidden })
+      await api.patch(`/messages/item/${m.id}`, { hidden: !m.hidden })
     } catch (err) {
       window.alert(err.message)
     }
@@ -67,7 +73,7 @@ export default function Chat() {
     sub = (head.phones ?? []).join(' · ')
   } else if (head?.kind === 'entrance') {
     title = head.title
-    sub = 'Ажилтан зөвхөн уншина, нууж болно'
+    sub = 'Орцны бүх оршин суугч харна · зүй бус мессежийг нууж болно'
   }
 
   return (
@@ -92,7 +98,24 @@ export default function Chat() {
 
       <div className={room ? 'admin-chat-columns has-room' : 'admin-chat-columns'}>
         <div className="admin-chat-list">
-          {tab === 'inbox' && threads.map((t) => (
+          {tab === 'inbox' && (
+            <SearchInput value={q} onChange={setQ} placeholder="Тоот эсвэл нэрээр хайж бичих" />
+          )}
+          {tab === 'inbox' && q.trim() && found.slice(0, 8).map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              className="admin-chat-item"
+              onClick={() => { setQ(''); select(`soh:${u.id}`) }}
+            >
+              <span className="admin-chat-av" aria-hidden="true">{u.code.split('-')[0]}</span>
+              <span className="admin-chat-item-text">
+                <strong>{u.code} тоот</strong>
+                <span className="admin-chat-last">{u.name || 'Оршин суугч бүртгэлгүй'}</span>
+              </span>
+            </button>
+          ))}
+          {tab === 'inbox' && !q.trim() && threads.map((t) => (
             <button
               key={t.room}
               type="button"
@@ -113,8 +136,8 @@ export default function Chat() {
               {t.unread > 0 && <span className="admin-chat-badge">{t.unread}</span>}
             </button>
           ))}
-          {tab === 'inbox' && !threads.length && data && (
-            <p className="admin-chat-empty">Оршин суугчдаас мессеж ирээгүй байна. Оршин суугч "СӨХ" чатад бичмэгц энд гарна.</p>
+          {tab === 'inbox' && !q.trim() && !threads.length && data && (
+            <p className="admin-chat-empty">Чат алга. Дээрх хайлтаар тоот олж бичих эсвэл оршин суугч "СӨХ" чатад бичмэгц энд гарна.</p>
           )}
 
           {tab === 'groups' && groups.map((g) => (
@@ -139,7 +162,7 @@ export default function Chat() {
           ))}
           {tab === 'groups' && (
             <p className="admin-chat-empty">
-              Ажилтан группийн мессежийг уншина, зүй бус мессежийг нууж болно. Оршин суугчдын бие биедээ бичсэн хувийн мессеж байхгүй.
+              Ажилтан группт бичиж, зүй бус мессежийг нууж болно. Оршин суугчдын бие биедээ бичсэн хувийн мессеж байхгүй.
             </p>
           )}
         </div>
@@ -164,7 +187,6 @@ export default function Chat() {
                 chat={chat}
                 me={{ type: 'admin' }}
                 adminSide
-                canWrite={!isGroup}
                 placeholder="Хариу бичих…"
                 quick={quickReplies}
                 actions={isGroup ? (m) => (

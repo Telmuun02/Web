@@ -25,6 +25,7 @@ import Units from './pages/admin/Units'
 import Reports from './pages/admin/Reports'
 import Settings from './pages/admin/Settings'
 import AdminChat from './pages/admin/Chat'
+import AdminMeeting from './pages/admin/Meeting'
 
 import ResidentLayout from './components/resident/ResidentLayout'
 import Home from './pages/resident/Home'
@@ -88,6 +89,7 @@ function App() {
           <Route path="requests" element={<Requests />} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="polls" element={<Polls />} />
+          <Route path="meeting" element={<AdminMeeting />} />
           <Route path="units" element={<Units />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />

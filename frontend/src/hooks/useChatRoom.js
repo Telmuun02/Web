@@ -1,6 +1,6 @@
 /**
  * Нэг чатын өрөөний мессежүүд. chat_messages өөрчлөгдөхөд (WebSocket) сүүлийн мессежүүдийг дахин татна.
- *   const chat = useChatRoom('/resident/messages/entrance')
+ *   const chat = useChatRoom('/messages/entrance:34')
  *   chat.messages, chat.send(text), chat.loadOlder()
  *   chat.info — серверийн хариуны бусад талбар (ажилтны чатын header гэх мэт)
  * url — GET өрөөний мессежүүд, POST шинэ мессеж, POST {url}/read уншсан. null бол юу ч хийхгүй

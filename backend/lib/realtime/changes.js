@@ -10,7 +10,7 @@
 
 var db = require('../../db');
 
-var PUBLIC_TABLES = ['announcements', 'polls', 'poll_votes', 'meetings', 'chat_messages'];
+var PUBLIC_TABLES = ['announcements', 'announcement_comments', 'polls', 'poll_votes', 'meetings', 'chat_messages'];
 var UNIT_TABLES = ['invoices', 'payments', 'requests', 'users', 'units'];
 
 async function latestId() {

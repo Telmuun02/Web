@@ -1,18 +1,19 @@
 /**
  * Зарлал ба санал хураалт — /news
- * СӨХ-ийн зарлалууд, идэвхтэй санал хураалтад санал өгөх.
+ * СӨХ-ийн зарлалууд, идэвхтэй ба дууссан санал хураалтууд нэг feed-д огноогоор пост хэлбэрээр (FeedPost; зарлалд сэтгэгдэлтэй, хурал зарласан бол "Хуралд орох" → /meeting), идэвхтэй санал хураалтад санал өгөх.
  * GET /api/resident/news, POST /api/resident/polls/:id/vote
  */
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import Badge from '../../components/UI/Badge'
 import PageHeader from '../../components/UI/PageHeader'
 import ProgressBar from '../../components/UI/ProgressBar'
 import Toast from '../../components/UI/Toast'
+import FeedPost from '../../components/Feed/FeedPost'
+import PollSummary from '../../components/Feed/PollSummary'
 import api from '../../api/client'
 import useApi from '../../hooks/useApi'
-import { monthDay, relativeDay } from '../../utils/format'
+import { monthDay } from '../../utils/format'
 import './styles/News.css'
 
 function PollCard({ poll, onVoted }) {
@@ -32,10 +33,12 @@ function PollCard({ poll, onVoted }) {
   }
 
   return (
-    <section className="nw-poll" aria-labelledby={`poll-${poll.id}`}>
-      <span className="nw-poll-tag">Онлайн санал · {monthDay(poll.ends_at)} хүртэл</span>
-      <h2 id={`poll-${poll.id}`}>{poll.title}</h2>
-      {poll.description && <span className="nw-poll-info">{poll.description}</span>}
+    <FeedPost
+      post={{ id: poll.id, title: poll.title, body: poll.description, created_at: poll.starts_at }}
+      meta="Бүх айл"
+      tag={`Санал хураалт · ${monthDay(poll.ends_at)} хүртэл`}
+      comments={false}
+    >
 
       {voted ? (
         <div className="nw-results">
@@ -50,7 +53,7 @@ function PollCard({ poll, onVoted }) {
             return (
               <div key={o.id} className="nw-result">
                 <div className="nw-result-head"><span>{o.label}</span><span>{percent}%</span></div>
-                <ProgressBar value={percent} color={i === 0 ? 'var(--yellow)' : 'var(--link)'} track="rgba(255, 255, 255, 0.15)" />
+                <ProgressBar value={percent} color={i === 0 ? 'var(--accent)' : 'var(--field-border)'} track="var(--line-soft)" />
               </div>
             )
           })}
@@ -76,12 +79,12 @@ function PollCard({ poll, onVoted }) {
       <span className="nw-poll-info small">
         {poll.voted_units}/{poll.total_units} айл санал өгсөн · босго {poll.threshold_percent}%
       </span>
-    </section>
+    </FeedPost>
   )
 }
 
 export default function News() {
-  const { data, error } = useApi('/resident/news', null, { fallback: null, live: ['announcements', 'polls', 'poll_votes'] })
+  const { data, error } = useApi('/resident/news', null, { fallback: null })
   const [votedPolls, setVotedPolls] = useState({})
 
   if (error) return <div className="res-news"><p role="alert">{error}</p></div>
@@ -89,6 +92,11 @@ export default function News() {
 
   const { posts, past_polls: pastPolls, meeting_votes: meetingVotes } = data
   const activePolls = data.active_polls.map((p) => votedPolls[p.id] ?? p)
+  const feed = [
+    ...posts.map((p) => ({ kind: 'post', key: `a${p.id}`, date: p.created_at, item: p })),
+    ...activePolls.map((p) => ({ kind: 'active', key: `p${p.id}`, date: p.starts_at, item: p })),
+    ...pastPolls.map((p) => ({ kind: 'past', key: `p${p.id}`, date: p.ends_at, item: p })),
+  ].sort((a, b) => new Date(b.date) - new Date(a.date))
 
   return (
     <div className="res-news">
@@ -96,60 +104,47 @@ export default function News() {
 
       <div className="nw-columns">
 
-        <section className="nw-posts" aria-labelledby="ann-title">
-          <h2 id="ann-title">Зарлал ({posts.length})</h2>
-          {posts.length === 0 && <p>Зарлал алга</p>}
-          {posts.map((p) => (
-            <article key={p.id} className={p.important ? 'nw-post important' : 'nw-post'}>
-              <span className="nw-post-meta">
-                <Badge tone={p.important ? 'red' : 'gray'}>{p.important ? 'Чухал' : 'Мэдээлэл'}</Badge>
-                <span className="nw-muted">{relativeDay(p.created_at)}</span>
-              </span>
-              <h3>{p.title}</h3>
-              <p>{p.body}</p>
-            </article>
-          ))}
+        <section className="nw-posts" aria-label="Зарлал ба санал хураалт">
+          {feed.length === 0 && <p>Зарлал алга</p>}
+          {feed.map(({ kind, key, item: p }) => {
+            if (kind === 'active') {
+              return <PollCard key={key} poll={p} onVoted={(result) => setVotedPolls((v) => ({ ...v, [p.id]: result }))} />
+            }
+            if (kind === 'past') {
+              return (
+                <FeedPost
+                  key={key}
+                  post={{ id: p.id, title: p.title, created_at: p.ends_at }}
+                  meta="Бүх айл"
+                  tag="Санал хураалт · дууссан"
+                  comments={false}
+                >
+                  <PollSummary yes={p.yes_percent} turnout={p.turnout_percent} result={p.passed ? 'passed' : 'failed'} />
+                </FeedPost>
+              )
+            }
+            return (
+              <FeedPost
+                key={key}
+                post={p}
+                meta={p.entrance_number ? `${p.entrance_number}-р орц` : 'Бүх орц'}
+                action={p.meeting_id && <Link to="/meeting" className="nw-post-meeting">Хуралд орох</Link>}
+              />
+            )
+          })}
         </section>
 
-        <aside className="nw-side">
-
-          {activePolls.length === 0 && (
-            <section className="nw-poll" aria-label="Санал хураалт">
-              <span className="nw-poll-info">Одоогоор явагдаж буй санал хураалт алга</span>
-            </section>
-          )}
-          {activePolls.map((p) => (
-            <PollCard
-              key={p.id}
-              poll={p}
-              onVoted={(result) => setVotedPolls((v) => ({ ...v, [p.id]: result }))}
-            />
-          ))}
-
-          {meetingVotes.map((v) => (
-            <Link key={v.title} to="/meeting" className="nw-meeting">
-              <span className="nw-meeting-tag">Хурал дээр хураана · {monthDay(v.starts_at)}</span>
-              <span className="nw-meeting-title">{v.title}</span>
-              <span className="nw-meeting-go">Хуралд нэгдэж санал өгнө үү →</span>
-            </Link>
-          ))}
-
-          <section className="nw-past" aria-labelledby="past-title">
-            <h2 id="past-title">Өмнөх дүнгүүд</h2>
-            {pastPolls.length === 0 && <span className="nw-muted">Дууссан санал хураалт алга</span>}
-            {pastPolls.map((r) => (
-              <div key={r.id} className="nw-past-item">
-                <span className="nw-past-head">
-                  <span className="nw-past-q">{r.title}</span>
-                  <Badge tone={r.passed ? 'green' : 'red'}>{r.passed ? 'Батлагдсан' : 'Татгалзсан'}</Badge>
-                </span>
-                <span className="nw-muted">
-                  Тийм {r.yes_percent}% · ирц {r.turnout_percent}% · {monthDay(r.ends_at)}
-                </span>
-              </div>
+        {meetingVotes.length > 0 && (
+          <aside className="nw-side">
+            {meetingVotes.map((v) => (
+              <Link key={v.title} to="/meeting" className="nw-meeting">
+                <span className="nw-meeting-tag">Хурал дээр хураана · {monthDay(v.starts_at)}</span>
+                <span className="nw-meeting-title">{v.title}</span>
+                <span className="nw-meeting-go">Хуралд нэгдэж санал өгнө үү →</span>
+              </Link>
             ))}
-          </section>
-        </aside>
+          </aside>
+        )}
       </div>
     </div>
   )

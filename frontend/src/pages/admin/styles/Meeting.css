@@ -1,0 +1,18 @@
+.meeting {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meeting-room {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meeting-error {
+  margin: 0;
+  max-width: 720px;
+  font-size: 14px;
+  color: var(--on-red);
+}

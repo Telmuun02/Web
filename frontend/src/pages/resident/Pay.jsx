@@ -88,7 +88,7 @@ const qrCells = buildQr()
 export default function Pay() {
   const { user } = useOutletContext()
 
-  const { data: loaded, error } = useApi('/resident/pay', null, { fallback: null, live: ['invoices', 'payments'] })
+  const { data: loaded, error } = useApi('/resident/pay', null, { fallback: null })
   const [fresh, setFresh] = useState(null)
   const [state, setState] = useState({ sending: false, message: '' })
   const data = fresh ?? loaded

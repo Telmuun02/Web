@@ -1,49 +1,53 @@
 /**
  * Зарлал — /admin/announcements
- * Шинэ зарлал бичих (бүх орц эсвэл нэг орцонд), нийтэлсэн зарлалын жагсаалт.
+ * Шинэ зарлал бичих (бүх орц эсвэл нэг орцонд), нийтэлсэн зарлалууд feed хэлбэрээр, сэтгэгдэлтэй (FeedPost).
+ * "Хурал зарлах" асаавал зарлалтай хамт хурал үүснэ (meeting: { starts_at, ends_at }), жагсаалтаас /admin/meeting руу орно.
+ * Пост бүрийн баруун дээд "Засах" товчоор тухайн пост дотроо гарчиг, агуулгыг засна (PATCH /api/admin/announcements/:id).
+ * Санал хураалтууд ч зарлалтай нэг feed-д пост хэлбэрээр, огноогоор холилдож харагдана (GET /api/admin/polls).
  * GET/POST /api/admin/announcements, GET /api/admin/units (орцны тоо), useLive('announcements')
  */
 
 import { useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import Badge from '../../components/UI/Badge'
 import Button from '../../components/UI/Button'
 import Card from '../../components/UI/Card'
 import Field from '../../components/UI/Field'
 import PageHeader from '../../components/UI/PageHeader'
-import ProgressBar from '../../components/UI/ProgressBar'
 import Segmented from '../../components/UI/Segmented'
 import Switch from '../../components/UI/Switch'
-import Table from '../../components/UI/Table'
 import Toast from '../../components/UI/Toast'
 import api from '../../api/client'
+import FeedPost from '../../components/Feed/FeedPost'
+import PollSummary from '../../components/Feed/PollSummary'
 import LiveBar from '../../components/admin/LiveBar'
 import useLive from '../../hooks/useLive'
 import useApi from '../../hooks/useApi'
+import { monthDay } from '../../utils/format'
 import './styles/Announcements.css'
 
 const audienceLabels = { all: 'Бүх орц', 1: '1-р орц', 2: '2-р орц', 3: '3-р орц' }
 
 function toPost(a) {
-  const d = new Date(a.created_at)
   return {
-    id: a.id,
-    title: a.title,
+    ...a,
+    author: a.created_by_name || 'СӨХ',
     audience: audienceLabels[a.audience] ?? a.audience,
-    date: `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, '0')}`,
     channel: a.sms ? 'Апп · SMS' : 'Апп',
-    read: null,
-    important: Boolean(a.important),
+    meetingId: a.meeting_id ?? null,
   }
 }
 
-const columns = [
-  { label: 'Гарчиг' },
-  { label: 'Хэнд' },
-  { label: 'Огноо' },
-  { label: 'Суваг' },
-  { label: 'Уншсан', width: 200 },
-]
+const pollTag = {
+  active: (p) => `Санал хураалт · ${monthDay(p.ends_at)} хүртэл`,
+  upcoming: (p) => `Санал хураалт · ${monthDay(p.starts_at)}-нд эхэлнэ`,
+  ended: () => 'Санал хураалт · дууссан',
+}
+
+function pollResult(p) {
+  if (p.status !== 'ended') return null
+  return p.turnout_percent >= p.threshold_percent && p.yes_votes * 2 > p.votes ? 'passed' : 'failed'
+}
 
 const smsLimit = 160
 
@@ -52,7 +56,9 @@ function smsText(title, body) {
   return text.length > smsLimit ? `${text.slice(0, smsLimit - 3)}...` : text
 }
 
-const emptyForm = { title: '', body: '', audience: 'all', sms: true, important: false }
+const emptyForm = { title: '', body: '', audience: 'all', sms: true, important: false, meeting: false, startsAt: '', endsAt: '' }
+
+const toDbTime = (value) => `${value.replace('T', ' ')}:00`
 
 export default function Announcements() {
   const live = useLive('announcements')
@@ -61,11 +67,16 @@ export default function Announcements() {
 
   const [form, setForm] = useState(emptyForm)
   const [toast, setToast] = useState('')
-  const { title, body, audience, sms, important } = form
+  const { title, body, audience, sms, important, meeting, startsAt, endsAt } = form
 
   const { data: list, reload } = useApi('/admin/announcements', null, { fallback: [], live: ['announcements'] })
   const { data: units } = useApi('/admin/units', null, { fallback: [], live: ['units', 'users'] })
+  const { data: polls } = useApi('/admin/polls', null, { fallback: [], live: ['polls', 'poll_votes'] })
   const posts = list.map(toPost)
+  const feed = [
+    ...posts.map((p) => ({ kind: 'post', key: `a${p.id}`, date: p.created_at, item: p })),
+    ...polls.map((p) => ({ kind: 'poll', key: `p${p.id}`, date: p.starts_at, item: p })),
+  ].sort((a, b) => new Date(b.date) - new Date(a.date))
 
   const unitCount = (value) => (value === 'all' ? units.length : units.filter((u) => String(u.entrance) === value).length)
   const audienceOptions = Object.entries(audienceLabels).map(([value, label]) => ({
@@ -77,14 +88,18 @@ export default function Announcements() {
 
   const previewTitle = title.trim() || 'Гарчиг энд харагдана'
   const previewBody = body.trim() || 'Агуулга энд харагдана'
-  const cantPublish = !title.trim() || !body.trim()
+  const badTime = meeting && (!startsAt || !endsAt || endsAt <= startsAt)
+  const cantPublish = !title.trim() || !body.trim() || badTime
 
   async function publish() {
     if (cantPublish) return
     try {
-      await api.post('/admin/announcements', form)
+      await api.post('/admin/announcements', {
+        title, body, audience, sms, important,
+        meeting: meeting ? { starts_at: toDbTime(startsAt), ends_at: toDbTime(endsAt) } : null,
+      })
       reload()
-      setForm((f) => ({ ...f, title: '', body: '' }))
+      setForm((f) => ({ ...f, title: '', body: '', meeting: false, startsAt: '', endsAt: '' }))
       setToast(`${target.units} тоотод зарлал илгээгдлээ`)
     } catch (err) {
       setToast(err.message)
@@ -137,7 +152,19 @@ export default function Announcements() {
             <div className="ann-switches">
               <Switch label="SMS-ээр давхар илгээх" hint="Апп суулгаагүй 24 тоотод ч хүрнэ" checked={sms} onChange={field('sms')} />
               <Switch label="Чухал зарлал" hint="Мэдэгдлээ унтраасан хүнд ч очно" checked={important} onChange={field('important')} />
+              <Switch label="Хурал зарлах" hint="Зарлалаас онлайн хурал руу орно" checked={meeting} onChange={field('meeting')} />
             </div>
+
+            {meeting && (
+              <div className="ann-meeting">
+                <Field label="Эхлэх">
+                  <input type="datetime-local" value={startsAt} onChange={(e) => field('startsAt')(e.target.value)} />
+                </Field>
+                <Field label="Дуусах">
+                  <input type="datetime-local" value={endsAt} min={startsAt} onChange={(e) => field('endsAt')(e.target.value)} />
+                </Field>
+              </div>
+            )}
 
             <div className="ann-footer">
               <span className="ann-cost">
@@ -161,6 +188,7 @@ export default function Announcements() {
                 </span>
                 <span className="ann-notice-title">{previewTitle}</span>
                 <span className="ann-notice-body">{previewBody}</span>
+                {meeting && <span className="ann-notice-meeting">Хуралд орох</span>}
               </div>
               {sms && (
                 <div className="ann-sms">
@@ -173,33 +201,40 @@ export default function Announcements() {
         </div>
       )}
 
-      <Card title="Нийтэлсэн зарлал">
-        <Table columns={columns} minWidth={720}>
-          {posts.map((p) => (
-            <tr key={p.id}>
-              <td className="bold">
-                <span className="ann-post-title">
-                  {p.important && <Badge tone="red" small>Чухал</Badge>}
-                  {p.title}
-                </span>
-              </td>
-              <td className="dim">{p.audience}</td>
-              <td className="dim">{p.date}</td>
-              <td className="dim">{p.channel}</td>
-              <td>
-
-                {p.read == null ? <span className="dim">—</span> : (
-                  <span className="ann-read">
-                    <ProgressBar value={p.read} size={8} />
-                    <b>{p.read}%</b>
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </Table>
-        {posts.length === 0 && <p className="dim">Нийтэлсэн зарлал алга</p>}
-      </Card>
+      <section className="ann-feed" aria-labelledby="ann-feed-title">
+        <h2 id="ann-feed-title">Нийтэлсэн зарлал ба санал хураалт</h2>
+        {feed.length === 0 && <p className="dim">Нийтэлсэн зарлал алга</p>}
+        {feed.map(({ kind, key, item: p }) => kind === 'poll' ? (
+          <FeedPost
+            key={key}
+            post={{ id: p.id, title: p.title, body: p.description, created_at: p.starts_at }}
+            author="СӨХ"
+            meta="Бүх айл"
+            tag={pollTag[p.status]?.(p)}
+            comments={false}
+            action={<Link to="/admin/polls" className="ann-meeting-link">Дэлгэрэнгүй</Link>}
+          >
+            {p.status !== 'upcoming' && (
+              <PollSummary
+                yes={p.votes ? Math.round((p.yes_votes / p.votes) * 100) : 0}
+                turnout={p.turnout_percent}
+                threshold={p.threshold_percent}
+                note={`${p.votes}/${p.total_units} айл`}
+                result={pollResult(p)}
+              />
+            )}
+          </FeedPost>
+        ) : (
+          <FeedPost
+            key={key}
+            post={p}
+            author={p.author}
+            meta={`${p.audience} · ${p.channel}`}
+            action={p.meetingId && <Link to="/admin/meeting" className="ann-meeting-link">Хурал руу</Link>}
+            onSave={isAdmin ? async (changes) => { await api.patch(`/admin/announcements/${p.id}`, changes); reload() } : undefined}
+          />
+        ))}
+      </section>
     </div>
   )
 }
